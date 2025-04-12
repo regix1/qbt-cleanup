@@ -1,0 +1,82 @@
+[
+    {
+        "label": "logging",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "logging",
+        "description": "logging",
+        "detail": "logging",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "qbittorrentapi",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "qbittorrentapi",
+        "description": "qbittorrentapi",
+        "detail": "qbittorrentapi",
+        "documentation": {}
+    },
+    {
+        "label": "run_cleanup",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def run_cleanup():\n    # qBittorrent connection settings from environment variables\n    qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n    qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n    qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # Cleanup settings\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))\n    delete_files = os.environ.get(\"DELETE_FILES\", \"True\").lower() == \"true\"",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def main():\n    # Get schedule interval from environment\n    interval_hours = int(os.environ.get(\"SCHEDULE_HOURS\", \"24\"))\n    interval_seconds = interval_hours * 60 * 60\n    run_once = os.environ.get(\"RUN_ONCE\", \"False\").lower() == \"true\"\n    logger.info(f\"qBittorrent Cleanup Container started\")\n    logger.info(f\"Schedule: {'Run once' if run_once else f'Every {interval_hours} hours'}\")\n    if run_once:\n        # Run once and exit\n        run_cleanup()",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\ndef run_cleanup():\n    # qBittorrent connection settings from environment variables\n    qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n    qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n    qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # Cleanup settings\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))",
+        "detail": "app",
+        "documentation": {}
+    }
+]
