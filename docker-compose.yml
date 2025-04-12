@@ -1,0 +1,18 @@
+version: '3'
+
+services:
+  qbt-cleanup:
+    build: .
+    container_name: qbt-cleanup
+    restart: unless-stopped
+    environment:
+      - QB_HOST=192.168.1.100  
+      - QB_PORT=8080           
+      - QB_USERNAME=admin      
+      - QB_PASSWORD=adminadmin 
+      - FALLBACK_RATIO=1.0     
+      - FALLBACK_DAYS=7       
+      - DELETE_FILES=true      
+      - DRY_RUN=false          
+      - SCHEDULE_HOURS=24
+      - RUN_ONCE=false
