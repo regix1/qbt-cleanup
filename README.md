@@ -26,7 +26,7 @@ docker run -d \
   -e DELETE_FILES=true \
   -e SCHEDULE_HOURS=24 \
   ghcr.io/regix1/qbittorrent-cleanup:latest
-
+```
 ## Configuration Options
 
 | Environment Variable | Description | Default |
