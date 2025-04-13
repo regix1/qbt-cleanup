@@ -27,6 +27,7 @@ def run_cleanup():
     fallback_days = float(os.environ.get("FALLBACK_DAYS", "7"))
     delete_files = os.environ.get("DELETE_FILES", "True").lower() == "true"
     dry_run = os.environ.get("DRY_RUN", "False").lower() == "true"
+    check_paused_only = os.environ.get("CHECK_PAUSED_ONLY", "False").lower() == "true"
     
     # Schedule settings
     interval_hours = int(os.environ.get("SCHEDULE_HOURS", "24"))
@@ -66,6 +67,10 @@ def run_cleanup():
             days_limit = fallback_days
             logger.info(f"Seeding time limit not enabled in qBittorrent, using fallback: {days_limit} days")
         
+        # Log paused-only mode
+        if check_paused_only:
+            logger.info("Running in paused-only mode: only checking paused torrents")
+        
         # Convert days to seconds for comparison
         seeding_time_limit = days_limit * 24 * 60 * 60
         
@@ -76,6 +81,12 @@ def run_cleanup():
         # Identify torrents meeting deletion criteria
         torrents_to_delete = []
         for torrent in torrents:
+            # Check if we should only process paused torrents
+            is_paused = torrent.state in ["pausedUP", "pausedDL"]
+            
+            if check_paused_only and not is_paused:
+                continue  # Skip non-paused torrents in paused-only mode
+                
             # Check if ratio or seeding time exceeds limits
             if torrent.ratio >= ratio_limit or torrent.seeding_time >= seeding_time_limit:
                 days_seeded = torrent.seeding_time / 86400  # Convert seconds to days
@@ -83,7 +94,7 @@ def run_cleanup():
                 torrents_to_delete.append(torrent)
                 logger.info(
                     f"Found: {torrent.name[:50]}... "
-                    f"(Ratio: {torrent.ratio:.2f}, "
+                    f"(State: {torrent.state}, Ratio: {torrent.ratio:.2f}, "
                     f"Seeded: {days_seeded:.1f} days)"
                 )
         

@@ -18,3 +18,4 @@ services:
       - DRY_RUN=false
       - SCHEDULE_HOURS=24
       - RUN_ONCE=false
+      - CHECK_PAUSED_ONLY=true
