@@ -107,15 +107,22 @@ def run_cleanup():
         torrents = qbt_client.torrents.info()
         logger.info(f"Found {len(torrents)} torrents")
         
+        # Count paused torrents
+        paused_torrents = [t for t in torrents if t.state in ["pausedUP", "pausedDL"]]
+        if check_paused_only:
+            logger.info(f"Found {len(paused_torrents)} paused torrents to check")
+        
         # Identify torrents meeting deletion criteria
         torrents_to_delete = []
+        paused_but_not_ready = []
+        
         for torrent in torrents:
             # Check if we should only process paused torrents
             is_paused = torrent.state in ["pausedUP", "pausedDL"]
             
             if check_paused_only and not is_paused:
                 continue  # Skip non-paused torrents in paused-only mode
-                
+            
             # Check if ratio or seeding time exceeds limits
             if torrent.ratio >= ratio_limit or torrent.seeding_time >= seeding_time_limit:
                 days_seeded = torrent.seeding_time / 86400  # Convert seconds to days
@@ -126,7 +133,26 @@ def run_cleanup():
                     f"(State: {torrent.state}, Ratio: {torrent.ratio:.2f}, "
                     f"Seeded: {days_seeded:.1f} days)"
                 )
+            elif is_paused:
+                days_seeded = torrent.seeding_time / 86400  # Convert seconds to days
+                paused_but_not_ready.append({
+                    "name": torrent.name,
+                    "ratio": torrent.ratio,
+                    "days_seeded": days_seeded
+                })
         
+        # Log paused torrents that don't meet criteria yet
+        if paused_but_not_ready:
+            logger.info(f"Found {len(paused_but_not_ready)} paused torrents that don't meet deletion criteria yet:")
+            for idx, t in enumerate(paused_but_not_ready[:5], 1):  # Show up to 5 examples
+                logger.info(
+                    f"  {idx}. {t['name'][:50]}... "
+                    f"(Ratio: {t['ratio']:.2f}/{ratio_limit:.2f}, "
+                    f"Seeded: {t['days_seeded']:.1f}/{days_limit:.1f} days)"
+                )
+            if len(paused_but_not_ready) > 5:
+                logger.info(f"  ... and {len(paused_but_not_ready) - 5} more")
+                
         # Delete torrents if not in dry-run mode
         if torrents_to_delete:
             if dry_run:
