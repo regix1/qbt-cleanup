@@ -34,21 +34,40 @@ def run_cleanup():
     
     # Connect to qBittorrent
     try:
-        qbt_client = qbittorrentapi.Client(
+        # Create connection with configurable timeout for better reliability
+        conn_info = dict(
             host=qb_host,
             port=qb_port,
             username=qb_username,
             password=qb_password,
+            VERIFY_WEBUI_CERTIFICATE=False,  # Set to True in production with proper cert
+            REQUESTS_ARGS=dict(timeout=30)   # Configurable timeout
         )
+        
+        qbt_client = qbittorrentapi.Client(**conn_info)
         qbt_client.auth_log_in()
-        logger.info(f"Connected to qBittorrent {qbt_client.app.version} (API: {qbt_client.app.web_api_version})")
+        
+        # Check and log version information
+        version = qbt_client.app.version
+        api_version = qbt_client.app.web_api_version
+        logger.info(f"Connected to qBittorrent {version} (API: {api_version})")
+        
+        # Check minimum supported version (adjust as needed)
+        if qbt_client.app.version_tuple < (4, 1, 0):
+            logger.warning(f"This script is designed for qBittorrent 4.1.0+ (detected {version})")
+    except qbittorrentapi.LoginFailed as e:
+        logger.error(f"Login failed: {e}")
+        return
+    except qbittorrentapi.APIConnectionError as e:
+        logger.error(f"Connection error: {e}")
+        return
     except Exception as e:
         logger.error(f"Connection failed: {e}")
         return
     
     try:
         # Get qBittorrent preferences
-        prefs = qbt_client.app_preferences()
+        prefs = qbt_client.app.preferences
         
         # Get ratio limit from qBittorrent preferences (if enabled)
         if prefs.get('max_ratio_enabled', False):
@@ -75,7 +94,7 @@ def run_cleanup():
         seeding_time_limit = days_limit * 24 * 60 * 60
         
         # Get all torrents
-        torrents = qbt_client.torrents_info()
+        torrents = qbt_client.torrents.info()
         logger.info(f"Found {len(torrents)} torrents")
         
         # Identify torrents meeting deletion criteria
@@ -104,7 +123,7 @@ def run_cleanup():
                 logger.info(f"DRY RUN: Would delete {len(torrents_to_delete)} torrents")
             else:
                 hashes = [t.hash for t in torrents_to_delete]
-                qbt_client.torrents_delete(delete_files=delete_files, hashes=hashes)
+                qbt_client.torrents.delete(delete_files=delete_files, hashes=hashes)
                 logger.info(f"Deleted {len(torrents_to_delete)} torrents" + 
                           (" and their files" if delete_files else ""))
         else:
@@ -131,9 +150,17 @@ def main():
     else:
         # Run on a schedule
         while True:
-            run_cleanup()
-            logger.info(f"Next run in {interval_hours} hours. Sleeping...")
-            time.sleep(interval_seconds)
+            try:
+                run_cleanup()
+                logger.info(f"Next run in {interval_hours} hours. Sleeping...")
+                time.sleep(interval_seconds)
+            except KeyboardInterrupt:
+                logger.info("Received shutdown signal, exiting...")
+                break
+            except Exception as e:
+                logger.error(f"Unexpected error: {e}")
+                # Sleep a shorter time before retrying after an error
+                time.sleep(60)
 
 if __name__ == "__main__":
     main()
