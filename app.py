@@ -53,8 +53,16 @@ def run_cleanup():
         logger.info(f"Connected to qBittorrent {version} (API: {api_version})")
         
         # Check minimum supported version (adjust as needed)
-        if qbt_client.app.version_tuple < (4, 1, 0):
-            logger.warning(f"This script is designed for qBittorrent 4.1.0+ (detected {version})")
+        # Parse version string manually since version_tuple might not exist
+        try:
+            version_parts = version.split('.')
+            major = int(version_parts[0])
+            minor = int(version_parts[1])
+            if major < 4 or (major == 4 and minor < 1):
+                logger.warning(f"This script is designed for qBittorrent 4.1.0+ (detected {version})")
+        except (ValueError, IndexError):
+            # If we can't parse the version, just log and continue
+            logger.warning(f"Could not parse qBittorrent version: {version}")
     except qbittorrentapi.LoginFailed as e:
         logger.error(f"Login failed: {e}")
         return
