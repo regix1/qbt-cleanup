@@ -55,7 +55,9 @@ def run_cleanup():
         # Check minimum supported version (adjust as needed)
         # Parse version string manually since version_tuple might not exist
         try:
-            version_parts = version.split('.')
+            # Remove 'v' prefix if it exists
+            clean_version = version.lstrip('v')
+            version_parts = clean_version.split('.')
             major = int(version_parts[0])
             minor = int(version_parts[1])
             if major < 4 or (major == 4 and minor < 1):
