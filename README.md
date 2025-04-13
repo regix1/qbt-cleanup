@@ -3,7 +3,7 @@
 Automatically clean up qBittorrent torrents based on ratio and seeding time without affecting Sonarr and Radarr health checks.
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/regix1/qbt-cleanup)
-![Docker Pulls](https://img.shields.io/docker/pulls/regix1/qbt-cleanup)
+![Docker Image Size](https://img.shields.io/github/repo-size/regix1/qbt-cleanup)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## Description
