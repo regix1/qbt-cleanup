@@ -16,7 +16,7 @@ The tool can:
 * Optionally delete the actual files from disk
 * Run once or on a schedule
 * Display detailed logs of its operations
-* Optionally only check paused torrents
+* **Selectively delete only paused torrents** (with CHECK_PAUSED_ONLY=true)
 
 ## Quick Start
 
@@ -88,18 +88,20 @@ This tool directly deletes torrents when they meet criteria, preventing Sonarr/R
 ## How It Works
 
 1. The tool connects to your qBittorrent WebUI
-2. It checks all torrents against the specified criteria (either qBittorrent's configured limits or your fallback values)
+2. It checks torrents against the specified criteria (either qBittorrent's configured limits or your fallback values)
+   - When CHECK_PAUSED_ONLY=true, only paused torrents are evaluated
+   - When CHECK_PAUSED_ONLY=false (default), all torrents are evaluated
 3. When torrents meet or exceed these criteria, they are deleted (with or without their files, as configured)
 4. The process repeats on the schedule you define
 
 ## Paused-Only Mode
 
-If you enable `CHECK_PAUSED_ONLY=true`, the tool will only consider torrents that are already paused. This allows you to:
+If you enable `CHECK_PAUSED_ONLY=true`, the tool will only delete torrents that are already paused. This creates a powerful workflow:
 
-1. Use qBittorrent's built-in ratio management to pause torrents
-2. Then have this tool clean up only those paused torrents
+1. Use qBittorrent's built-in ratio management to pause torrents that reach your thresholds
+2. Have this tool automatically clean up those paused torrents without affecting active ones
 
-This creates a two-stage deletion process that some users prefer.
+This two-stage approach gives you more control over your torrents and ensures only paused content is removed. Many users prefer this method as it allows qBittorrent to handle the initial decision to pause, followed by this tool's automatic cleanup.
 
 ## Using With Radarr and Sonarr
 
