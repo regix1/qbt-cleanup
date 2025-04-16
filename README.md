@@ -8,15 +8,16 @@ Automatically clean up qBittorrent torrents based on ratio and seeding time with
 
 ## Description
 
-This tool helps manage your qBittorrent instance by automatically cleaning up torrents based on their ratio and seeding time. Unlike qBittorrent's built-in auto-management, this tool will not pause torrents (which can trigger health check alerts in Sonarr and Radarr), but instead directly deletes them when they meet your specified criteria.
+This tool solves a critical issue for users of qBittorrent with Sonarr, Radarr, and other *arr applications. While qBittorrent offers built-in options to manage torrents based on ratio and seeding time, these options can cause problems with media management tools:
 
-The tool can:
-* Check torrents against ratio and seeding time thresholds
-* Either use qBittorrent's built-in settings or custom thresholds you specify
-* Optionally delete the actual files from disk
-* Run once or on a schedule
-* Display detailed logs of its operations
-* **Selectively delete only paused torrents** (with CHECK_PAUSED_ONLY=true)
+- qBittorrent's **pause option** stops seeding but keeps torrents in the client, triggering health check alerts in Sonarr/Radarr
+- qBittorrent's **remove option** can delete torrents but if configured to remove files, it can interfere with Sonarr/Radarr's file management when these applications aren't set to handle file deletion themselves
+
+This tool bridges this gap by:
+* Directly removing torrents from qBittorrent when they meet criteria (not just pausing them)
+* Providing control over whether the underlying files are deleted
+* Working harmoniously with Sonarr/Radarr's expected workflow
+* Preventing health check alerts while maintaining your desired ratio and seeding policies
 
 ## Quick Start
 
@@ -77,13 +78,21 @@ services:
 
 ## Why Use This Tool?
 
-### Problem with qBittorrent's Built-in Automation
+### The Problem with qBittorrent's Built-in Options
 
-qBittorrent offers built-in ratio and seeding time limits, but it pauses torrents rather than removing them. This can cause problems with Sonarr and Radarr, which monitor torrent client status and may report health check errors when torrents are paused.
+qBittorrent provides two built-in methods for handling torrents that reach ratio/time limits:
 
-### Solution
+1. **Pause Torrents**: This leaves torrents in the client, but Sonarr/Radarr expect torrents to remain active until properly removed, triggering health check alerts for paused torrents.
 
-This tool directly deletes torrents when they meet criteria, preventing Sonarr/Radarr health check alerts while still maintaining your desired ratio and seeding time rules.
+2. **Remove Torrents**: qBittorrent can remove torrents when limits are reached, but when configured to also delete files, this can cause issues if Sonarr/Radarr aren't configured to handle file removal themselves.
+
+### The Solution
+
+This tool provides an intelligent middle layer:
+
+- It completely removes torrents from qBittorrent (not just pausing them), preventing Sonarr/Radarr health alerts
+- It gives you control over file deletion with the `DELETE_FILES` option, allowing you to match your *arr applications' file management settings
+- It can work with qBittorrent's native limits or use custom thresholds you specify
 
 ## How It Works
 
@@ -91,28 +100,28 @@ This tool directly deletes torrents when they meet criteria, preventing Sonarr/R
 2. It checks torrents against the specified criteria (either qBittorrent's configured limits or your fallback values)
    - When CHECK_PAUSED_ONLY=true, only paused torrents are evaluated
    - When CHECK_PAUSED_ONLY=false (default), all torrents are evaluated
-3. When torrents meet or exceed these criteria, they are deleted (with or without their files, as configured)
+3. When torrents meet or exceed these criteria, they are deleted from qBittorrent (with or without their files, as configured)
 4. The process repeats on the schedule you define
 
 ## Paused-Only Mode
 
-If you enable `CHECK_PAUSED_ONLY=true`, the tool will only delete torrents that are already paused. This creates a powerful workflow:
+If you enable `CHECK_PAUSED_ONLY=true`, the tool will only delete torrents that are already paused. This creates a powerful two-stage workflow:
 
 1. Use qBittorrent's built-in ratio management to pause torrents that reach your thresholds
-2. Have this tool automatically clean up those paused torrents without affecting active ones
+2. Have this tool automatically remove those paused torrents from qBittorrent
 
-This two-stage approach gives you more control over your torrents and ensures only paused content is removed. Many users prefer this method as it allows qBittorrent to handle the initial decision to pause, followed by this tool's automatic cleanup.
+This approach gives you more granular control over your torrents and ensures only content that qBittorrent has already determined should be paused gets removed.
 
 ## Using With Radarr and Sonarr
 
-Since this tool deletes torrents directly instead of pausing them, it works well with:
+This tool is specifically designed to work seamlessly with:
 
 - Radarr
 - Sonarr
 - Lidarr
 - Readarr
 
-And other *arr applications that expect torrents to remain active until they're completely removed.
+By removing torrents completely (rather than pausing them) and giving you control over file deletion, it ensures these applications continue to function correctly without health check alerts.
 
 ## Support
 
