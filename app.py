@@ -34,10 +34,22 @@ def run_cleanup():
     nonprivate_ratio = float(os.environ.get("NONPRIVATE_RATIO", str(fallback_ratio)))
     nonprivate_days = float(os.environ.get("NONPRIVATE_DAYS", str(fallback_days)))
     
+    # New override environment variables for specific torrent types
+    ignore_qbt_ratio_private = os.environ.get("IGNORE_QBT_RATIO_PRIVATE", "False").lower() == "true"
+    ignore_qbt_ratio_nonprivate = os.environ.get("IGNORE_QBT_RATIO_NONPRIVATE", "False").lower() == "true"
+    ignore_qbt_time_private = os.environ.get("IGNORE_QBT_TIME_PRIVATE", "False").lower() == "true"
+    ignore_qbt_time_nonprivate = os.environ.get("IGNORE_QBT_TIME_NONPRIVATE", "False").lower() == "true"
+    
     # Other settings
     delete_files = os.environ.get("DELETE_FILES", "True").lower() == "true"
     dry_run = os.environ.get("DRY_RUN", "False").lower() == "true"
+    
+    # Legacy paused-only setting (for backward compatibility)
     check_paused_only = os.environ.get("CHECK_PAUSED_ONLY", "False").lower() == "true"
+    
+    # Use the legacy setting as default for specific settings if not provided
+    check_private_paused_only = os.environ.get("CHECK_PRIVATE_PAUSED_ONLY", str(check_paused_only)).lower() == "true"
+    check_nonprivate_paused_only = os.environ.get("CHECK_NONPRIVATE_PAUSED_ONLY", str(check_paused_only)).lower() == "true"
     
     # Schedule settings
     interval_hours = int(os.environ.get("SCHEDULE_HOURS", "24"))
@@ -92,12 +104,21 @@ def run_cleanup():
         # Get ratio limit from qBittorrent preferences (if enabled)
         if prefs.get('max_ratio_enabled', False):
             global_ratio_limit = prefs.get('max_ratio', fallback_ratio)
-            logger.info(f"Using qBittorrent's configured ratio limit: {global_ratio_limit}")
-            # Use global settings as defaults if specific ones weren't provided
-            if os.environ.get("PRIVATE_RATIO") is None:
+            logger.info(f"qBittorrent's configured ratio limit: {global_ratio_limit}")
+            
+            # Apply to private torrents if not ignored and not explicitly set
+            if not ignore_qbt_ratio_private and os.environ.get("PRIVATE_RATIO") is None:
                 private_ratio = global_ratio_limit
-            if os.environ.get("NONPRIVATE_RATIO") is None:
+                logger.info(f"Using qBittorrent ratio for private torrents: {private_ratio}")
+            else:
+                logger.info(f"Using custom ratio for private torrents: {private_ratio}")
+                
+            # Apply to non-private torrents if not ignored and not explicitly set
+            if not ignore_qbt_ratio_nonprivate and os.environ.get("NONPRIVATE_RATIO") is None:
                 nonprivate_ratio = global_ratio_limit
+                logger.info(f"Using qBittorrent ratio for non-private torrents: {nonprivate_ratio}")
+            else:
+                logger.info(f"Using custom ratio for non-private torrents: {nonprivate_ratio}")
         else:
             global_ratio_limit = fallback_ratio
             logger.info(f"Ratio limit not enabled in qBittorrent, using fallback: {global_ratio_limit}")
@@ -106,23 +127,28 @@ def run_cleanup():
         if prefs.get('max_seeding_time_enabled', False):
             # Convert minutes to days
             global_days_limit = prefs.get('max_seeding_time', fallback_days * 60 * 24) / (60 * 24)
-            logger.info(f"Using qBittorrent's configured seeding time limit: {global_days_limit:.1f} days")
-            # Use global settings as defaults if specific ones weren't provided
-            if os.environ.get("PRIVATE_DAYS") is None:
+            logger.info(f"qBittorrent's configured seeding time limit: {global_days_limit:.1f} days")
+            
+            # Apply to private torrents if not ignored and not explicitly set
+            if not ignore_qbt_time_private and os.environ.get("PRIVATE_DAYS") is None:
                 private_days = global_days_limit
-            if os.environ.get("NONPRIVATE_DAYS") is None:
+                logger.info(f"Using qBittorrent seeding time for private torrents: {private_days:.1f} days")
+            else:
+                logger.info(f"Using custom seeding time for private torrents: {private_days:.1f} days")
+                
+            # Apply to non-private torrents if not ignored and not explicitly set
+            if not ignore_qbt_time_nonprivate and os.environ.get("NONPRIVATE_DAYS") is None:
                 nonprivate_days = global_days_limit
+                logger.info(f"Using qBittorrent seeding time for non-private torrents: {nonprivate_days:.1f} days")
+            else:
+                logger.info(f"Using custom seeding time for non-private torrents: {nonprivate_days:.1f} days")
         else:
             global_days_limit = fallback_days
             logger.info(f"Seeding time limit not enabled in qBittorrent, using fallback: {global_days_limit} days")
         
-        # Log private/non-private settings
-        logger.info(f"Private torrent limits: Ratio={private_ratio:.2f}, Days={private_days:.1f}")
-        logger.info(f"Non-private torrent limits: Ratio={nonprivate_ratio:.2f}, Days={nonprivate_days:.1f}")
-        
-        # Log paused-only mode
-        if check_paused_only:
-            logger.info("Running in paused-only mode: only checking paused torrents")
+        # Log private/non-private settings and paused-only mode
+        logger.info(f"Private torrent settings: Ratio={private_ratio:.2f}, Days={private_days:.1f}, CheckPausedOnly={check_private_paused_only}")
+        logger.info(f"Non-private torrent settings: Ratio={nonprivate_ratio:.2f}, Days={nonprivate_days:.1f}, CheckPausedOnly={check_nonprivate_paused_only}")
         
         # Convert days to seconds for comparison
         private_seeding_time_limit = private_days * 24 * 60 * 60
@@ -139,22 +165,23 @@ def run_cleanup():
         
         # Count paused torrents
         paused_torrents = [t for t in torrents if t.state in ["pausedUP", "pausedDL"]]
-        if check_paused_only:
-            logger.info(f"Found {len(paused_torrents)} paused torrents to check")
+        private_paused = sum(1 for t in paused_torrents if getattr(t, 'isPrivate', False))
+        nonprivate_paused = len(paused_torrents) - private_paused
+        logger.info(f"Found {len(paused_torrents)} paused torrents ({private_paused} private, {nonprivate_paused} non-private)")
         
         # Identify torrents meeting deletion criteria
         torrents_to_delete = []
         paused_but_not_ready = []
         
         for torrent in torrents:
-            # Check if we should only process paused torrents
-            is_paused = torrent.state in ["pausedUP", "pausedDL"]
-            
-            if check_paused_only and not is_paused:
-                continue  # Skip non-paused torrents in paused-only mode
-            
             # Determine if torrent is private (with fallback if field is missing)
             is_private = getattr(torrent, 'isPrivate', False)
+            is_paused = torrent.state in ["pausedUP", "pausedDL"]
+            
+            # Check if we should process this torrent based on pause state and privacy
+            if (is_private and check_private_paused_only and not is_paused) or \
+               (not is_private and check_nonprivate_paused_only and not is_paused):
+                continue  # Skip non-paused torrents based on privacy-specific settings
             
             # Apply appropriate limits based on torrent privacy
             if is_private:

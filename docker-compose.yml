@@ -14,8 +14,15 @@ services:
       - QB_PASSWORD=adminadmin
       - FALLBACK_RATIO=1.0
       - FALLBACK_DAYS=7
+      - PRIVATE_RATIO=2.0
+      - PRIVATE_DAYS=14
+      - NONPRIVATE_RATIO=1.0
+      - NONPRIVATE_DAYS=3
+      - IGNORE_QBT_RATIO_NONPRIVATE=true
+      - IGNORE_QBT_TIME_NONPRIVATE=true
       - DELETE_FILES=true
       - DRY_RUN=false
+      - CHECK_PRIVATE_PAUSED_ONLY=true
+      - CHECK_NONPRIVATE_PAUSED_ONLY=false
       - SCHEDULE_HOURS=24
       - RUN_ONCE=false
-      - CHECK_PAUSED_ONLY=true
