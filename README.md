@@ -34,6 +34,7 @@ docker run -d \
   -e NONPRIVATE_RATIO=1.0 \
   -e NONPRIVATE_DAYS=3 \
   -e DELETE_FILES=true \
+  -e CHECK_PAUSED_ONLY=false \
   -e SCHEDULE_HOURS=24 \
   ghcr.io/regix1/qbittorrent-cleanup:latest
 ```
