@@ -1,6 +1,6 @@
 # qbt-cleanup
 
-Automatically clean up qBittorrent torrents based on ratio and seeding time without affecting Sonarr and Radarr health checks.
+Automatically clean up qBittorrent torrents based on ratio and seeding time without affecting Sonarr and Radarr file management.
 
 ![GitHub last commit](https://img.shields.io/github/last-commit/regix1/qbt-cleanup)
 ![Docker Image Size](https://img.shields.io/github/repo-size/regix1/qbt-cleanup)
@@ -8,16 +8,13 @@ Automatically clean up qBittorrent torrents based on ratio and seeding time with
 
 ## Description
 
-This tool solves a critical issue for users of qBittorrent with Sonarr, Radarr, and other *arr applications. While qBittorrent offers built-in options to manage torrents based on ratio and seeding time, these options can cause problems with media management tools:
-
-- qBittorrent's **pause option** stops seeding but keeps torrents in the client, triggering health check alerts in Sonarr/Radarr
-- qBittorrent's **remove option** can delete torrents but if configured to remove files, it can interfere with Sonarr/Radarr's file management when these applications aren't set to handle file deletion themselves
+This tool solves a specific issue with qBittorrent, Sonarr, and Radarr integration. In certain media server configurations, Sonarr and Radarr removal tasks may not run as expected, leading to torrents remaining in qBittorrent. Additionally, using qBittorrent's built-in removal option can interfere with Sonarr and Radarr's file management, causing health check errors.
 
 This tool bridges this gap by:
-* Directly removing torrents from qBittorrent when they meet criteria (not just pausing them)
-* Providing control over whether the underlying files are deleted
-* Working harmoniously with Sonarr/Radarr's expected workflow
-* Preventing health check alerts while maintaining your desired ratio and seeding policies
+* Safely removing torrents that meet your criteria without disrupting Sonarr/Radarr file management
+* Working with either qBittorrent's built-in settings or custom thresholds you specify
+* Giving you control over whether associated files are deleted
+* Providing scheduled cleanup to prevent torrent buildup
 
 ## Quick Start
 
@@ -78,50 +75,50 @@ services:
 
 ## Why Use This Tool?
 
-### The Problem with qBittorrent's Built-in Options
+### The Problem
 
-qBittorrent provides two built-in methods for handling torrents that reach ratio/time limits:
+When using qBittorrent with Sonarr and Radarr, several issues can occur in specific setups:
 
-1. **Pause Torrents**: This leaves torrents in the client, but Sonarr/Radarr expect torrents to remain active until properly removed, triggering health check alerts for paused torrents.
-
-2. **Remove Torrents**: qBittorrent can remove torrents when limits are reached, but when configured to also delete files, this can cause issues if Sonarr/Radarr aren't configured to handle file removal themselves.
+1. In certain configurations, Sonarr and Radarr removal tasks may not run as expected, leading to torrents remaining in qBittorrent
+2. This can occur in unique media server setups or when scheduled tasks are interrupted
+3. Using qBittorrent's built-in removal feature interferes with Sonarr/Radarr file management and triggers health check errors
+4. Without proper cleanup, your torrent client becomes cluttered with completed torrents
 
 ### The Solution
 
-This tool provides an intelligent middle layer:
-
-- It completely removes torrents from qBittorrent (not just pausing them), preventing Sonarr/Radarr health alerts
-- It gives you control over file deletion with the `DELETE_FILES` option, allowing you to match your *arr applications' file management settings
-- It can work with qBittorrent's native limits or use custom thresholds you specify
+This tool provides a safe way to clean up your torrents:
+- It removes torrents from qBittorrent based on ratio/time criteria without disrupting Sonarr/Radarr
+- It can target only paused torrents (recommended) to ensure you're only removing completed downloads
+- It gives you control over file deletion to match your media management setup
+- It runs on a schedule to keep your torrent client tidy
 
 ## How It Works
 
 1. The tool connects to your qBittorrent WebUI
 2. It checks torrents against the specified criteria (either qBittorrent's configured limits or your fallback values)
-   - When CHECK_PAUSED_ONLY=true, only paused torrents are evaluated
-   - When CHECK_PAUSED_ONLY=false (default), all torrents are evaluated
+   - When CHECK_PAUSED_ONLY=true, only paused torrents are evaluated (recommended)
+   - When CHECK_PAUSED_ONLY=false, all torrents are evaluated
 3. When torrents meet or exceed these criteria, they are deleted from qBittorrent (with or without their files, as configured)
 4. The process repeats on the schedule you define
 
 ## Paused-Only Mode
 
-If you enable `CHECK_PAUSED_ONLY=true`, the tool will only delete torrents that are already paused. This creates a powerful two-stage workflow:
+The recommended way to use this tool is with `CHECK_PAUSED_ONLY=true`. This creates an effective workflow:
 
 1. Use qBittorrent's built-in ratio management to pause torrents that reach your thresholds
-2. Have this tool automatically remove those paused torrents from qBittorrent
+2. Have this tool automatically remove those paused torrents that Sonarr/Radarr haven't cleaned up
 
-This approach gives you more granular control over your torrents and ensures only content that qBittorrent has already determined should be paused gets removed.
+This approach ensures only torrents that are already paused (and thus likely completed and processed by your *arr applications) are removed.
 
 ## Using With Radarr and Sonarr
 
-This tool is specifically designed to work seamlessly with:
-
+This tool is designed to work harmoniously with:
 - Radarr
 - Sonarr
 - Lidarr
 - Readarr
 
-By removing torrents completely (rather than pausing them) and giving you control over file deletion, it ensures these applications continue to function correctly without health check alerts.
+By providing a reliable cleanup mechanism that doesn't interfere with these applications' file management, you avoid the health check errors that can occur when using qBittorrent's built-in removal feature.
 
 ## Support
 
