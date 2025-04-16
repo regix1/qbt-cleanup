@@ -13,6 +13,7 @@ This tool solves a specific issue with qBittorrent, Sonarr, and Radarr integrati
 This tool bridges this gap by:
 * Safely removing torrents that meet your criteria without disrupting Sonarr/Radarr file management
 * Working with either qBittorrent's built-in settings or custom thresholds you specify
+* Supporting different cleanup criteria for private and non-private torrents
 * Giving you control over whether associated files are deleted
 * Providing scheduled cleanup to prevent torrent buildup
 
@@ -41,11 +42,27 @@ docker run -d \
 | `QB_PASSWORD` | qBittorrent WebUI password | `adminadmin` |
 | `FALLBACK_RATIO` | Ratio threshold if not set in qBittorrent | `1.0` |
 | `FALLBACK_DAYS` | Days seeding threshold if not set in qBittorrent | `7` |
+| `PRIVATE_RATIO` | Ratio threshold for private torrents | Same as FALLBACK_RATIO |
+| `PRIVATE_DAYS` | Days seeding threshold for private torrents | Same as FALLBACK_DAYS |
+| `NONPRIVATE_RATIO` | Ratio threshold for non-private torrents | Same as FALLBACK_RATIO |
+| `NONPRIVATE_DAYS` | Days seeding threshold for non-private torrents | Same as FALLBACK_DAYS |
 | `DELETE_FILES` | Whether to delete files on disk | `true` |
 | `DRY_RUN` | Test run without deleting anything | `false` |
 | `SCHEDULE_HOURS` | Hours between cleanup runs | `24` |
 | `RUN_ONCE` | Run once and exit instead of scheduling | `false` |
 | `CHECK_PAUSED_ONLY` | Only check paused torrents | `false` |
+
+## Private vs Non-Private Torrents
+
+The tool now supports different cleanup criteria for private and non-private torrents:
+
+- **Private torrents** are from private trackers that typically require maintaining good ratios
+- **Non-private torrents** are from public trackers where ratio maintenance may be less important
+
+This feature allows you to:
+- Keep private torrents seeding longer to maintain your tracker ratio
+- Remove non-private torrents more aggressively to free up resources
+- Maintain different ratios for each type based on your needs
 
 ## Docker Compose Example
 
@@ -66,6 +83,10 @@ services:
       - QB_PASSWORD=adminadmin
       - FALLBACK_RATIO=1.0
       - FALLBACK_DAYS=7
+      - PRIVATE_RATIO=2.0
+      - PRIVATE_DAYS=14
+      - NONPRIVATE_RATIO=1.0
+      - NONPRIVATE_DAYS=3
       - DELETE_FILES=true
       - DRY_RUN=false
       - SCHEDULE_HOURS=24
@@ -89,15 +110,17 @@ When using qBittorrent with Sonarr and Radarr, several issues can occur in speci
 This tool provides a safe way to clean up your torrents:
 - It removes torrents from qBittorrent based on ratio/time criteria without disrupting Sonarr/Radarr
 - It can target only paused torrents (recommended) to ensure you're only removing completed downloads
+- It applies different criteria to private and non-private torrents based on your preferences
 - It gives you control over file deletion to match your media management setup
 - It runs on a schedule to keep your torrent client tidy
 
 ## How It Works
 
 1. The tool connects to your qBittorrent WebUI
-2. It checks torrents against the specified criteria (either qBittorrent's configured limits or your fallback values)
+2. It checks torrents against the specified criteria:
+   - For private torrents: PRIVATE_RATIO and PRIVATE_DAYS (or qBittorrent's settings)
+   - For non-private torrents: NONPRIVATE_RATIO and NONPRIVATE_DAYS (or fallback values)
    - When CHECK_PAUSED_ONLY=true, only paused torrents are evaluated (recommended)
-   - When CHECK_PAUSED_ONLY=false, all torrents are evaluated
 3. When torrents meet or exceed these criteria, they are deleted from qBittorrent (with or without their files, as configured)
 4. The process repeats on the schedule you define
 
