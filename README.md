@@ -27,6 +27,12 @@ docker run -d \
   -e QB_PORT=8080 \
   -e QB_USERNAME=admin \
   -e QB_PASSWORD=adminadmin \
+  -e FALLBACK_RATIO=1.0 \
+  -e FALLBACK_DAYS=7 \
+  -e PRIVATE_RATIO=2.0 \
+  -e PRIVATE_DAYS=14 \
+  -e NONPRIVATE_RATIO=1.0 \
+  -e NONPRIVATE_DAYS=3 \
   -e DELETE_FILES=true \
   -e SCHEDULE_HOURS=24 \
   ghcr.io/regix1/qbittorrent-cleanup:latest
