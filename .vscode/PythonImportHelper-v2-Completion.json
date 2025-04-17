@@ -57,7 +57,7 @@
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def run_cleanup():\n    # qBittorrent connection settings from environment variables\n    qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n    qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n    qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # Cleanup settings for all torrents (used as fallback)\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))\n    # New settings for private torrents",
+        "peekOfCode": "def run_cleanup():\n    # qBittorrent connection settings from environment variables\n    qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n    qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n    qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # Fallback cleanup settings\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))\n    # Private torrent settings (default to fallback if not set)",
         "detail": "app",
         "documentation": {}
     },
@@ -66,7 +66,7 @@
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def main():\n    # Get schedule interval from environment\n    interval_hours = int(os.environ.get(\"SCHEDULE_HOURS\", \"24\"))\n    interval_seconds = interval_hours * 60 * 60\n    run_once = os.environ.get(\"RUN_ONCE\", \"False\").lower() == \"true\"\n    logger.info(f\"qBittorrent Cleanup Container started\")\n    logger.info(f\"Schedule: {'Run once' if run_once else f'Every {interval_hours} hours'}\")\n    if run_once:\n        # Run once and exit\n        run_cleanup()",
+        "peekOfCode": "def main():\n    interval_h = int(os.environ.get(\"SCHEDULE_HOURS\", \"24\"))\n    run_once = os.environ.get(\"RUN_ONCE\", \"False\").lower() == \"true\"\n    logger.info(\"qBittorrent Cleanup Container started\")\n    logger.info(f\"Schedule: {'Run once' if run_once else f'Every {interval_h} hours'}\")\n    if run_once:\n        run_cleanup()\n    else:\n        interval_s = interval_h * 3600\n        while True:",
         "detail": "app",
         "documentation": {}
     },
@@ -75,7 +75,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\ndef run_cleanup():\n    # qBittorrent connection settings from environment variables\n    qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n    qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n    qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # Cleanup settings for all torrents (used as fallback)\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))",
+        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\ndef run_cleanup():\n    # qBittorrent connection settings from environment variables\n    qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n    qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n    qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # Fallback cleanup settings\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))",
         "detail": "app",
         "documentation": {}
     }
