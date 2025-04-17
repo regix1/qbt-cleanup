@@ -82,7 +82,7 @@
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def main():\n    interval_h = int(os.environ.get(\"SCHEDULE_HOURS\", \"24\"))\n    run_once   = os.environ.get(\"RUN_ONCE\", \"False\").lower() == \"true\"\n    logger.info(\"### qBittorrent cleanup starting\")\n    if run_once:\n        run_cleanup()\n    else:\n        logger.info(f\"### looping every {interval_h}h\")\n        while True:\n            try:",
+        "peekOfCode": "def main():\n    interval_h = int(os.environ.get(\"SCHEDULE_HOURS\", \"24\"))\n    run_once = os.environ.get(\"RUN_ONCE\", \"False\").lower() == \"true\"\n    logger.info(\"### qBittorrent cleanup starting\")\n    if run_once:\n        run_cleanup()\n    else:\n        logger.info(f\"### looping every {interval_h}h\")\n        while True:\n            try:",
         "detail": "app",
         "documentation": {}
     },

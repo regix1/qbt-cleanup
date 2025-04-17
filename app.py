@@ -67,12 +67,12 @@ def run_cleanup():
         )
         qbt.auth_log_in()
         version = qbt.app.version
-        api_v   = qbt.app.web_api_version
+        api_v = qbt.app.web_api_version
         logger.info(f"Connected to qBittorrent {version} (API: {api_v})")
-    except LoginFailed as e:
+    except LoginFailed:
         logger.error("Login failed, check your credentials")
         return
-    except APIConnectionError as e:
+    except APIConnectionError:
         logger.error("Cannot reach qBittorrent Web UI")
         return
     except Exception:
@@ -100,7 +100,7 @@ def run_cleanup():
     logger.info(f"Private  → ratio={private_ratio}, days={private_days}, paused_only={check_priv_paused}")
     logger.info(f"Non‑priv→ ratio={nonpriv_ratio}, days={nonpriv_days}, paused_only={check_nonpriv_paused}")
 
-    sec_priv    = private_days * 86400
+    sec_priv = private_days * 86400
     sec_nonpriv = nonpriv_days * 86400
 
     # ─── fetch torrents ─────────────────────────────────────────────────────────
@@ -112,15 +112,13 @@ def run_cleanup():
         qbt.auth_log_out()
         return
 
-    # print raw data of the first torrent so you can inspect the real keys:
+    # ─── debug first torrent ────────────────────────────────────────────────────
     if torrents:
-        logger.debug("raw first torrent → %r", torrents[0]._data)
+        # safe repr to show the JSON-like contents
+        logger.debug("raw first torrent → %r", torrents[0])
 
     # ─── classify ────────────────────────────────────────────────────────────────
-    priv_count = 0
-    for t in torrents:
-        if detect_private_flag(t):
-            priv_count += 1
+    priv_count = sum(1 for t in torrents if detect_private_flag(t))
     logger.info(f"Detected {priv_count} private, {len(torrents) - priv_count} non‑private")
 
     to_delete = []
@@ -129,8 +127,8 @@ def run_cleanup():
     for t in torrents:
         try:
             is_priv = detect_private_flag(t)
-            state   = t.state
-            paused  = state in ("pausedUP", "pausedDL")
+            state = t.state
+            paused = state in ("pausedUP", "pausedDL")
 
             # skip if we only care about paused:
             if (is_priv and check_priv_paused and not paused) or (
@@ -138,10 +136,9 @@ def run_cleanup():
                 continue
 
             ratio_lim = private_ratio if is_priv else nonpriv_ratio
-            time_lim  = sec_priv        if is_priv else sec_nonpriv
+            time_lim = sec_priv if is_priv else sec_nonpriv
 
-            if t.ratio    >= ratio_lim or \
-               t.seeding_time >= time_lim:
+            if t.ratio >= ratio_lim or t.seeding_time >= time_lim:
                 to_delete.append(t)
                 logger.info(
                     f"→ delete: {t.name[:60]!r} "
@@ -160,7 +157,7 @@ def run_cleanup():
     # ─── do delete ──────────────────────────────────────────────────────────────
     if to_delete:
         priv_d = sum(detect_private_flag(t) for t in to_delete)
-        np_d   = len(to_delete) - priv_d
+        np_d = len(to_delete) - priv_d
 
         if dry_run:
             logger.info(f"DRY RUN: would delete {len(to_delete)} ({priv_d} priv, {np_d} non‑priv)")
@@ -168,8 +165,10 @@ def run_cleanup():
             hashes = [t.hash for t in to_delete]
             try:
                 qbt.torrents.delete(hashes=hashes, delete_files=delete_files)
-                logger.info(f"Deleted {len(to_delete)} torrents ({priv_d} priv, {np_d} non‑priv)"
-                            + (" +files" if delete_files else ""))
+                logger.info(
+                    f"Deleted {len(to_delete)} torrents ({priv_d} priv, {np_d} non‑priv)"
+                    + (" +files" if delete_files else "")
+                )
             except Exception:
                 logger.exception("Failed to delete torrents")
     else:
@@ -184,7 +183,7 @@ def run_cleanup():
 
 def main():
     interval_h = int(os.environ.get("SCHEDULE_HOURS", "24"))
-    run_once   = os.environ.get("RUN_ONCE", "False").lower() == "true"
+    run_once = os.environ.get("RUN_ONCE", "False").lower() == "true"
 
     logger.info("### qBittorrent cleanup starting")
     if run_once:
