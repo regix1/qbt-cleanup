@@ -65,6 +65,17 @@ def run_cleanup():
         logger.error(f"Failed to connect/login: {e}")
         return
 
+    # ─── Helper function to detect private torrents by tracker messages ────────────
+    def is_private(t):
+        try:
+            trackers = qbt_client.torrents.trackers(hash=t.hash)
+            for tr in trackers:
+                if tr.status == 0 and tr.msg and "private" in tr.msg.lower():
+                    return True
+        except Exception as e:
+            logger.warning(f"Could not detect privacy for {t.name}: {e}")
+        return False
+
     try:
         # ─── pull in qB limits ──────────────────────────────────────────────────
         prefs = qbt_client.app.preferences
@@ -98,11 +109,19 @@ def run_cleanup():
         torrents = qbt_client.torrents.info()
         logger.info(f"Fetched {len(torrents)} torrents")
 
+        # Count private/non-private for logging
+        private_count = 0
+        for t in torrents:
+            if is_private(t):
+                private_count += 1
+        nonprivate_count = len(torrents) - private_count
+        logger.info(f"Torrent breakdown: {private_count} private, {nonprivate_count} non‑private")
+
         # Classify and collect
         torrents_to_delete = []
         paused_not_ready   = []
         for t in torrents:
-            is_priv = getattr(t, "isPrivate", False)
+            is_priv = is_private(t)
             paused  = t.state in ("pausedUP", "pausedDL")
 
             # skip if requiring paused-only and not paused
@@ -115,6 +134,7 @@ def run_cleanup():
 
             if t.ratio >= ratio_limit or t.seeding_time >= time_limit:
                 torrents_to_delete.append((t, is_priv, ratio_limit, time_limit))
+                logger.info(f"→ delete: {t.name[:60]!r} (priv={is_priv}, state={t.state}, ratio={t.ratio:.2f}/{ratio_limit:.2f}, time={t.seeding_time/86400:.1f}/{time_limit/86400:.1f}d)")
             elif paused:
                 paused_not_ready.append((t, is_priv, ratio_limit, time_limit))
 
@@ -132,11 +152,18 @@ def run_cleanup():
                 logger.info(f"DRY RUN: would delete {len(hashes)} ({priv_d} priv, {np_d} non‑priv)")
             else:
                 try:
-                    # ← correct parameter name here:
-                    qbt_client.torrents.delete(
-                        delete_files=delete_files,
-                        torrent_hashes=hashes
-                    )
+                    # Parameter name differs between API versions
+                    try:
+                        qbt_client.torrents.delete(
+                            delete_files=delete_files,
+                            torrent_hashes=hashes
+                        )
+                    except Exception:
+                        # Fall back to older API parameter name
+                        qbt_client.torrents.delete(
+                            delete_files=delete_files,
+                            hashes=hashes
+                        )
                     logger.info(
                         f"Deleted {len(hashes)} torrents ({priv_d} priv, {np_d} non‑priv)"
                         + (" +files" if delete_files else "")
