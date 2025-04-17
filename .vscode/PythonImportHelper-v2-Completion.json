@@ -51,11 +51,20 @@
         "documentation": {}
     },
     {
+        "label": "all_torrents",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "all_torrents = qbt.torrents.info()\npublic  = [t for t in all_torrents if getattr(t, \"availability\", 0) >= 0]\nprivate = [t for t in all_torrents if getattr(t, \"availability\", 0) <  0]\n# ─── PRINT FIRST 3 OF EACH ───────────────────────────────────────────────────\nprint(f\"\\nFirst 3 public  torrents  ({len(public)} total):\")\nfor t in public[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nFirst 3 private torrents  ({len(private)} total):\")\nfor t in private[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
         "label": "private",
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "private = qbt.torrents.info(private=True)\n# ─── PRINT FIRST 3 OF EACH ───────────────────────────────────────────────────\nprint(f\"\\nFirst  3 public  torrents  ({len(public)} total):\")\nfor t in public[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nFirst  3 private torrents  ({len(private)} total):\")\nfor t in private[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\n# ─── CLEANUP ─────────────────────────────────────────────────────────────────\nqbt.auth_log_out()",
+        "peekOfCode": "private = [t for t in all_torrents if getattr(t, \"availability\", 0) <  0]\n# ─── PRINT FIRST 3 OF EACH ───────────────────────────────────────────────────\nprint(f\"\\nFirst 3 public  torrents  ({len(public)} total):\")\nfor t in public[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nFirst 3 private torrents  ({len(private)} total):\")\nfor t in private[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\nqbt.auth_log_out()",
         "detail": "app",
         "documentation": {}
     }

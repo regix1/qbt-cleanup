@@ -17,25 +17,23 @@ try:
         VERIFY_WEBUI_CERTIFICATE=False,
     )
     qbt.auth_log_in()
-except LoginFailed:
-    print("⚠️ Login failed – check your credentials")
-    exit(1)
-except APIConnectionError:
-    print("⚠️ Cannot reach qBittorrent Web UI")
+except (LoginFailed, APIConnectionError) as e:
+    print(f"❌ {e}")
     exit(1)
 
-# ─── PULL PUBLIC vs PRIVATE ───────────────────────────────────────────────────
-public  = qbt.torrents.info(private=False)
-private = qbt.torrents.info(private=True)
+# ─── FETCH & CLASSIFY ─────────────────────────────────────────────────────────
+all_torrents = qbt.torrents.info()
+
+public  = [t for t in all_torrents if getattr(t, "availability", 0) >= 0]
+private = [t for t in all_torrents if getattr(t, "availability", 0) <  0]
 
 # ─── PRINT FIRST 3 OF EACH ───────────────────────────────────────────────────
-print(f"\nFirst  3 public  torrents  ({len(public)} total):")
+print(f"\nFirst 3 public  torrents  ({len(public)} total):")
 for t in public[:3]:
     print(f" • {t.name}  [{t.hash}]")
 
-print(f"\nFirst  3 private torrents  ({len(private)} total):")
+print(f"\nFirst 3 private torrents  ({len(private)} total):")
 for t in private[:3]:
     print(f" • {t.name}  [{t.hash}]")
 
-# ─── CLEANUP ─────────────────────────────────────────────────────────────────
 qbt.auth_log_out()
