@@ -73,7 +73,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "private_torrents = client.torrents.info(private=True)\n# ─── print them ─────────────────────────────────────────────────────────────────\nprint(f\"Public torrents  ({len(public_torrents)}):\")\nfor t in public_torrents:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nPrivate torrents ({len(private_torrents)}):\")\nfor t in private_torrents:\n    print(f\" • {t.name}  [{t.hash}]\")\n# ─── clean up ───────────────────────────────────────────────────────────────────\nclient.auth_log_out()",
+        "peekOfCode": "private_torrents = client.torrents.info(private=True)[:3]\n# ─── print them ─────────────────────────────────────────────────────────────────\nprint(f\"First 3 public torrents  ({len(public_torrents)} shown):\")\nfor t in public_torrents:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nFirst 3 private torrents ({len(private_torrents)} shown):\")\nfor t in private_torrents:\n    print(f\" • {t.name}  [{t.hash}]\")\n# ─── clean up ───────────────────────────────────────────────────────────────────\nclient.auth_log_out()",
         "detail": "app",
         "documentation": {}
     }

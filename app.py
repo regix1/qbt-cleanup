@@ -27,15 +27,15 @@ except (LoginFailed, APIConnectionError) as e:
     sys.exit(1)
 
 # ─── fetch public vs private ────────────────────────────────────────────────────
-public_torrents  = client.torrents.info(private=False)
-private_torrents = client.torrents.info(private=True)
+public_torrents  = client.torrents.info(private=False)[:3]
+private_torrents = client.torrents.info(private=True)[:3]
 
 # ─── print them ─────────────────────────────────────────────────────────────────
-print(f"Public torrents  ({len(public_torrents)}):")
+print(f"First 3 public torrents  ({len(public_torrents)} shown):")
 for t in public_torrents:
     print(f" • {t.name}  [{t.hash}]")
 
-print(f"\nPrivate torrents ({len(private_torrents)}):")
+print(f"\nFirst 3 private torrents ({len(private_torrents)} shown):")
 for t in private_torrents:
     print(f" • {t.name}  [{t.hash}]")
 
