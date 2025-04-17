@@ -42,11 +42,38 @@
         "documentation": {}
     },
     {
-        "label": "main",
-        "kind": 2,
+        "label": "username",
+        "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def main():\n    # ─── load your env ─────────────────────────────────────────────────────────\n    host = os.environ.get(\"QB_HOST\", \"localhost\")\n    port = os.environ.get(\"QB_PORT\", \"8080\")\n    user = os.environ.get(\"QB_USERNAME\", \"admin\")\n    pwd  = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    tag = os.environ.get(\"TARGET_TAG\")\n    if not tag:\n        print(\"❌ set TARGET_TAG to the tag you want to filter on\")\n        sys.exit(1)",
+        "peekOfCode": "username = os.environ.get(\"QB_USERNAME\", \"\")\npassword = os.environ.get(\"QB_PASSWORD\", \"\")\nif not username or not password:\n    print(\"❌ Please set QB_USERNAME and QB_PASSWORD\")\n    sys.exit(1)\n# ─── connect ────────────────────────────────────────────────────────────────────\nclient = Client(\n    host=f\"{host}:{port}\",\n    username=username,\n    password=password,",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "password",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "password = os.environ.get(\"QB_PASSWORD\", \"\")\nif not username or not password:\n    print(\"❌ Please set QB_USERNAME and QB_PASSWORD\")\n    sys.exit(1)\n# ─── connect ────────────────────────────────────────────────────────────────────\nclient = Client(\n    host=f\"{host}:{port}\",\n    username=username,\n    password=password,\n    VERIFY_WEBUI_CERTIFICATE=False,",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "client",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "client = Client(\n    host=f\"{host}:{port}\",\n    username=username,\n    password=password,\n    VERIFY_WEBUI_CERTIFICATE=False,\n)\ntry:\n    client.auth_log_in()\nexcept (LoginFailed, APIConnectionError) as e:\n    print(\"❌ Failed to log in:\", e)",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "private_torrents",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "private_torrents = client.torrents.info(private=True)\n# ─── print them ─────────────────────────────────────────────────────────────────\nprint(f\"Public torrents  ({len(public_torrents)}):\")\nfor t in public_torrents:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nPrivate torrents ({len(private_torrents)}):\")\nfor t in private_torrents:\n    print(f\" • {t.name}  [{t.hash}]\")\n# ─── clean up ───────────────────────────────────────────────────────────────────\nclient.auth_log_out()",
         "detail": "app",
         "documentation": {}
     }
