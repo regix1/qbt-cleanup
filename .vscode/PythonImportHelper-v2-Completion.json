@@ -9,7 +9,32 @@
         "documentation": {}
     },
     {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
         "label": "Client",
+        "importPath": "qbittorrentapi",
+        "description": "qbittorrentapi",
+        "isExtraImport": true,
+        "detail": "qbittorrentapi",
+        "documentation": {}
+    },
+    {
+        "label": "LoginFailed",
+        "importPath": "qbittorrentapi",
+        "description": "qbittorrentapi",
+        "isExtraImport": true,
+        "detail": "qbittorrentapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIConnectionError",
         "importPath": "qbittorrentapi",
         "description": "qbittorrentapi",
         "isExtraImport": true,
@@ -21,7 +46,7 @@
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def main():\n    # use the same env vars your container already has\n    host = os.getenv(\"QB_HOST\", \"localhost\")\n    port = os.getenv(\"QB_PORT\", \"8080\")\n    user = os.getenv(\"QB_USERNAME\", \"admin\")\n    pw   = os.getenv(\"QB_PASSWORD\", \"adminadmin\")\n    qbt = Client(\n        host=f\"{host}:{port}\",\n        username=user,\n        password=pw,",
+        "peekOfCode": "def main():\n    # use your existing env vars\n    host     = os.environ.get(\"QB_HOST\", \"localhost\")\n    port     = os.environ.get(\"QB_PORT\", \"8080\")\n    username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # connect\n    try:\n        client = Client(\n            host=f\"{host}:{port}\",",
         "detail": "app",
         "documentation": {}
     }
