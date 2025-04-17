@@ -1,38 +1,11 @@
 [
     {
-        "label": "logging",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "logging",
-        "description": "logging",
-        "detail": "logging",
-        "documentation": {}
-    },
-    {
         "label": "os",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "os",
         "description": "os",
         "detail": "os",
-        "documentation": {}
-    },
-    {
-        "label": "sys",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
-        "documentation": {}
-    },
-    {
-        "label": "time",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "time",
-        "description": "time",
-        "detail": "time",
         "documentation": {}
     },
     {
@@ -44,54 +17,11 @@
         "documentation": {}
     },
     {
-        "label": "LoginFailed",
-        "importPath": "qbittorrentapi",
-        "description": "qbittorrentapi",
-        "isExtraImport": true,
-        "detail": "qbittorrentapi",
-        "documentation": {}
-    },
-    {
-        "label": "APIConnectionError",
-        "importPath": "qbittorrentapi",
-        "description": "qbittorrentapi",
-        "isExtraImport": true,
-        "detail": "qbittorrentapi",
-        "documentation": {}
-    },
-    {
-        "label": "detect_private_flag",
-        "kind": 2,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "def detect_private_flag(t):\n    \"\"\"\n    Torrents sometimes carry their private flag under\n      - t.is_private\n      - t.isPrivate\n      - t.private\n    This helper will pick whichever one exists.\n    \"\"\"\n    for attr in (\"is_private\", \"isPrivate\", \"private\"):\n        if hasattr(t, attr):",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
-        "label": "run_cleanup",
-        "kind": 2,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "def run_cleanup():\n    # ─── load env ───────────────────────────────────────────────────────────────\n    host = os.environ.get(\"QB_HOST\", \"localhost\")\n    port = os.environ.get(\"QB_PORT\", \"8080\")\n    username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))\n    private_ratio = float(os.environ.get(\"PRIVATE_RATIO\", str(fallback_ratio)))\n    private_days = float(os.environ.get(\"PRIVATE_DAYS\", str(fallback_days)))",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
         "label": "main",
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def main():\n    interval_h = int(os.environ.get(\"SCHEDULE_HOURS\", \"24\"))\n    run_once = os.environ.get(\"RUN_ONCE\", \"False\").lower() == \"true\"\n    logger.info(\"### qBittorrent cleanup starting\")\n    if run_once:\n        run_cleanup()\n    else:\n        logger.info(f\"### looping every {interval_h}h\")\n        while True:\n            try:",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "kind": 5,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\ndef detect_private_flag(t):\n    \"\"\"\n    Torrents sometimes carry their private flag under\n      - t.is_private\n      - t.isPrivate\n      - t.private\n    This helper will pick whichever one exists.\n    \"\"\"\n    for attr in (\"is_private\", \"isPrivate\", \"private\"):",
+        "peekOfCode": "def main():\n    # use the same env vars your container already has\n    host = os.getenv(\"QB_HOST\", \"localhost\")\n    port = os.getenv(\"QB_PORT\", \"8080\")\n    user = os.getenv(\"QB_USERNAME\", \"admin\")\n    pw   = os.getenv(\"QB_PASSWORD\", \"adminadmin\")\n    qbt = Client(\n        host=f\"{host}:{port}\",\n        username=user,\n        password=pw,",
         "detail": "app",
         "documentation": {}
     }
