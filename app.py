@@ -2,13 +2,13 @@
 import os
 from qbittorrentapi import Client, LoginFailed, APIConnectionError
 
-# ─── CONFIGURE via ENV ─────────────────────────────────────────────────────────
+# ─── CONFIG via ENV ──────────────────────────────────────────────────────────
 HOST     = os.environ.get("QB_HOST",     "localhost")
 PORT     = os.environ.get("QB_PORT",     "8080")
 USERNAME = os.environ.get("QB_USERNAME", "admin")
 PASSWORD = os.environ.get("QB_PASSWORD", "adminadmin")
 
-# ─── CONNECT ───────────────────────────────────────────────────────────────────
+# ─── CONNECT ─────────────────────────────────────────────────────────────────
 try:
     qbt = Client(
         host=f"{HOST}:{PORT}",
@@ -24,27 +24,18 @@ except APIConnectionError:
     print("⚠️ Cannot reach qBittorrent Web UI")
     exit(1)
 
-# ─── FETCH & SPLIT ──────────────────────────────────────────────────────────────
-all_torrents = qbt.torrents.info()
-public  = []
-private = []
+# ─── PULL PUBLIC vs PRIVATE ───────────────────────────────────────────────────
+public  = qbt.torrents.info(private=False)
+private = qbt.torrents.info(private=True)
 
-for t in all_torrents:
-    # call the “generic properties” endpoint to get isPrivate
-    props = qbt.torrents.properties(t.hash)
-    if props.get("isPrivate", False):
-        private.append(t)
-    else:
-        public.append(t)
-
-# ─── PRINT FIRST 3 OF EACH ─────────────────────────────────────────────────────
-print("\nFirst 3 public torrents  ({} total):".format(len(public)))
+# ─── PRINT FIRST 3 OF EACH ───────────────────────────────────────────────────
+print(f"\nFirst  3 public  torrents  ({len(public)} total):")
 for t in public[:3]:
     print(f" • {t.name}  [{t.hash}]")
 
-print("\nFirst 3 private torrents ({} total):".format(len(private)))
+print(f"\nFirst  3 private torrents  ({len(private)} total):")
 for t in private[:3]:
     print(f" • {t.name}  [{t.hash}]")
 
-# ─── CLEANUP ───────────────────────────────────────────────────────────────────
+# ─── CLEANUP ─────────────────────────────────────────────────────────────────
 qbt.auth_log_out()

@@ -37,7 +37,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "USERNAME = os.environ.get(\"QB_USERNAME\", \"admin\")\nPASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── CONNECT ───────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )",
+        "peekOfCode": "USERNAME = os.environ.get(\"QB_USERNAME\", \"admin\")\nPASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── CONNECT ─────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )",
         "detail": "app",
         "documentation": {}
     },
@@ -46,16 +46,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "PASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── CONNECT ───────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )\n    qbt.auth_log_in()",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
-        "label": "all_torrents",
-        "kind": 5,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "all_torrents = qbt.torrents.info()\npublic  = []\nprivate = []\nfor t in all_torrents:\n    # call the “generic properties” endpoint to get isPrivate\n    props = qbt.torrents.properties(t.hash)\n    if props.get(\"isPrivate\", False):\n        private.append(t)\n    else:\n        public.append(t)",
+        "peekOfCode": "PASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── CONNECT ─────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )\n    qbt.auth_log_in()",
         "detail": "app",
         "documentation": {}
     },
@@ -64,7 +55,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "private = []\nfor t in all_torrents:\n    # call the “generic properties” endpoint to get isPrivate\n    props = qbt.torrents.properties(t.hash)\n    if props.get(\"isPrivate\", False):\n        private.append(t)\n    else:\n        public.append(t)\n# ─── PRINT FIRST 3 OF EACH ─────────────────────────────────────────────────────\nprint(\"\\nFirst 3 public torrents  ({} total):\".format(len(public)))",
+        "peekOfCode": "private = qbt.torrents.info(private=True)\n# ─── PRINT FIRST 3 OF EACH ───────────────────────────────────────────────────\nprint(f\"\\nFirst  3 public  torrents  ({len(public)} total):\")\nfor t in public[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nFirst  3 private torrents  ({len(private)} total):\")\nfor t in private[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\n# ─── CLEANUP ─────────────────────────────────────────────────────────────────\nqbt.auth_log_out()",
         "detail": "app",
         "documentation": {}
     }
