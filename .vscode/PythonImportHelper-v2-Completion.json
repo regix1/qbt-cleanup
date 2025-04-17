@@ -46,7 +46,7 @@
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def main():\n    # use your existing env vars\n    host     = os.environ.get(\"QB_HOST\", \"localhost\")\n    port     = os.environ.get(\"QB_PORT\", \"8080\")\n    username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # connect\n    try:\n        client = Client(\n            host=f\"{host}:{port}\",",
+        "peekOfCode": "def main():\n    # ─── load your env ─────────────────────────────────────────────────────────\n    host = os.environ.get(\"QB_HOST\", \"localhost\")\n    port = os.environ.get(\"QB_PORT\", \"8080\")\n    user = os.environ.get(\"QB_USERNAME\", \"admin\")\n    pwd  = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    tag = os.environ.get(\"TARGET_TAG\")\n    if not tag:\n        print(\"❌ set TARGET_TAG to the tag you want to filter on\")\n        sys.exit(1)",
         "detail": "app",
         "documentation": {}
     }
