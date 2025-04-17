@@ -86,9 +86,11 @@ def run_cleanup():
                 private_ratio = global_ratio
             if not ignore_qbt_ratio_nonprivate and os.environ.get("NONPRIVATE_RATIO") is None:
                 nonprivate_ratio = global_ratio
-            logger.info(f"Using qBittorrent ratios → private={private_ratio}, non-private={nonprivate_ratio}")
+            logger.info(f"Using qBittorrent ratio limits:")
+            logger.info(f"  → Private torrents:    {private_ratio}")
+            logger.info(f"  → Non-private torrents: {nonprivate_ratio}")
         else:
-            logger.info(f"No qB ratio limit, using fallback={fallback_ratio}")
+            logger.info(f"No qBittorrent ratio limit, using fallback value: {fallback_ratio}")
 
         if prefs.get("max_seeding_time_enabled", False):
             gl_min = prefs.get("max_seeding_time", fallback_days * 24 * 60)
@@ -97,9 +99,11 @@ def run_cleanup():
                 private_days = gl_days
             if not ignore_qbt_time_nonprivate and os.environ.get("NONPRIVATE_DAYS") is None:
                 nonprivate_days = gl_days
-            logger.info(f"Using qB time limits → private={private_days}d, non-private={nonprivate_days}d")
+            logger.info(f"Using qBittorrent time limits:")
+            logger.info(f"  → Private torrents:    {private_days:.1f} days")
+            logger.info(f"  → Non-private torrents: {nonprivate_days:.1f} days")
         else:
-            logger.info(f"No qB time limit, using fallback={fallback_days}d")
+            logger.info(f"No qBittorrent time limit, using fallback value: {fallback_days:.1f} days")
 
         # Convert days to seconds
         sec_priv    = private_days * 86400
