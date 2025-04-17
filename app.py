@@ -86,8 +86,8 @@ def run_cleanup():
         logger.error(f"Connection failed: {e}")
         return
 
+    # Pull in qBittorrent’s own ratio/time limits if enabled
     try:
-        # Pull in qBittorrent’s own ratio/time limits if enabled
         prefs = qbt_client.app.preferences
 
         if prefs.get('max_ratio_enabled', False):
@@ -110,28 +110,36 @@ def run_cleanup():
                 nonprivate_days = global_days
                 logger.info(f"Using qBittorrent seeding time for non‑private torrents: {nonprivate_days:.1f} days")
 
-        logger.info(f"Private torrent settings: Ratio={private_ratio:.2f}, Days={private_days:.1f}, "
-                    f"PausedOnly={check_private_paused_only}")
-        logger.info(f"Non‑private torrent settings: Ratio={nonprivate_ratio:.2f}, Days={nonprivate_days:.1f}, "
-                    f"PausedOnly={check_nonprivate_paused_only}")
+    except Exception:
+        logger.exception("Failed to fetch qBittorrent preferences, using environment values")
 
-        private_limit_secs = private_days * 86400
-        nonprivate_limit_secs = nonprivate_days * 86400
+    logger.info(f"Private torrent settings: Ratio={private_ratio:.2f}, Days={private_days:.1f}, "
+                f"PausedOnly={check_private_paused_only}")
+    logger.info(f"Non‑private torrent settings: Ratio={nonprivate_ratio:.2f}, Days={nonprivate_days:.1f}, "
+                f"PausedOnly={check_nonprivate_paused_only}")
 
-        # Fetch all torrents
+    private_limit_secs = private_days * 86400
+    nonprivate_limit_secs = nonprivate_days * 86400
+
+    # Fetch all torrents
+    try:
         torrents = qbt_client.torrents.info()
         logger.info(f"Found {len(torrents)} torrents total")
+    except Exception:
+        logger.exception("Failed to fetch torrent list")
+        return
 
-        # Count private vs non‑private
-        private_count = sum(1 for t in torrents if getattr(t, 'private', False))
-        nonprivate_count = len(torrents) - private_count
-        logger.info(f"Torrent breakdown: {private_count} private, {nonprivate_count} non‑private")
+    # Count private vs non‑private
+    private_count = sum(1 for t in torrents if getattr(t, 'is_private', False))   # UPDATED
+    nonprivate_count = len(torrents) - private_count
+    logger.info(f"Torrent breakdown: {private_count} private, {nonprivate_count} non‑private")
 
-        to_delete = []
-        not_ready = []
+    to_delete = []
+    not_ready = []
 
-        for t in torrents:
-            is_private = getattr(t, 'private', False)
+    for t in torrents:
+        try:
+            is_private = getattr(t, 'is_private', False)  # UPDATED
             state = t.state
             is_paused = state in ("pausedUP", "pausedDL")
 
@@ -147,44 +155,46 @@ def run_cleanup():
             if t.ratio >= ratio_limit or t.seeding_time >= time_limit:
                 to_delete.append(t)
                 days_seeded = t.seeding_time / 86400
-                logger.info(f"Queuing for delete: {t.name[:60]} "
-                            f"(private={is_private}, state={state}, "
-                            f"ratio={t.ratio:.2f}/{ratio_limit:.2f}, "
-                            f"seeded={days_seeded:.1f}/{time_limit/86400:.1f} days)")
+                logger.info(
+                    f"Queuing for delete: {t.name[:60]} "
+                    f"(private={is_private}, state={state}, "
+                    f"ratio={t.ratio:.2f}/{ratio_limit:.2f}, "
+                    f"seeded={days_seeded:.1f}/{time_limit/86400:.1f} days)"
+                )
             elif is_paused:
                 not_ready.append((t.name, t.ratio, t.seeding_time / 86400, is_private))
 
-        if not_ready:
-            logger.info(f"{len(not_ready)} paused torrents not yet meeting criteria")
-
-        if to_delete:
-            private_del = sum(1 for t in to_delete if getattr(t, 'private', False))
-            nonpriv_del = len(to_delete) - private_del
-
-            if dry_run:
-                logger.info(f"DRY RUN: Would delete {len(to_delete)} torrents "
-                            f"({private_del} private, {nonpriv_del} non‑private)")
-            else:
-                hashes = [t.hash for t in to_delete]
-                try:
-                    qbt_client.torrents.delete(hashes=hashes, delete_files=delete_files)
-                    logger.info(f"Deleted {len(to_delete)} torrents "
-                                f"({private_del} private, {nonpriv_del} non‑private)"
-                                + (" and their files" if delete_files else ""))
-                except Exception as de:
-                    logger.error(f"Failed to delete torrents: {de}")
-        else:
-            logger.info("No torrents met deletion criteria")
-
-    except Exception as e:
-        logger.error(f"Error during cleanup: {e}")
-
-    finally:
-        try:
-            qbt_client.auth_log_out()
-            logger.info("Logged out from qBittorrent")
         except Exception:
-            pass
+            logger.exception(f"Error evaluating torrent {t.name}")
+
+    if not_ready:
+        logger.info(f"{len(not_ready)} paused torrents not yet meeting criteria")
+
+    if to_delete:
+        private_del = sum(1 for t in to_delete if getattr(t, 'is_private', False))
+        nonpriv_del = len(to_delete) - private_del
+
+        if dry_run:
+            logger.info(f"DRY RUN: Would delete {len(to_delete)} torrents "
+                        f"({private_del} private, {nonpriv_del} non‑private)")
+        else:
+            hashes = [t.hash for t in to_delete]
+            try:
+                qbt_client.torrents.delete(hashes=hashes, delete_files=delete_files)
+                logger.info(f"Deleted {len(to_delete)} torrents "
+                            f"({private_del} private, {nonpriv_del} non‑private)"
+                            + (" and their files" if delete_files else ""))
+            except Exception:
+                logger.exception("Failed to delete torrents")
+    else:
+        logger.info("No torrents met deletion criteria")
+
+    # Logout
+    try:
+        qbt_client.auth_log_out()
+        logger.info("Logged out from qBittorrent")
+    except Exception:
+        pass
 
 
 def main():
@@ -206,8 +216,8 @@ def main():
             except KeyboardInterrupt:
                 logger.info("Shutdown signal received, exiting")
                 sys.exit(0)
-            except Exception as ex:
-                logger.error(f"Unexpected error: {ex}, retrying in 60s")
+            except Exception:
+                logger.exception("Unexpected error in main loop, retrying in 60s")
                 time.sleep(60)
 
 
