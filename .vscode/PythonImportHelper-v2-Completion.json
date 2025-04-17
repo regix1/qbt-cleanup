@@ -36,20 +36,36 @@
         "documentation": {}
     },
     {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
+        "label": "Client",
+        "importPath": "qbittorrentapi",
+        "description": "qbittorrentapi",
         "isExtraImport": true,
-        "detail": "datetime",
+        "detail": "qbittorrentapi",
         "documentation": {}
     },
     {
-        "label": "qbittorrentapi",
-        "kind": 6,
-        "isExtraImport": true,
+        "label": "LoginFailed",
         "importPath": "qbittorrentapi",
         "description": "qbittorrentapi",
+        "isExtraImport": true,
         "detail": "qbittorrentapi",
+        "documentation": {}
+    },
+    {
+        "label": "APIConnectionError",
+        "importPath": "qbittorrentapi",
+        "description": "qbittorrentapi",
+        "isExtraImport": true,
+        "detail": "qbittorrentapi",
+        "documentation": {}
+    },
+    {
+        "label": "detect_private_flag",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def detect_private_flag(t):\n    \"\"\"\n    Torrents sometimes carry their private flag under\n      - t.is_private\n      - t.isPrivate\n      - t.private\n    This helper will pick whichever one exists.\n    \"\"\"\n    for attr in (\"is_private\", \"isPrivate\", \"private\"):\n        if hasattr(t, attr):",
+        "detail": "app",
         "documentation": {}
     },
     {
@@ -57,7 +73,7 @@
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def run_cleanup():\n    # qBittorrent connection settings from environment variables\n    qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n    qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n    qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # Fallback cleanup settings\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))\n    # Private torrent settings (default to fallback if not set)",
+        "peekOfCode": "def run_cleanup():\n    # ─── load env ───────────────────────────────────────────────────────────────\n    host = os.environ.get(\"QB_HOST\", \"localhost\")\n    port = os.environ.get(\"QB_PORT\", \"8080\")\n    username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))\n    private_ratio = float(os.environ.get(\"PRIVATE_RATIO\", str(fallback_ratio)))\n    private_days = float(os.environ.get(\"PRIVATE_DAYS\", str(fallback_days)))",
         "detail": "app",
         "documentation": {}
     },
@@ -66,7 +82,7 @@
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def main():\n    interval_h = int(os.environ.get(\"SCHEDULE_HOURS\", \"24\"))\n    run_once = os.environ.get(\"RUN_ONCE\", \"False\").lower() == \"true\"\n    logger.info(\"qBittorrent Cleanup Container started\")\n    logger.info(f\"Schedule: {'Run once' if run_once else f'Every {interval_h} hours'}\")\n    if run_once:\n        run_cleanup()\n    else:\n        interval_s = interval_h * 3600\n        while True:",
+        "peekOfCode": "def main():\n    interval_h = int(os.environ.get(\"SCHEDULE_HOURS\", \"24\"))\n    run_once   = os.environ.get(\"RUN_ONCE\", \"False\").lower() == \"true\"\n    logger.info(\"### qBittorrent cleanup starting\")\n    if run_once:\n        run_cleanup()\n    else:\n        logger.info(f\"### looping every {interval_h}h\")\n        while True:\n            try:",
         "detail": "app",
         "documentation": {}
     },
@@ -75,7 +91,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\ndef run_cleanup():\n    # qBittorrent connection settings from environment variables\n    qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n    qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n    qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n    qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n    # Fallback cleanup settings\n    fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))\n    fallback_days = float(os.environ.get(\"FALLBACK_DAYS\", \"7\"))",
+        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\ndef detect_private_flag(t):\n    \"\"\"\n    Torrents sometimes carry their private flag under\n      - t.is_private\n      - t.isPrivate\n      - t.private\n    This helper will pick whichever one exists.\n    \"\"\"\n    for attr in (\"is_private\", \"isPrivate\", \"private\"):",
         "detail": "app",
         "documentation": {}
     }

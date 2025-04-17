@@ -3,221 +3,204 @@ import logging
 import os
 import sys
 import time
-from datetime import datetime
 
-import qbittorrentapi
+from qbittorrentapi import Client, LoginFailed, APIConnectionError
 
-# Set up logging
+# ─── Logging setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler()]
+    format="%(asctime)s %(levelname)-8s %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger("qbt-cleanup")
 
 
-def run_cleanup():
-    # qBittorrent connection settings from environment variables
-    qb_host = os.environ.get("QB_HOST", "localhost")
-    qb_port = int(os.environ.get("QB_PORT", "8080"))
-    qb_username = os.environ.get("QB_USERNAME", "admin")
-    qb_password = os.environ.get("QB_PASSWORD", "adminadmin")
+def detect_private_flag(t):
+    """
+    Torrents sometimes carry their private flag under
+      - t.is_private
+      - t.isPrivate
+      - t.private
+    This helper will pick whichever one exists.
+    """
+    for attr in ("is_private", "isPrivate", "private"):
+        if hasattr(t, attr):
+            return bool(getattr(t, attr))
+    return False
 
-    # Fallback cleanup settings
+
+def run_cleanup():
+    # ─── load env ───────────────────────────────────────────────────────────────
+    host = os.environ.get("QB_HOST", "localhost")
+    port = os.environ.get("QB_PORT", "8080")
+    username = os.environ.get("QB_USERNAME", "admin")
+    password = os.environ.get("QB_PASSWORD", "adminadmin")
+
     fallback_ratio = float(os.environ.get("FALLBACK_RATIO", "1.0"))
     fallback_days = float(os.environ.get("FALLBACK_DAYS", "7"))
 
-    # Private torrent settings (default to fallback if not set)
     private_ratio = float(os.environ.get("PRIVATE_RATIO", str(fallback_ratio)))
     private_days = float(os.environ.get("PRIVATE_DAYS", str(fallback_days)))
+    nonpriv_ratio = float(os.environ.get("NONPRIVATE_RATIO", str(fallback_ratio)))
+    nonpriv_days = float(os.environ.get("NONPRIVATE_DAYS", str(fallback_days)))
 
-    # Non‑private torrent settings
-    nonprivate_ratio = float(os.environ.get("NONPRIVATE_RATIO", str(fallback_ratio)))
-    nonprivate_days = float(os.environ.get("NONPRIVATE_DAYS", str(fallback_days)))
+    ignore_ratio_priv = os.environ.get("IGNORE_QBT_RATIO_PRIVATE", "False").lower() == "true"
+    ignore_ratio_non = os.environ.get("IGNORE_QBT_RATIO_NONPRIVATE", "False").lower() == "true"
+    ignore_time_priv = os.environ.get("IGNORE_QBT_TIME_PRIVATE", "False").lower() == "true"
+    ignore_time_non = os.environ.get("IGNORE_QBT_TIME_NONPRIVATE", "False").lower() == "true"
 
-    # Ignore qBittorrent’s built‑in limits?
-    ignore_qbt_ratio_private = os.environ.get("IGNORE_QBT_RATIO_PRIVATE", "False").lower() == "true"
-    ignore_qbt_ratio_nonprivate = os.environ.get("IGNORE_QBT_RATIO_NONPRIVATE", "False").lower() == "true"
-    ignore_qbt_time_private = os.environ.get("IGNORE_QBT_TIME_PRIVATE", "False").lower() == "true"
-    ignore_qbt_time_nonprivate = os.environ.get("IGNORE_QBT_TIME_NONPRIVATE", "False").lower() == "true"
-
-    # Other settings
     delete_files = os.environ.get("DELETE_FILES", "True").lower() == "true"
     dry_run = os.environ.get("DRY_RUN", "False").lower() == "true"
 
-    # Legacy paused‑only handling
     check_paused_only = os.environ.get("CHECK_PAUSED_ONLY", "False").lower() == "true"
-    check_private_paused_only = os.environ.get("CHECK_PRIVATE_PAUSED_ONLY", str(check_paused_only)).lower() == "true"
-    check_nonprivate_paused_only = os.environ.get("CHECK_NONPRIVATE_PAUSED_ONLY", str(check_paused_only)).lower() == "true"
+    check_priv_paused = os.environ.get("CHECK_PRIVATE_PAUSED_ONLY", str(check_paused_only)).lower() == "true"
+    check_nonpriv_paused = os.environ.get("CHECK_NONPRIVATE_PAUSED_ONLY", str(check_paused_only)).lower() == "true"
 
-    # Connect to qBittorrent
+    # ─── connect ────────────────────────────────────────────────────────────────
     try:
-        conn_info = dict(
-            host=qb_host,
-            port=qb_port,
-            username=qb_username,
-            password=qb_password,
+        qbt = Client(
+            host=f"{host}:{port}",
+            username=username,
+            password=password,
             VERIFY_WEBUI_CERTIFICATE=False,
             REQUESTS_ARGS=dict(timeout=30),
         )
-        qbt_client = qbittorrentapi.Client(**conn_info)
-        qbt_client.auth_log_in()
-
-        version = qbt_client.app.version
-        api_version = qbt_client.app.web_api_version
-        logger.info(f"Connected to qBittorrent {version} (API: {api_version})")
-
-        # Warn if qBittorrent version < 4.1
-        try:
-            clean_version = version.lstrip('v')
-            major, minor = map(int, clean_version.split('.')[:2])
-            if major < 4 or (major == 4 and minor < 1):
-                logger.warning(f"This script is designed for qBittorrent 4.1.0+ (detected {version})")
-        except Exception:
-            logger.warning(f"Could not parse qBittorrent version: {version}")
-
-    except qbittorrentapi.LoginFailed as e:
-        logger.error(f"Login failed: {e}")
+        qbt.auth_log_in()
+        version = qbt.app.version
+        api_v   = qbt.app.web_api_version
+        logger.info(f"Connected to qBittorrent {version} (API: {api_v})")
+    except LoginFailed as e:
+        logger.error("Login failed, check your credentials")
         return
-    except qbittorrentapi.APIConnectionError as e:
-        logger.error(f"Connection error: {e}")
+    except APIConnectionError as e:
+        logger.error("Cannot reach qBittorrent Web UI")
         return
-    except Exception as e:
-        logger.error(f"Connection failed: {e}")
-        return
-
-    # Pull in qBittorrent’s own ratio/time limits if enabled
-    try:
-        prefs = qbt_client.app.preferences
-
-        if prefs.get('max_ratio_enabled', False):
-            global_ratio = prefs.get('max_ratio', fallback_ratio)
-            if not ignore_qbt_ratio_private and os.environ.get("PRIVATE_RATIO") is None:
-                private_ratio = global_ratio
-                logger.info(f"Using qBittorrent ratio for private torrents: {private_ratio}")
-            if not ignore_qbt_ratio_nonprivate and os.environ.get("NONPRIVATE_RATIO") is None:
-                nonprivate_ratio = global_ratio
-                logger.info(f"Using qBittorrent ratio for non‑private torrents: {nonprivate_ratio}")
-
-        if prefs.get('max_seeding_time_enabled', False):
-            # API reports minutes
-            global_minutes = prefs.get('max_seeding_time', fallback_days * 24 * 60)
-            global_days = global_minutes / (60 * 24)
-            if not ignore_qbt_time_private and os.environ.get("PRIVATE_DAYS") is None:
-                private_days = global_days
-                logger.info(f"Using qBittorrent seeding time for private torrents: {private_days:.1f} days")
-            if not ignore_qbt_time_nonprivate and os.environ.get("NONPRIVATE_DAYS") is None:
-                nonprivate_days = global_days
-                logger.info(f"Using qBittorrent seeding time for non‑private torrents: {nonprivate_days:.1f} days")
-
     except Exception:
-        logger.exception("Failed to fetch qBittorrent preferences, using environment values")
-
-    logger.info(f"Private torrent settings: Ratio={private_ratio:.2f}, Days={private_days:.1f}, "
-                f"PausedOnly={check_private_paused_only}")
-    logger.info(f"Non‑private torrent settings: Ratio={nonprivate_ratio:.2f}, Days={nonprivate_days:.1f}, "
-                f"PausedOnly={check_nonprivate_paused_only}")
-
-    private_limit_secs = private_days * 86400
-    nonprivate_limit_secs = nonprivate_days * 86400
-
-    # Fetch all torrents
-    try:
-        torrents = qbt_client.torrents.info()
-        logger.info(f"Found {len(torrents)} torrents total")
-    except Exception:
-        logger.exception("Failed to fetch torrent list")
+        logger.exception("Unexpected error during login/connect")
         return
 
-    # Count private vs non‑private
-    private_count = sum(1 for t in torrents if getattr(t, 'is_private', False))   # UPDATED
-    nonprivate_count = len(torrents) - private_count
-    logger.info(f"Torrent breakdown: {private_count} private, {nonprivate_count} non‑private")
+    # ─── pull in qB limits ──────────────────────────────────────────────────────
+    try:
+        prefs = qbt.app.preferences
+        if prefs.get("max_ratio_enabled", False) and not ignore_ratio_priv:
+            global_r = prefs.get("max_ratio", fallback_ratio)
+            private_ratio = private_ratio if os.environ.get("PRIVATE_RATIO") else global_r
+            nonpriv_ratio = nonpriv_ratio if os.environ.get("NONPRIVATE_RATIO") else global_r
+            logger.info(f"Using qB ratio limits: private={private_ratio}, nonpriv={nonpriv_ratio}")
+
+        if prefs.get("max_seeding_time_enabled", False) and not ignore_time_priv:
+            gl_min = prefs.get("max_seeding_time", fallback_days * 24 * 60)
+            gl_days = gl_min / 60 / 24
+            private_days = private_days if os.environ.get("PRIVATE_DAYS") else gl_days
+            nonpriv_days = nonpriv_days if os.environ.get("NONPRIVATE_DAYS") else gl_days
+            logger.info(f"Using qB time limits: private={private_days}d, nonpriv={nonpriv_days}d")
+    except Exception:
+        logger.exception("Failed to read qBittorrent preferences, using ENV values")
+
+    logger.info(f"Private  → ratio={private_ratio}, days={private_days}, paused_only={check_priv_paused}")
+    logger.info(f"Non‑priv→ ratio={nonpriv_ratio}, days={nonpriv_days}, paused_only={check_nonpriv_paused}")
+
+    sec_priv    = private_days * 86400
+    sec_nonpriv = nonpriv_days * 86400
+
+    # ─── fetch torrents ─────────────────────────────────────────────────────────
+    try:
+        torrents = qbt.torrents.info()
+        logger.info(f"Fetched {len(torrents)} torrents")
+    except Exception:
+        logger.exception("Could not list torrents")
+        qbt.auth_log_out()
+        return
+
+    # print raw data of the first torrent so you can inspect the real keys:
+    if torrents:
+        logger.debug("raw first torrent → %r", torrents[0]._data)
+
+    # ─── classify ────────────────────────────────────────────────────────────────
+    priv_count = 0
+    for t in torrents:
+        if detect_private_flag(t):
+            priv_count += 1
+    logger.info(f"Detected {priv_count} private, {len(torrents) - priv_count} non‑private")
 
     to_delete = []
     not_ready = []
 
     for t in torrents:
         try:
-            is_private = getattr(t, 'is_private', False)  # UPDATED
-            state = t.state
-            is_paused = state in ("pausedUP", "pausedDL")
+            is_priv = detect_private_flag(t)
+            state   = t.state
+            paused  = state in ("pausedUP", "pausedDL")
 
-            # Skip if we’re only checking paused and this torrent isn’t paused
-            if is_private and check_private_paused_only and not is_paused:
+            # skip if we only care about paused:
+            if (is_priv and check_priv_paused and not paused) or (
+               not is_priv and check_nonpriv_paused and not paused):
                 continue
-            if not is_private and check_nonprivate_paused_only and not is_paused:
-                continue
 
-            ratio_limit = private_ratio if is_private else nonprivate_ratio
-            time_limit = private_limit_secs if is_private else nonprivate_limit_secs
+            ratio_lim = private_ratio if is_priv else nonpriv_ratio
+            time_lim  = sec_priv        if is_priv else sec_nonpriv
 
-            if t.ratio >= ratio_limit or t.seeding_time >= time_limit:
+            if t.ratio    >= ratio_lim or \
+               t.seeding_time >= time_lim:
                 to_delete.append(t)
-                days_seeded = t.seeding_time / 86400
                 logger.info(
-                    f"Queuing for delete: {t.name[:60]} "
-                    f"(private={is_private}, state={state}, "
-                    f"ratio={t.ratio:.2f}/{ratio_limit:.2f}, "
-                    f"seeded={days_seeded:.1f}/{time_limit/86400:.1f} days)"
+                    f"→ delete: {t.name[:60]!r} "
+                    f"(priv={is_priv}, state={state}, "
+                    f"ratio={t.ratio:.2f}/{ratio_lim:.2f}, "
+                    f"time={t.seeding_time/86400:.1f}/{time_lim/86400:.1f}d)"
                 )
-            elif is_paused:
-                not_ready.append((t.name, t.ratio, t.seeding_time / 86400, is_private))
-
+            elif paused:
+                not_ready.append(t)
         except Exception:
-            logger.exception(f"Error evaluating torrent {t.name}")
+            logger.exception(f"Error evaluating {t.name}")
 
     if not_ready:
-        logger.info(f"{len(not_ready)} paused torrents not yet meeting criteria")
+        logger.info(f"{len(not_ready)} paused torrents not yet at their limits")
 
+    # ─── do delete ──────────────────────────────────────────────────────────────
     if to_delete:
-        private_del = sum(1 for t in to_delete if getattr(t, 'is_private', False))
-        nonpriv_del = len(to_delete) - private_del
+        priv_d = sum(detect_private_flag(t) for t in to_delete)
+        np_d   = len(to_delete) - priv_d
 
         if dry_run:
-            logger.info(f"DRY RUN: Would delete {len(to_delete)} torrents "
-                        f"({private_del} private, {nonpriv_del} non‑private)")
+            logger.info(f"DRY RUN: would delete {len(to_delete)} ({priv_d} priv, {np_d} non‑priv)")
         else:
             hashes = [t.hash for t in to_delete]
             try:
-                qbt_client.torrents.delete(hashes=hashes, delete_files=delete_files)
-                logger.info(f"Deleted {len(to_delete)} torrents "
-                            f"({private_del} private, {nonpriv_del} non‑private)"
-                            + (" and their files" if delete_files else ""))
+                qbt.torrents.delete(hashes=hashes, delete_files=delete_files)
+                logger.info(f"Deleted {len(to_delete)} torrents ({priv_d} priv, {np_d} non‑priv)"
+                            + (" +files" if delete_files else ""))
             except Exception:
                 logger.exception("Failed to delete torrents")
     else:
-        logger.info("No torrents met deletion criteria")
+        logger.info("No torrents matched deletion criteria")
 
-    # Logout
+    # ─── logout ────────────────────────────────────────────────────────────────
     try:
-        qbt_client.auth_log_out()
-        logger.info("Logged out from qBittorrent")
+        qbt.auth_log_out()
     except Exception:
         pass
 
 
 def main():
     interval_h = int(os.environ.get("SCHEDULE_HOURS", "24"))
-    run_once = os.environ.get("RUN_ONCE", "False").lower() == "true"
+    run_once   = os.environ.get("RUN_ONCE", "False").lower() == "true"
 
-    logger.info("qBittorrent Cleanup Container started")
-    logger.info(f"Schedule: {'Run once' if run_once else f'Every {interval_h} hours'}")
-
+    logger.info("### qBittorrent cleanup starting")
     if run_once:
         run_cleanup()
     else:
-        interval_s = interval_h * 3600
+        logger.info(f"### looping every {interval_h}h")
         while True:
             try:
                 run_cleanup()
-                logger.info(f"Next run in {interval_h} hours. Sleeping...")
-                time.sleep(interval_s)
+                logger.info(f"Sleeping {interval_h}h …")
+                time.sleep(interval_h * 3600)
             except KeyboardInterrupt:
-                logger.info("Shutdown signal received, exiting")
+                logger.info("Interrupted; exiting")
                 sys.exit(0)
             except Exception:
-                logger.exception("Unexpected error in main loop, retrying in 60s")
+                logger.exception("Uncaught error in main loop; retrying in 60s")
                 time.sleep(60)
 
 
