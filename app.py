@@ -1,43 +1,50 @@
 #!/usr/bin/env python3
 import os
-import sys
 from qbittorrentapi import Client, LoginFailed, APIConnectionError
 
-# ─── pick up your existing env vars ─────────────────────────────────────────────
-host     = os.environ.get("QB_HOST",     "localhost")
-port     = os.environ.get("QB_PORT",     "8080")
-username = os.environ.get("QB_USERNAME", "")
-password = os.environ.get("QB_PASSWORD", "")
+# ─── CONFIGURE via ENV ─────────────────────────────────────────────────────────
+HOST     = os.environ.get("QB_HOST",     "localhost")
+PORT     = os.environ.get("QB_PORT",     "8080")
+USERNAME = os.environ.get("QB_USERNAME", "admin")
+PASSWORD = os.environ.get("QB_PASSWORD", "adminadmin")
 
-if not username or not password:
-    print("❌ Please set QB_USERNAME and QB_PASSWORD")
-    sys.exit(1)
-
-# ─── connect ────────────────────────────────────────────────────────────────────
-client = Client(
-    host=f"{host}:{port}",
-    username=username,
-    password=password,
-    VERIFY_WEBUI_CERTIFICATE=False,
-)
+# ─── CONNECT ───────────────────────────────────────────────────────────────────
 try:
-    client.auth_log_in()
-except (LoginFailed, APIConnectionError) as e:
-    print("❌ Failed to log in:", e)
-    sys.exit(1)
+    qbt = Client(
+        host=f"{HOST}:{PORT}",
+        username=USERNAME,
+        password=PASSWORD,
+        VERIFY_WEBUI_CERTIFICATE=False,
+    )
+    qbt.auth_log_in()
+except LoginFailed:
+    print("⚠️ Login failed – check your credentials")
+    exit(1)
+except APIConnectionError:
+    print("⚠️ Cannot reach qBittorrent Web UI")
+    exit(1)
 
-# ─── fetch public vs private ────────────────────────────────────────────────────
-public_torrents  = client.torrents.info(private=False)[:3]
-private_torrents = client.torrents.info(private=True)[:3]
+# ─── FETCH & SPLIT ──────────────────────────────────────────────────────────────
+all_torrents = qbt.torrents.info()
+public  = []
+private = []
 
-# ─── print them ─────────────────────────────────────────────────────────────────
-print(f"First 3 public torrents  ({len(public_torrents)} shown):")
-for t in public_torrents:
+for t in all_torrents:
+    # call the “generic properties” endpoint to get isPrivate
+    props = qbt.torrents.properties(t.hash)
+    if props.get("isPrivate", False):
+        private.append(t)
+    else:
+        public.append(t)
+
+# ─── PRINT FIRST 3 OF EACH ─────────────────────────────────────────────────────
+print("\nFirst 3 public torrents  ({} total):".format(len(public)))
+for t in public[:3]:
     print(f" • {t.name}  [{t.hash}]")
 
-print(f"\nFirst 3 private torrents ({len(private_torrents)} shown):")
-for t in private_torrents:
+print("\nFirst 3 private torrents ({} total):".format(len(private)))
+for t in private[:3]:
     print(f" • {t.name}  [{t.hash}]")
 
-# ─── clean up ───────────────────────────────────────────────────────────────────
-client.auth_log_out()
+# ─── CLEANUP ───────────────────────────────────────────────────────────────────
+qbt.auth_log_out()

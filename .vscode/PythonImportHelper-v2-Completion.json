@@ -9,15 +9,6 @@
         "documentation": {}
     },
     {
-        "label": "sys",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
-        "documentation": {}
-    },
-    {
         "label": "Client",
         "importPath": "qbittorrentapi",
         "description": "qbittorrentapi",
@@ -42,38 +33,38 @@
         "documentation": {}
     },
     {
-        "label": "username",
+        "label": "USERNAME",
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "username = os.environ.get(\"QB_USERNAME\", \"\")\npassword = os.environ.get(\"QB_PASSWORD\", \"\")\nif not username or not password:\n    print(\"❌ Please set QB_USERNAME and QB_PASSWORD\")\n    sys.exit(1)\n# ─── connect ────────────────────────────────────────────────────────────────────\nclient = Client(\n    host=f\"{host}:{port}\",\n    username=username,\n    password=password,",
+        "peekOfCode": "USERNAME = os.environ.get(\"QB_USERNAME\", \"admin\")\nPASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── CONNECT ───────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )",
         "detail": "app",
         "documentation": {}
     },
     {
-        "label": "password",
+        "label": "PASSWORD",
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "password = os.environ.get(\"QB_PASSWORD\", \"\")\nif not username or not password:\n    print(\"❌ Please set QB_USERNAME and QB_PASSWORD\")\n    sys.exit(1)\n# ─── connect ────────────────────────────────────────────────────────────────────\nclient = Client(\n    host=f\"{host}:{port}\",\n    username=username,\n    password=password,\n    VERIFY_WEBUI_CERTIFICATE=False,",
+        "peekOfCode": "PASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── CONNECT ───────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )\n    qbt.auth_log_in()",
         "detail": "app",
         "documentation": {}
     },
     {
-        "label": "client",
+        "label": "all_torrents",
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "client = Client(\n    host=f\"{host}:{port}\",\n    username=username,\n    password=password,\n    VERIFY_WEBUI_CERTIFICATE=False,\n)\ntry:\n    client.auth_log_in()\nexcept (LoginFailed, APIConnectionError) as e:\n    print(\"❌ Failed to log in:\", e)",
+        "peekOfCode": "all_torrents = qbt.torrents.info()\npublic  = []\nprivate = []\nfor t in all_torrents:\n    # call the “generic properties” endpoint to get isPrivate\n    props = qbt.torrents.properties(t.hash)\n    if props.get(\"isPrivate\", False):\n        private.append(t)\n    else:\n        public.append(t)",
         "detail": "app",
         "documentation": {}
     },
     {
-        "label": "private_torrents",
+        "label": "private",
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "private_torrents = client.torrents.info(private=True)[:3]\n# ─── print them ─────────────────────────────────────────────────────────────────\nprint(f\"First 3 public torrents  ({len(public_torrents)} shown):\")\nfor t in public_torrents:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nFirst 3 private torrents ({len(private_torrents)} shown):\")\nfor t in private_torrents:\n    print(f\" • {t.name}  [{t.hash}]\")\n# ─── clean up ───────────────────────────────────────────────────────────────────\nclient.auth_log_out()",
+        "peekOfCode": "private = []\nfor t in all_torrents:\n    # call the “generic properties” endpoint to get isPrivate\n    props = qbt.torrents.properties(t.hash)\n    if props.get(\"isPrivate\", False):\n        private.append(t)\n    else:\n        public.append(t)\n# ─── PRINT FIRST 3 OF EACH ─────────────────────────────────────────────────────\nprint(\"\\nFirst 3 public torrents  ({} total):\".format(len(public)))",
         "detail": "app",
         "documentation": {}
     }
