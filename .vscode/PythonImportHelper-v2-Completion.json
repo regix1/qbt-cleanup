@@ -33,11 +33,20 @@
         "documentation": {}
     },
     {
+        "label": "is_private",
+        "kind": 2,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "def is_private(t):\n    try:\n        # one HTTP call per torrent, so this is slower!\n        trackers = qbt.torrents.trackers(hash=t.hash)\n        return any(\n            (tr.status == 0 and tr.msg and \"private\" in tr.msg.lower())\n            for tr in trackers\n        )\n    except Exception:\n        return False",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
         "label": "USERNAME",
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "USERNAME = os.environ.get(\"QB_USERNAME\", \"admin\")\nPASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── CONNECT ─────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )",
+        "peekOfCode": "USERNAME = os.environ.get(\"QB_USERNAME\", \"admin\")\nPASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── connect ──────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )",
         "detail": "app",
         "documentation": {}
     },
@@ -46,7 +55,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "PASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── CONNECT ─────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )\n    qbt.auth_log_in()",
+        "peekOfCode": "PASSWORD = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n# ─── connect ──────────────────────────────────────────────────────────────────\ntry:\n    qbt = Client(\n        host=f\"{HOST}:{PORT}\",\n        username=USERNAME,\n        password=PASSWORD,\n        VERIFY_WEBUI_CERTIFICATE=False,\n    )\n    qbt.auth_log_in()",
         "detail": "app",
         "documentation": {}
     },
@@ -55,16 +64,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "all_torrents = qbt.torrents.info()\npublic  = [t for t in all_torrents if getattr(t, \"availability\", 0) >= 0]\nprivate = [t for t in all_torrents if getattr(t, \"availability\", 0) <  0]\n# ─── PRINT FIRST 3 OF EACH ───────────────────────────────────────────────────\nprint(f\"\\nFirst 3 public  torrents  ({len(public)} total):\")\nfor t in public[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nFirst 3 private torrents  ({len(private)} total):\")\nfor t in private[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
-        "label": "private",
-        "kind": 5,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "private = [t for t in all_torrents if getattr(t, \"availability\", 0) <  0]\n# ─── PRINT FIRST 3 OF EACH ───────────────────────────────────────────────────\nprint(f\"\\nFirst 3 public  torrents  ({len(public)} total):\")\nfor t in public[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\nprint(f\"\\nFirst 3 private torrents  ({len(private)} total):\")\nfor t in private[:3]:\n    print(f\" • {t.name}  [{t.hash}]\")\nqbt.auth_log_out()",
+        "peekOfCode": "all_torrents = qbt.torrents.info()\npublic, private = [], []\nfor t in all_torrents:\n    if is_private(t):\n        private.append(t)\n    else:\n        public.append(t)\n# ─── print first 3 of each ───────────────────────────────────────────────────\nprint(f\"\\nFirst 3 public  torrents  ({len(public)} total):\")\nfor t in public[:3]:",
         "detail": "app",
         "documentation": {}
     }
