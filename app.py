@@ -101,10 +101,13 @@ class FileFlowsClient:
     def get_processing_files(self) -> List[Dict[str, Any]]:
         """Get list of files currently being processed by FileFlows."""
         try:
-            # Get files with processing status (status 1 = processing, 0 = unprocessed)
+            # Get files with processing status
+            # Status 0 = unprocessed (queued)
+            # Status 1 = processing 
+            # Status 2 = currently processing (active)
             response = requests.get(
                 f"{self.base_url}/library-file", 
-                params={"status": "0,1"}, 
+                params={"status": "0,1,2"}, 
                 timeout=self.timeout
             )
             if response.status_code == 200:
@@ -140,10 +143,21 @@ class FileFlowsClient:
         # Create set of processing file paths for faster lookup
         processing_paths = set()
         for file_info in processing_files:
-            if 'RelativePath' in file_info:
-                processing_paths.add(file_info['RelativePath'])
-            if 'OutputPath' in file_info:
-                processing_paths.add(file_info['OutputPath'])
+            # Check if file is actually being processed (not completed)
+            processing_ended = file_info.get('ProcessingEnded', '')
+            is_processing = (processing_ended == "1970-01-01T00:00:00Z" or 
+                           processing_ended == "" or 
+                           file_info.get('Status') in [0, 1, 2])
+            
+            if is_processing:
+                if 'RelativePath' in file_info:
+                    processing_paths.add(file_info['RelativePath'])
+                if 'Name' in file_info:
+                    processing_paths.add(file_info['Name'])
+                if 'OutputPath' in file_info and file_info['OutputPath']:
+                    processing_paths.add(file_info['OutputPath'])
+        
+        logger.debug(f"FileFlows processing {len(processing_paths)} files for torrent check: {torrent_path}")
         
         # Check if any torrent files are being processed
         torrent_base_path = Path(torrent_path)
@@ -155,6 +169,14 @@ class FileFlowsClient:
                 logger.info(f"FileFlows is processing: {file_path}")
                 self._processing_cache[cache_key] = True
                 return True
+            
+            # Check if torrent name/directory matches any processing path
+            torrent_name = Path(file_path).parts[0] if '/' in file_path else Path(file_path).stem
+            for proc_path in processing_paths:
+                if torrent_name in proc_path:
+                    logger.info(f"FileFlows is processing torrent content: {torrent_name}")
+                    self._processing_cache[cache_key] = True
+                    return True
             
             # For .rar files, check if extracted files might be processing
             if file_path.lower().endswith('.rar'):
@@ -186,39 +208,42 @@ class QbtCleanup:
     
     def connect(self) -> bool:
         """Connect to qBittorrent client and optionally FileFlows."""
-        try:
-            self.client = qbittorrentapi.Client(
-                host=self.config.qb_host,
-                port=self.config.qb_port,
-                username=self.config.qb_username,
-                password=self.config.qb_password,
-                VERIFY_WEBUI_CERTIFICATE=False,
-                REQUESTS_ARGS=dict(timeout=DEFAULT_TIMEOUT),
-            )
-            self.client.auth_log_in()
-            ver = self.client.app.version
-            api_v = self.client.app.web_api_version
-            logger.info(f"Connected to qBittorrent {ver} (API: {api_v})")
-            
-            # Initialize FileFlows if enabled
-            if self.config.fileflows_enabled:
-                self.fileflows = FileFlowsClient(self.config)
-                if self.fileflows.test_connection():
-                    logger.info("FileFlows integration enabled and connected")
+        for attempt in range(3):
+            try:
+                self.client = qbittorrentapi.Client(
+                    host=self.config.qb_host,
+                    port=self.config.qb_port,
+                    username=self.config.qb_username,
+                    password=self.config.qb_password,
+                    VERIFY_WEBUI_CERTIFICATE=False,
+                    REQUESTS_ARGS=dict(timeout=DEFAULT_TIMEOUT),
+                )
+                self.client.auth_log_in()
+                ver = self.client.app.version
+                api_v = self.client.app.web_api_version
+                logger.info(f"Connected to qBittorrent {ver} (API: {api_v})")
+                
+                # Initialize FileFlows if enabled
+                if self.config.fileflows_enabled:
+                    self.fileflows = FileFlowsClient(self.config)
+                    if self.fileflows.test_connection():
+                        logger.info("FileFlows integration enabled and connected")
+                    else:
+                        logger.warning("FileFlows integration enabled but connection failed")
+                        self.fileflows = None
+                
+                return True
+            except (qbittorrentapi.LoginFailed, qbittorrentapi.APIConnectionError) as e:
+                if attempt == 2:  # Last attempt
+                    logger.error(f"Connection failed after 3 attempts: {e}")
+                    return False
                 else:
-                    logger.warning("FileFlows integration enabled but connection failed")
-                    self.fileflows = None
-            
-            return True
-        except qbittorrentapi.LoginFailed as e:
-            logger.error(f"Login failed: {e}")
-            return False
-        except qbittorrentapi.APIConnectionError as e:
-            logger.error(f"Connection failed: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Unexpected error during connection: {e}")
-            return False
+                    logger.warning(f"Connection attempt {attempt + 1} failed, retrying in 5s: {e}")
+                    time.sleep(5)
+            except Exception as e:
+                logger.error(f"Unexpected error during connection: {e}")
+                return False
+        return False
     
     def disconnect(self) -> None:
         """Disconnect from qBittorrent client."""
