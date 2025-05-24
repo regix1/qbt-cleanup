@@ -4,10 +4,18 @@ import os
 import sys
 import time
 from datetime import datetime
+from typing import List, Tuple, Dict, Any, Optional
+import requests
+from pathlib import Path
 
 import qbittorrentapi
 
-# ─── Logging setup ─────────────────────────────────────────────────────────────
+# ─── Constants ─────────────────────────────────────────────────────────────
+SECONDS_PER_DAY = 86400
+DEFAULT_TIMEOUT = 30
+MAX_SEARCH_ATTEMPTS = 3
+
+# ─── Logging setup ─────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -16,192 +24,461 @@ logging.basicConfig(
 logger = logging.getLogger("qbt-cleanup")
 
 
-def run_cleanup():
-    # ─── load env ───────────────────────────────────────────────────────────────
-    qb_host = os.environ.get("QB_HOST", "localhost")
-    qb_port = int(os.environ.get("QB_PORT", "8080"))
-    qb_username = os.environ.get("QB_USERNAME", "admin")
-    qb_password = os.environ.get("QB_PASSWORD", "adminadmin")
-
-    # Fallback cleanup settings
-    fallback_ratio = float(os.environ.get("FALLBACK_RATIO", "1.0"))
-    fallback_days = float(os.environ.get("FALLBACK_DAYS", "7"))
-
-    # Private vs non‑private settings
-    private_ratio   = float(os.environ.get("PRIVATE_RATIO", str(fallback_ratio)))
-    private_days    = float(os.environ.get("PRIVATE_DAYS",  str(fallback_days)))
-    nonprivate_ratio= float(os.environ.get("NONPRIVATE_RATIO", str(fallback_ratio)))
-    nonprivate_days = float(os.environ.get("NONPRIVATE_DAYS", str(fallback_days)))
-
-    # Overrides for using qB limits
-    ignore_qbt_ratio_private    = os.environ.get("IGNORE_QBT_RATIO_PRIVATE", "False").lower() == "true"
-    ignore_qbt_ratio_nonprivate = os.environ.get("IGNORE_QBT_RATIO_NONPRIVATE", "False").lower() == "true"
-    ignore_qbt_time_private     = os.environ.get("IGNORE_QBT_TIME_PRIVATE", "False").lower() == "true"
-    ignore_qbt_time_nonprivate  = os.environ.get("IGNORE_QBT_TIME_NONPRIVATE", "False").lower() == "true"
-
-    delete_files = os.environ.get("DELETE_FILES", "True").lower() == "true"
-    dry_run      = os.environ.get("DRY_RUN", "False").lower() == "true"
-
-    # paused-only flags
-    check_paused_only          = os.environ.get("CHECK_PAUSED_ONLY", "False").lower() == "true"
-    check_private_paused_only  = os.environ.get("CHECK_PRIVATE_PAUSED_ONLY", str(check_paused_only)).lower() == "true"
-    check_nonprivate_paused_only = os.environ.get("CHECK_NONPRIVATE_PAUSED_ONLY", str(check_paused_only)).lower() == "true"
-
-    # ─── connect ────────────────────────────────────────────────────────────────
-    try:
-        qbt_client = qbittorrentapi.Client(
-            host=qb_host,
-            port=qb_port,
-            username=qb_username,
-            password=qb_password,
-            VERIFY_WEBUI_CERTIFICATE=False,
-            REQUESTS_ARGS=dict(timeout=30),
-        )
-        qbt_client.auth_log_in()
-        ver = qbt_client.app.version
-        api_v = qbt_client.app.web_api_version
-        logger.info(f"Connected to qBittorrent {ver} (API: {api_v})")
-    except Exception as e:
-        logger.error(f"Failed to connect/login: {e}")
-        return
-
-    # ─── Helper function to detect private torrents by tracker messages ────────────
-    def is_private(t):
-        try:
-            trackers = qbt_client.torrents.trackers(hash=t.hash)
-            for tr in trackers:
-                if tr.status == 0 and tr.msg and "private" in tr.msg.lower():
-                    return True
-        except Exception as e:
-            logger.warning(f"Could not detect privacy for {t.name}: {e}")
-        return False
-
-    try:
-        # ─── pull in qB limits ──────────────────────────────────────────────────
-        prefs = qbt_client.app.preferences
-
-        if prefs.get("max_ratio_enabled", False):
-            global_ratio = prefs.get("max_ratio", fallback_ratio)
-            if not ignore_qbt_ratio_private and os.environ.get("PRIVATE_RATIO") is None:
-                private_ratio = global_ratio
-            if not ignore_qbt_ratio_nonprivate and os.environ.get("NONPRIVATE_RATIO") is None:
-                nonprivate_ratio = global_ratio
-            logger.info(f"Using qBittorrent ratio limits:")
-            logger.info(f"  → Private torrents:    {private_ratio}")
-            logger.info(f"  → Non-private torrents: {nonprivate_ratio}")
-        else:
-            logger.info(f"No qBittorrent ratio limit, using fallback value: {fallback_ratio}")
-
-        if prefs.get("max_seeding_time_enabled", False):
-            gl_min = prefs.get("max_seeding_time", fallback_days * 24 * 60)
-            gl_days = gl_min / 60 / 24
-            if not ignore_qbt_time_private and os.environ.get("PRIVATE_DAYS") is None:
-                private_days = gl_days
-            if not ignore_qbt_time_nonprivate and os.environ.get("NONPRIVATE_DAYS") is None:
-                nonprivate_days = gl_days
-            logger.info(f"Using qBittorrent time limits:")
-            logger.info(f"  → Private torrents:    {private_days:.1f} days")
-            logger.info(f"  → Non-private torrents: {nonprivate_days:.1f} days")
-        else:
-            logger.info(f"No qBittorrent time limit, using fallback value: {fallback_days:.1f} days")
-
-        # Convert days to seconds
-        sec_priv    = private_days * 86400
-        sec_nonpriv = nonprivate_days * 86400
-
-        # ─── fetch torrents ─────────────────────────────────────────────────────
-        torrents = qbt_client.torrents.info()
-        logger.info(f"Fetched {len(torrents)} torrents")
-
-        # Count private/non-private for logging
-        private_count = 0
-        for t in torrents:
-            if is_private(t):
-                private_count += 1
-        nonprivate_count = len(torrents) - private_count
-        logger.info(f"Torrent breakdown: {private_count} private, {nonprivate_count} non‑private")
-
-        # Classify and collect
-        torrents_to_delete = []
-        paused_not_ready   = []
-        for t in torrents:
-            is_priv = is_private(t)
-            paused  = t.state in ("pausedUP", "pausedDL")
-
-            # skip if requiring paused-only and not paused
-            if (is_priv and check_private_paused_only and not paused) or \
-               (not is_priv and check_nonprivate_paused_only and not paused):
-                continue
-
-            ratio_limit = private_ratio   if is_priv else nonprivate_ratio
-            time_limit  = sec_priv        if is_priv else sec_nonpriv
-
-            if t.ratio >= ratio_limit or t.seeding_time >= time_limit:
-                torrents_to_delete.append((t, is_priv, ratio_limit, time_limit))
-                logger.info(f"→ delete: {t.name[:60]!r} (priv={is_priv}, state={t.state}, ratio={t.ratio:.2f}/{ratio_limit:.2f}, time={t.seeding_time/86400:.1f}/{time_limit/86400:.1f}d)")
-            elif paused:
-                paused_not_ready.append((t, is_priv, ratio_limit, time_limit))
-
-        # Log paused-but-not-ready
-        if paused_not_ready:
-            logger.info(f"{len(paused_not_ready)} paused torrents not yet at their limits")
+class QbtConfig:
+    """Configuration class for qBittorrent cleanup settings."""
+    
+    def __init__(self):
+        # Connection settings
+        self.qb_host = os.environ.get("QB_HOST", "localhost")
+        self.qb_port = int(os.environ.get("QB_PORT", "8080"))
+        self.qb_username = os.environ.get("QB_USERNAME", "admin")
+        self.qb_password = os.environ.get("QB_PASSWORD", "adminadmin")
         
-        # ─── delete ────────────────────────────────────────────────────────────────
-        if torrents_to_delete:
-            priv_d = sum(1 for t, p, *_ in torrents_to_delete if p)
-            np_d   = len(torrents_to_delete) - priv_d
-            hashes = [t.hash for t, *_ in torrents_to_delete]
+        # Fallback cleanup settings
+        self.fallback_ratio = float(os.environ.get("FALLBACK_RATIO", "1.0"))
+        self.fallback_days = float(os.environ.get("FALLBACK_DAYS", "7"))
+        
+        # Private vs non‑private settings
+        self.private_ratio = float(os.environ.get("PRIVATE_RATIO", str(self.fallback_ratio)))
+        self.private_days = float(os.environ.get("PRIVATE_DAYS", str(self.fallback_days)))
+        self.nonprivate_ratio = float(os.environ.get("NONPRIVATE_RATIO", str(self.fallback_ratio)))
+        self.nonprivate_days = float(os.environ.get("NONPRIVATE_DAYS", str(self.fallback_days)))
+        
+        # Overrides for using qB limits
+        self.ignore_qbt_ratio_private = self._get_bool("IGNORE_QBT_RATIO_PRIVATE", False)
+        self.ignore_qbt_ratio_nonprivate = self._get_bool("IGNORE_QBT_RATIO_NONPRIVATE", False)
+        self.ignore_qbt_time_private = self._get_bool("IGNORE_QBT_TIME_PRIVATE", False)
+        self.ignore_qbt_time_nonprivate = self._get_bool("IGNORE_QBT_TIME_NONPRIVATE", False)
+        
+        # Operation settings
+        self.delete_files = self._get_bool("DELETE_FILES", True)
+        self.dry_run = self._get_bool("DRY_RUN", False)
+        
+        # Paused-only flags
+        self.check_paused_only = self._get_bool("CHECK_PAUSED_ONLY", False)
+        self.check_private_paused_only = self._get_bool("CHECK_PRIVATE_PAUSED_ONLY", self.check_paused_only)
+        self.check_nonprivate_paused_only = self._get_bool("CHECK_NONPRIVATE_PAUSED_ONLY", self.check_paused_only)
+        
+        # Schedule settings
+        self.interval_hours = int(os.environ.get("SCHEDULE_HOURS", "24"))
+        self.run_once = self._get_bool("RUN_ONCE", False)
+        
+        # FileFlows integration settings
+        self.fileflows_enabled = self._get_bool("FILEFLOWS_ENABLED", False)
+        self.fileflows_host = os.environ.get("FILEFLOWS_HOST", "localhost")
+        self.fileflows_port = int(os.environ.get("FILEFLOWS_PORT", "19200"))
+        self.fileflows_timeout = int(os.environ.get("FILEFLOWS_TIMEOUT", "10"))
+    
+    @staticmethod
+    def _get_bool(env_var: str, default: bool) -> bool:
+        """Parse boolean environment variable."""
+        return os.environ.get(env_var, str(default)).lower() == "true"
 
-            if dry_run:
-                logger.info(f"DRY RUN: would delete {len(hashes)} ({priv_d} priv, {np_d} non‑priv)")
-            else:
-                try:
-                    # Parameter name differs between API versions
-                    try:
-                        qbt_client.torrents.delete(
-                            delete_files=delete_files,
-                            torrent_hashes=hashes
-                        )
-                    except Exception:
-                        # Fall back to older API parameter name
-                        qbt_client.torrents.delete(
-                            delete_files=delete_files,
-                            hashes=hashes
-                        )
-                    logger.info(
-                        f"Deleted {len(hashes)} torrents ({priv_d} priv, {np_d} non‑priv)"
-                        + (" +files" if delete_files else "")
-                    )
-                except Exception as e:
-                    logger.error(f"Failed to delete torrents: {e}")
-        else:
-            logger.info("No torrents matched deletion criteria")
 
-    except Exception as e:
-        logger.error(f"Error during cleanup: {e}")
-    finally:
+class FileFlowsClient:
+    """Client for FileFlows API integration."""
+    
+    def __init__(self, config: QbtConfig):
+        self.config = config
+        self.base_url = f"http://{config.fileflows_host}:{config.fileflows_port}/api"
+        self.timeout = config.fileflows_timeout
+        self._processing_cache: Dict[str, bool] = {}
+    
+    def is_enabled(self) -> bool:
+        """Check if FileFlows integration is enabled."""
+        return self.config.fileflows_enabled
+    
+    def test_connection(self) -> bool:
+        """Test connection to FileFlows API."""
         try:
-            qbt_client.auth_log_out()
-            logger.info("Logged out from qBittorrent")
-        except:
-            pass
+            response = requests.get(f"{self.base_url}/status", timeout=self.timeout)
+            return response.status_code == 200
+        except Exception as e:
+            logger.warning(f"FileFlows connection test failed: {e}")
+            return False
+    
+    def get_processing_files(self) -> List[Dict[str, Any]]:
+        """Get list of files currently being processed by FileFlows."""
+        try:
+            # Get files with processing status (status 1 = processing, 0 = unprocessed)
+            response = requests.get(
+                f"{self.base_url}/library-file", 
+                params={"status": "0,1"}, 
+                timeout=self.timeout
+            )
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.warning(f"FileFlows API returned status {response.status_code}")
+                return []
+        except Exception as e:
+            logger.warning(f"Failed to get FileFlows processing files: {e}")
+            return []
+    
+    def is_torrent_being_processed(self, torrent_path: str, torrent_files: List[str]) -> bool:
+        """
+        Check if any files from this torrent are currently being processed by FileFlows.
+        
+        Args:
+            torrent_path: The save path of the torrent
+            torrent_files: List of file paths within the torrent
+        """
+        if not self.is_enabled():
+            return False
+        
+        # Use cache key based on torrent path
+        cache_key = torrent_path
+        if cache_key in self._processing_cache:
+            return self._processing_cache[cache_key]
+        
+        processing_files = self.get_processing_files()
+        if not processing_files:
+            self._processing_cache[cache_key] = False
+            return False
+        
+        # Create set of processing file paths for faster lookup
+        processing_paths = set()
+        for file_info in processing_files:
+            if 'RelativePath' in file_info:
+                processing_paths.add(file_info['RelativePath'])
+            if 'OutputPath' in file_info:
+                processing_paths.add(file_info['OutputPath'])
+        
+        # Check if any torrent files are being processed
+        torrent_base_path = Path(torrent_path)
+        for file_path in torrent_files:
+            full_path = str(torrent_base_path / file_path)
+            
+            # Check direct path match
+            if full_path in processing_paths:
+                logger.info(f"FileFlows is processing: {file_path}")
+                self._processing_cache[cache_key] = True
+                return True
+            
+            # For .rar files, check if extracted files might be processing
+            if file_path.lower().endswith('.rar'):
+                # Check if any processing file starts with the .rar file's directory
+                rar_dir = str(Path(full_path).parent)
+                for proc_path in processing_paths:
+                    if proc_path.startswith(rar_dir):
+                        logger.info(f"FileFlows is processing extracted content from: {file_path}")
+                        self._processing_cache[cache_key] = True
+                        return True
+        
+        self._processing_cache[cache_key] = False
+        return False
+    
+    def clear_cache(self):
+        """Clear the processing cache."""
+        self._processing_cache.clear()
+
+
+class QbtCleanup:
+    """Main cleanup class for qBittorrent torrents."""
+    
+    def __init__(self, config: QbtConfig):
+        self.config = config
+        self.client: Optional[qbittorrentapi.Client] = None
+        self.fileflows: Optional[FileFlowsClient] = None
+        self._private_cache: Dict[str, bool] = {}
+        self._privacy_method_logged = False
+    
+    def connect(self) -> bool:
+        """Connect to qBittorrent client and optionally FileFlows."""
+        try:
+            self.client = qbittorrentapi.Client(
+                host=self.config.qb_host,
+                port=self.config.qb_port,
+                username=self.config.qb_username,
+                password=self.config.qb_password,
+                VERIFY_WEBUI_CERTIFICATE=False,
+                REQUESTS_ARGS=dict(timeout=DEFAULT_TIMEOUT),
+            )
+            self.client.auth_log_in()
+            ver = self.client.app.version
+            api_v = self.client.app.web_api_version
+            logger.info(f"Connected to qBittorrent {ver} (API: {api_v})")
+            
+            # Initialize FileFlows if enabled
+            if self.config.fileflows_enabled:
+                self.fileflows = FileFlowsClient(self.config)
+                if self.fileflows.test_connection():
+                    logger.info("FileFlows integration enabled and connected")
+                else:
+                    logger.warning("FileFlows integration enabled but connection failed")
+                    self.fileflows = None
+            
+            return True
+        except qbittorrentapi.LoginFailed as e:
+            logger.error(f"Login failed: {e}")
+            return False
+        except qbittorrentapi.APIConnectionError as e:
+            logger.error(f"Connection failed: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"Unexpected error during connection: {e}")
+            return False
+    
+    def disconnect(self) -> None:
+        """Disconnect from qBittorrent client."""
+        if self.client:
+            try:
+                self.client.auth_log_out()
+                logger.info("Logged out from qBittorrent")
+            except Exception:
+                pass  # Ignore logout errors
+    
+    def is_private(self, torrent: Any) -> bool:
+        """
+        Check if torrent is private, with caching.
+        Uses isPrivate field for qBittorrent 5.0.0+ or tracker message checking for older versions.
+        """
+        torrent_hash = torrent.hash
+        if torrent_hash in self._private_cache:
+            return self._private_cache[torrent_hash]
+        
+        is_priv = False
+        
+        # Try newer API first (qBittorrent 5.0.0+)
+        if hasattr(torrent, 'isPrivate') and torrent.isPrivate is not None:
+            if not self._privacy_method_logged:
+                logger.info("Using qBittorrent 5.0.0+ isPrivate field for privacy detection")
+                self._privacy_method_logged = True
+            is_priv = torrent.isPrivate
+        else:
+            # Fall back to tracker message checking for older versions
+            if not self._privacy_method_logged:
+                logger.info("Using tracker message method for privacy detection (qBittorrent < 5.0.0)")
+                self._privacy_method_logged = True
+            for attempt in range(MAX_SEARCH_ATTEMPTS):
+                try:
+                    trackers = self.client.torrents.trackers(hash=torrent_hash)
+                    for tracker in trackers:
+                        if tracker.status == 0 and tracker.msg and "private" in tracker.msg.lower():
+                            is_priv = True
+                            break
+                    break  # Success, exit retry loop
+                except Exception as e:
+                    if attempt == MAX_SEARCH_ATTEMPTS - 1:
+                        logger.warning(f"Could not detect privacy for torrent {torrent_hash}: {e}")
+                    else:
+                        time.sleep(0.5)  # Brief delay before retry
+        
+        self._private_cache[torrent_hash] = is_priv
+        return is_priv
+    
+    def get_torrent_files(self, torrent_hash: str) -> List[str]:
+        """Get list of files in a torrent."""
+        try:
+            files = self.client.torrents.files(hash=torrent_hash)
+            return [f.name for f in files]
+        except Exception as e:
+            logger.warning(f"Could not get files for torrent {torrent_hash}: {e}")
+            return []
+    
+    def is_torrent_processing_in_fileflows(self, torrent: Any) -> bool:
+        """Check if torrent files are being processed by FileFlows."""
+        if not self.fileflows:
+            return False
+        
+        try:
+            torrent_files = self.get_torrent_files(torrent.hash)
+            return self.fileflows.is_torrent_being_processed(torrent.save_path, torrent_files)
+        except Exception as e:
+            logger.warning(f"Error checking FileFlows status for {torrent.name}: {e}")
+            return False
+    
+    def get_qbt_limits(self) -> Tuple[float, float, float, float]:
+        """Get ratio and time limits from qBittorrent preferences."""
+        try:
+            prefs = self.client.app.preferences
+        except Exception as e:
+            logger.error(f"Failed to get preferences: {e}")
+            return (self.config.private_ratio, self.config.private_days, 
+                   self.config.nonprivate_ratio, self.config.nonprivate_days)
+        
+        private_ratio = self.config.private_ratio
+        private_days = self.config.private_days
+        nonprivate_ratio = self.config.nonprivate_ratio
+        nonprivate_days = self.config.nonprivate_days
+        
+        # Handle ratio limits
+        if prefs.get("max_ratio_enabled", False):
+            global_ratio = prefs.get("max_ratio", self.config.fallback_ratio)
+            if not self.config.ignore_qbt_ratio_private and os.environ.get("PRIVATE_RATIO") is None:
+                private_ratio = global_ratio
+            if not self.config.ignore_qbt_ratio_nonprivate and os.environ.get("NONPRIVATE_RATIO") is None:
+                nonprivate_ratio = global_ratio
+            logger.info(f"Using qBittorrent ratio limits: Private={private_ratio}, Non-private={nonprivate_ratio}")
+        else:
+            logger.info(f"No qBittorrent ratio limit, using fallback: {self.config.fallback_ratio}")
+        
+        # Handle time limits
+        if prefs.get("max_seeding_time_enabled", False):
+            global_minutes = prefs.get("max_seeding_time", self.config.fallback_days * 24 * 60)
+            global_days = global_minutes / 60 / 24
+            if not self.config.ignore_qbt_time_private and os.environ.get("PRIVATE_DAYS") is None:
+                private_days = global_days
+            if not self.config.ignore_qbt_time_nonprivate and os.environ.get("NONPRIVATE_DAYS") is None:
+                nonprivate_days = global_days
+            logger.info(f"Using qBittorrent time limits: Private={private_days:.1f}d, Non-private={nonprivate_days:.1f}d")
+        else:
+            logger.info(f"No qBittorrent time limit, using fallback: {self.config.fallback_days:.1f}d")
+        
+        return private_ratio, private_days, nonprivate_ratio, nonprivate_days
+    
+    def classify_torrents(self, torrents: List[Any], private_ratio: float, private_days: float, 
+                         nonprivate_ratio: float, nonprivate_days: float) -> Tuple[List[Tuple], List[Tuple]]:
+        """Classify torrents for deletion and identify paused torrents not ready."""
+        sec_priv = private_days * SECONDS_PER_DAY
+        sec_nonpriv = nonprivate_days * SECONDS_PER_DAY
+        
+        torrents_to_delete = []
+        paused_not_ready = []
+        fileflows_processing = []
+        
+        # Clear FileFlows cache for fresh status
+        if self.fileflows:
+            self.fileflows.clear_cache()
+        
+        for torrent in torrents:
+            is_priv = self.is_private(torrent)
+            paused = torrent.state in ("pausedUP", "pausedDL")
+            
+            # Skip if requiring paused-only and not paused
+            if ((is_priv and self.config.check_private_paused_only and not paused) or 
+                (not is_priv and self.config.check_nonprivate_paused_only and not paused)):
+                continue
+            
+            ratio_limit = private_ratio if is_priv else nonprivate_ratio
+            time_limit = sec_priv if is_priv else sec_nonpriv
+            
+            # Check if torrent meets deletion criteria
+            meets_criteria = torrent.ratio >= ratio_limit or torrent.seeding_time >= time_limit
+            
+            if meets_criteria:
+                # Check if FileFlows is processing this torrent
+                if self.is_torrent_processing_in_fileflows(torrent):
+                    fileflows_processing.append((torrent, is_priv, ratio_limit, time_limit))
+                    logger.info(
+                        f"→ skipping (FileFlows processing): {torrent.name[:60]!r} "
+                        f"(priv={is_priv}, state={torrent.state}, "
+                        f"ratio={torrent.ratio:.2f}/{ratio_limit:.2f}, "
+                        f"time={torrent.seeding_time/SECONDS_PER_DAY:.1f}/{time_limit/SECONDS_PER_DAY:.1f}d)"
+                    )
+                else:
+                    torrents_to_delete.append((torrent, is_priv, ratio_limit, time_limit))
+                    logger.info(
+                        f"→ delete: {torrent.name[:60]!r} "
+                        f"(priv={is_priv}, state={torrent.state}, "
+                        f"ratio={torrent.ratio:.2f}/{ratio_limit:.2f}, "
+                        f"time={torrent.seeding_time/SECONDS_PER_DAY:.1f}/{time_limit/SECONDS_PER_DAY:.1f}d)"
+                    )
+            elif paused:
+                paused_not_ready.append((torrent, is_priv, ratio_limit, time_limit))
+        
+        # Log FileFlows processing status
+        if fileflows_processing:
+            logger.info(f"{len(fileflows_processing)} torrents skipped due to FileFlows processing")
+        
+        return torrents_to_delete, paused_not_ready
+    
+    def delete_torrents(self, torrents_to_delete: List[Tuple]) -> bool:
+        """Delete the specified torrents."""
+        if not torrents_to_delete:
+            logger.info("No torrents matched deletion criteria")
+            return True
+        
+        priv_count = sum(1 for _, is_priv, *_ in torrents_to_delete if is_priv)
+        nonpriv_count = len(torrents_to_delete) - priv_count
+        hashes = [torrent.hash for torrent, *_ in torrents_to_delete]
+        
+        if self.config.dry_run:
+            logger.info(f"DRY RUN: would delete {len(hashes)} ({priv_count} priv, {nonpriv_count} non‑priv)")
+            return True
+        
+        try:
+            # Try newer API parameter name first
+            try:
+                self.client.torrents.delete(
+                    delete_files=self.config.delete_files,
+                    torrent_hashes=hashes
+                )
+            except Exception:
+                # Fall back to older API parameter name
+                self.client.torrents.delete(
+                    delete_files=self.config.delete_files,
+                    hashes=hashes
+                )
+            
+            logger.info(
+                f"Deleted {len(hashes)} torrents ({priv_count} priv, {nonpriv_count} non‑priv)"
+                + (" +files" if self.config.delete_files else "")
+            )
+            return True
+        except Exception as e:
+            logger.error(f"Failed to delete torrents: {e}")
+            return False
+    
+    def run_cleanup(self) -> bool:
+        """Main cleanup logic."""
+        if not self.connect():
+            return False
+        
+        try:
+            # Get limits from qBittorrent
+            private_ratio, private_days, nonprivate_ratio, nonprivate_days = self.get_qbt_limits()
+            
+            # Fetch torrents
+            try:
+                torrents = self.client.torrents.info()
+            except Exception as e:
+                logger.error(f"Failed to fetch torrents: {e}")
+                return False
+            
+            logger.info(f"Fetched {len(torrents)} torrents")
+            
+            # Count private/non-private for logging
+            private_count = sum(1 for t in torrents if self.is_private(t))
+            nonprivate_count = len(torrents) - private_count
+            logger.info(f"Torrent breakdown: {private_count} private, {nonprivate_count} non‑private")
+            
+            # Classify torrents
+            torrents_to_delete, paused_not_ready = self.classify_torrents(
+                torrents, private_ratio, private_days, nonprivate_ratio, nonprivate_days
+            )
+            
+            # Log paused-but-not-ready
+            if paused_not_ready:
+                logger.info(f"{len(paused_not_ready)} paused torrents not yet at their limits")
+            
+            # Delete torrents
+            return self.delete_torrents(torrents_to_delete)
+            
+        except Exception as e:
+            logger.error(f"Error during cleanup: {e}")
+            return False
+        finally:
+            self.disconnect()
 
 
 def main():
-    interval_h = int(os.environ.get("SCHEDULE_HOURS", "24"))
-    run_once  = os.environ.get("RUN_ONCE", "False").lower() == "true"
-
+    """Main entry point."""
+    config = QbtConfig()
+    cleanup = QbtCleanup(config)
+    
     logger.info("qBittorrent Cleanup Container started")
-    logger.info(f"Schedule: {'Run once' if run_once else f'Every {interval_h}h'}")
-
-    if run_once:
-        run_cleanup()
+    logger.info(f"Schedule: {'Run once' if config.run_once else f'Every {config.interval_hours}h'}")
+    
+    if config.run_once:
+        success = cleanup.run_cleanup()
+        sys.exit(0 if success else 1)
     else:
         while True:
             try:
-                run_cleanup()
-                logger.info(f"Next run in {interval_h}h. Sleeping…")
-                time.sleep(interval_h * 3600)
+                cleanup.run_cleanup()
+                logger.info(f"Next run in {config.interval_hours}h. Sleeping…")
+                time.sleep(config.interval_hours * 3600)
             except KeyboardInterrupt:
                 logger.info("Interrupted; exiting")
                 sys.exit(0)
