@@ -36,6 +36,15 @@
         "documentation": {}
     },
     {
+        "label": "signal",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "signal",
+        "description": "signal",
+        "detail": "signal",
+        "documentation": {}
+    },
+    {
         "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
@@ -141,7 +150,7 @@
         "kind": 2,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    config = QbtConfig()\n    cleanup = QbtCleanup(config)\n    logger.info(\"qBittorrent Cleanup Container started\")\n    logger.info(f\"Schedule: {'Run once' if config.run_once else f'Every {config.interval_hours}h'}\")\n    if config.run_once:\n        success = cleanup.run_cleanup()\n        sys.exit(0 if success else 1)\n    else:",
+        "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    config = QbtConfig()\n    cleanup = QbtCleanup(config)\n    # Flag to trigger manual scan\n    manual_scan_requested = {\"value\": False}\n    def signal_handler(signum, frame):\n        \"\"\"Handle manual scan trigger signal.\"\"\"\n        logger.info(\"Manual scan triggered via signal\")\n        manual_scan_requested[\"value\"] = True",
         "detail": "app",
         "documentation": {}
     },

@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import time
+import signal
 from datetime import datetime
 from typing import List, Tuple, Dict, Any, Optional
 import requests
@@ -467,8 +468,20 @@ def main():
     config = QbtConfig()
     cleanup = QbtCleanup(config)
     
+    # Flag to trigger manual scan
+    manual_scan_requested = {"value": False}
+    
+    def signal_handler(signum, frame):
+        """Handle manual scan trigger signal."""
+        logger.info("Manual scan triggered via signal")
+        manual_scan_requested["value"] = True
+    
+    # Set up signal handler for manual scan trigger
+    signal.signal(signal.SIGUSR1, signal_handler)
+    
     logger.info("qBittorrent Cleanup Container started")
     logger.info(f"Schedule: {'Run once' if config.run_once else f'Every {config.interval_hours}h'}")
+    logger.info("Send SIGUSR1 signal to trigger manual scan: docker kill --signal=SIGUSR1 qbt-cleanup")
     
     if config.run_once:
         success = cleanup.run_cleanup()
@@ -478,7 +491,21 @@ def main():
             try:
                 cleanup.run_cleanup()
                 logger.info(f"Next run in {config.interval_hours}h. Sleeping…")
-                time.sleep(config.interval_hours * 3600)
+                
+                # Sleep with periodic checks for manual scan trigger
+                sleep_duration = config.interval_hours * 3600
+                sleep_interval = 60  # Check every minute for manual trigger
+                
+                for _ in range(0, sleep_duration, sleep_interval):
+                    if manual_scan_requested["value"]:
+                        logger.info("Manual scan requested, interrupting sleep")
+                        manual_scan_requested["value"] = False
+                        break
+                    time.sleep(min(sleep_interval, sleep_duration))
+                    sleep_duration -= sleep_interval
+                    if sleep_duration <= 0:
+                        break
+                        
             except KeyboardInterrupt:
                 logger.info("Interrupted; exiting")
                 sys.exit(0)
