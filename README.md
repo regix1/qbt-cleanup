@@ -15,8 +15,10 @@ This tool bridges this gap by:
 * Working with either qBittorrent's built-in settings or custom thresholds you specify
 * Supporting different cleanup criteria for private and non-private torrents
 * Allowing separate pause monitoring for private and non-private torrents
+* **NEW:** FileFlows integration to protect files currently being processed
 * Giving you control over whether associated files are deleted
 * Providing scheduled cleanup to prevent torrent buildup
+* Manual scan triggering via Docker signals
 
 ## Quick Start
 
@@ -49,6 +51,7 @@ docker run -d \
 | `QB_PORT` | qBittorrent WebUI port | `8080` |
 | `QB_USERNAME` | qBittorrent WebUI username | `admin` |
 | `QB_PASSWORD` | qBittorrent WebUI password | `adminadmin` |
+| `QB_VERIFY_SSL` | Verify SSL certificate for qBittorrent WebUI | `false` |
 | `FALLBACK_RATIO` | Ratio threshold if not set in qBittorrent | `1.0` |
 | `FALLBACK_DAYS` | Days seeding threshold if not set in qBittorrent | `7` |
 | `PRIVATE_RATIO` | Ratio threshold for private torrents | Same as FALLBACK_RATIO |
@@ -66,6 +69,35 @@ docker run -d \
 | `CHECK_PAUSED_ONLY` | Legacy setting (use specific settings below instead) | `false` |
 | `CHECK_PRIVATE_PAUSED_ONLY` | Only check paused private torrents | Same as CHECK_PAUSED_ONLY |
 | `CHECK_NONPRIVATE_PAUSED_ONLY` | Only check paused non-private torrents | Same as CHECK_PAUSED_ONLY |
+| `FILEFLOWS_ENABLED` | Enable FileFlows integration to protect processing files | `false` |
+| `FILEFLOWS_HOST` | FileFlows server host | `localhost` |
+| `FILEFLOWS_PORT` | FileFlows server port | `19200` |
+| `FILEFLOWS_TIMEOUT` | FileFlows API timeout in seconds | `10` |
+
+## FileFlows Integration
+
+FileFlows is a file processing automation tool that can handle video encoding, audio processing, and file organization. This tool now includes optional FileFlows integration to prevent deletion of torrents whose files are currently being processed.
+
+### How it works:
+- When enabled, the tool checks FileFlows for any files currently being processed
+- Torrents containing files that match FileFlows processing files are automatically protected from deletion
+- Files are protected during active processing and for 10 minutes after completion
+- Protection uses filename matching between torrent files and FileFlows processing queue
+
+### Configuration:
+```bash
+# Enable FileFlows integration
+-e FILEFLOWS_ENABLED=true \
+-e FILEFLOWS_HOST=192.168.1.200 \
+-e FILEFLOWS_PORT=19200 \
+-e FILEFLOWS_TIMEOUT=10 \
+```
+
+### Benefits:
+- Prevents deletion of torrents while their files are being processed by FileFlows
+- Maintains seeding while ensuring post-processing completion
+- Automatic protection without manual intervention
+- Seamless integration with your existing media workflow
 
 ## Private vs Non-Private Torrents
 
@@ -94,6 +126,17 @@ New override options allow you to selectively ignore qBittorrent's built-in rati
 - Use `IGNORE_QBT_TIME_NONPRIVATE=true` to use your custom seeding time for non-private torrents
 
 This is particularly useful when you want qBittorrent to handle one type of torrent but use custom settings for the other.
+
+## Manual Scan Trigger
+
+You can trigger a manual scan without waiting for the scheduled run:
+
+```bash
+# Trigger manual scan
+docker kill --signal=SIGUSR1 qbt-cleanup
+```
+
+This is useful for testing or when you want an immediate cleanup after making configuration changes.
 
 ## Docker Compose Example
 
@@ -126,6 +169,11 @@ services:
       - CHECK_NONPRIVATE_PAUSED_ONLY=false
       - SCHEDULE_HOURS=24
       - RUN_ONCE=false
+      # FileFlows integration (optional)
+      - FILEFLOWS_ENABLED=true
+      - FILEFLOWS_HOST=192.168.1.200
+      - FILEFLOWS_PORT=19200
+      - FILEFLOWS_TIMEOUT=10
 ```
 
 ## Why Use This Tool?
@@ -138,6 +186,7 @@ When using qBittorrent with Sonarr and Radarr, several issues can occur in speci
 2. This can occur in unique media server setups or when scheduled tasks are interrupted
 3. Using qBittorrent's built-in removal feature interferes with Sonarr/Radarr file management and triggers health check errors
 4. Without proper cleanup, your torrent client becomes cluttered with completed torrents
+5. File processing tools like FileFlows may be working on files from torrents that get deleted prematurely
 
 ### The Solution
 
@@ -145,18 +194,22 @@ This tool provides a safe way to clean up your torrents:
 - It removes torrents from qBittorrent based on ratio/time criteria without disrupting Sonarr/Radarr
 - It applies different criteria to private and non-private torrents based on your preferences
 - It allows for independent monitoring of pause state for private vs. non-private torrents
+- It protects files currently being processed by FileFlows from premature deletion
 - It gives you control over file deletion to match your media management setup
 - It runs on a schedule to keep your torrent client tidy
+- It supports manual triggering for immediate cleanup when needed
 
 ## How It Works
 
 1. The tool connects to your qBittorrent WebUI
-2. It checks torrents against the specified criteria:
+2. If FileFlows integration is enabled, it checks for currently processing files
+3. It checks torrents against the specified criteria:
    - For private torrents: PRIVATE_RATIO and PRIVATE_DAYS (or qBittorrent's settings)
    - For non-private torrents: NONPRIVATE_RATIO and NONPRIVATE_DAYS (or fallback values)
    - It applies CHECK_PRIVATE_PAUSED_ONLY to private torrents and CHECK_NONPRIVATE_PAUSED_ONLY to non-private torrents
-3. When torrents meet or exceed these criteria, they are deleted from qBittorrent (with or without their files, as configured)
-4. The process repeats on the schedule you define
+4. Torrents are protected from deletion if their files are being processed by FileFlows
+5. When torrents meet or exceed deletion criteria and are not protected, they are deleted from qBittorrent (with or without their files, as configured)
+6. The process repeats on the schedule you define
 
 ## Pause Monitoring
 
@@ -171,13 +224,14 @@ Setting these differently allows for more nuanced control. For example:
 
 This creates an effective workflow where your private torrents are handled more carefully than public ones.
 
-## Using With Radarr and Sonarr
+## Using With Media Management Tools
 
 This tool is designed to work harmoniously with:
-- Radarr
-- Sonarr
-- Lidarr
-- Readarr
+- **Radarr** - Movie management
+- **Sonarr** - TV show management  
+- **Lidarr** - Music management
+- **Readarr** - Book management
+- **FileFlows** - File processing automation
 
 By providing a reliable cleanup mechanism that doesn't interfere with these applications' file management, you avoid the health check errors that can occur when using qBittorrent's built-in removal feature.
 
