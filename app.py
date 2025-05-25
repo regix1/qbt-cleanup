@@ -310,7 +310,7 @@ class QbtCleanup:
                     processing_paths.add(file_info['RelativePath'])
                 if 'Name' in file_info and file_info['Name']:
                     processing_paths.add(file_info['Name'])
-            logger.info(f"FileFlows is currently processing {len(processing_paths)} files")
+            logger.info(f"FileFlows is processing {len(processing_files)} files ({len(processing_paths)} paths cached for matching)")
         
         for torrent in torrents:
             is_priv = self.is_private(torrent)
