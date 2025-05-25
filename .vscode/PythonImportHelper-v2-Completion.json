@@ -148,7 +148,7 @@
         "kind": 6,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "class FileFlowsClient:\n    \"\"\"Client for FileFlows API integration.\"\"\"\n    def __init__(self, config: QbtConfig):\n        self.config = config\n        self.base_url = f\"http://{config.fileflows_host}:{config.fileflows_port}/api\"\n        self.timeout = config.fileflows_timeout\n        self._processing_cache: Dict[str, bool] = {}\n    def is_enabled(self) -> bool:\n        \"\"\"Check if FileFlows integration is enabled.\"\"\"\n        return self.config.fileflows_enabled",
+        "peekOfCode": "class FileFlowsClient:\n    \"\"\"Client for FileFlows API integration.\"\"\"\n    def __init__(self, config: QbtConfig):\n        self.config = config\n        self.base_url = f\"http://{config.fileflows_host}:{config.fileflows_port}/api\"\n        self.timeout = config.fileflows_timeout\n        self.client = None  # Will be set by QbtCleanup\n    def is_enabled(self) -> bool:\n        \"\"\"Check if FileFlows integration is enabled.\"\"\"\n        return self.config.fileflows_enabled",
         "detail": "app",
         "documentation": {}
     },
