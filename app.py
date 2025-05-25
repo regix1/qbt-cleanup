@@ -306,6 +306,15 @@ class QbtCleanup:
         
         # Return empty string if no full name available
         return ""
+
+    def get_torrent_files(self, torrent_hash: str) -> List[str]:
+        """Get list of files in a torrent."""
+        try:
+            files = self.client.torrents.files(torrent_hash=torrent_hash)
+            return [f.name for f in files]
+        except Exception as e:
+            logger.warning(f"Could not get files for torrent {torrent_hash}: {e}")
+            return []
         """Get list of files in a torrent."""
         try:
             files = self.client.torrents.files(torrent_hash=torrent_hash)
