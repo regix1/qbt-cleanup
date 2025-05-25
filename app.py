@@ -69,7 +69,6 @@ class QbtConfig:
         self.fileflows_host = os.environ.get("FILEFLOWS_HOST", "localhost")
         self.fileflows_port = int(os.environ.get("FILEFLOWS_PORT", "19200"))
         self.fileflows_timeout = int(os.environ.get("FILEFLOWS_TIMEOUT", "10"))
-        self.fileflows_auto_fix_names = self._get_bool("FILEFLOWS_AUTO_FIX_NAMES", True)
     
     @staticmethod
     def _get_bool(env_var: str, default: bool) -> bool:
@@ -99,59 +98,6 @@ class FileFlowsClient:
         except Exception as e:
             logger.warning(f"FileFlows connection test failed: {e} (URL: {self.base_url})")
             return False
-    
-    def auto_fix_truncated_names(self, processing_files: List[Dict[str, Any]]) -> None:
-        """
-        Automatically fix truncated torrent names in qBittorrent to match FileFlows filenames.
-        This improves future matching reliability.
-        """
-        if not processing_files or not self.client:
-            return
-            
-        try:
-            # Get all torrents to find potential matches for renaming
-            torrents = self.client.torrents.info()
-            
-            for file_info in processing_files:
-                # Get the FileFlows filename (without extension)
-                ff_relative_path = file_info.get('RelativePath', '')
-                ff_name_field = file_info.get('Name', '')
-                
-                # Try both RelativePath and Name fields
-                for ff_path in [ff_relative_path, ff_name_field]:
-                    if not ff_path:
-                        continue
-                        
-                    ff_filename = Path(ff_path).name
-                    ff_stem = Path(ff_path).stem  # Without extension
-                    
-                    # Look for qBittorrent torrents with truncated names that might match
-                    for torrent in torrents:
-                        qbt_name = torrent.name  # Keep using .name for auto-fix since we're comparing against the displayed name
-                        
-                        # Skip if names already match or qBt name is longer
-                        if qbt_name == ff_stem or len(qbt_name) >= len(ff_stem):
-                            continue
-                            
-                        # Check if qBt name appears to be a truncated version of FileFlows name
-                        if (len(qbt_name) > 40 and  # Only rename reasonably long names
-                            ff_stem.startswith(qbt_name) and  # FileFlows name starts with qBt name
-                            len(ff_stem) - len(qbt_name) < 50):  # Not too different in length
-                            
-                            logger.info(f"Auto-fixing truncated torrent name:")
-                            logger.info(f"  Old: '{qbt_name}'")
-                            logger.info(f"  New: '{ff_stem}'")
-                            
-                            try:
-                                # Rename the torrent in qBittorrent
-                                self.client.torrents.rename(torrent_hash=torrent.hash, new_torrent_name=ff_stem)
-                                logger.info(f"✅ Successfully renamed torrent {torrent.hash[:8]}")
-                                
-                            except Exception as e:
-                                logger.warning(f"Failed to rename torrent {torrent.hash[:8]}: {e}")
-                                
-        except Exception as e:
-            logger.warning(f"Error during auto-fix of truncated names: {e}")
 
     def get_processing_files(self) -> List[Dict[str, Any]]:
         """Get list of files currently being processed by FileFlows."""
@@ -292,29 +238,8 @@ class QbtCleanup:
         
         self._private_cache[torrent_hash] = is_priv
         return is_priv
-    
-    def get_torrent_full_name(self, torrent: Any) -> str:
-        """Get the full torrent name from properties."""
-        try:
-            # Get the full name from properties
-            properties = torrent.properties
-            # Properties might contain 'name' or other fields with the full name
-            if hasattr(properties, 'name') and properties.name:
-                return properties.name
-        except Exception as e:
-            logger.debug(f"Could not get properties for torrent {torrent.hash}: {e}")
-        
-        # Return empty string if no full name available
-        return ""
 
     def get_torrent_files(self, torrent_hash: str) -> List[str]:
-        """Get list of files in a torrent."""
-        try:
-            files = self.client.torrents.files(torrent_hash=torrent_hash)
-            return [f.name for f in files]
-        except Exception as e:
-            logger.warning(f"Could not get files for torrent {torrent_hash}: {e}")
-            return []
         """Get list of files in a torrent."""
         try:
             files = self.client.torrents.files(torrent_hash=torrent_hash)
@@ -376,11 +301,6 @@ class QbtCleanup:
         processing_files = []
         if self.fileflows:
             processing_files = self.fileflows.get_processing_files()
-            
-            # Auto-fix truncated torrent names to improve matching
-            if self.config.fileflows_auto_fix_names and processing_files:
-                logger.info(f"Auto-fixing truncated torrent names for {len(processing_files)} processing files...")
-                self.fileflows.auto_fix_truncated_names(processing_files)
         
         # Build processing paths cache
         processing_paths = set()
@@ -444,7 +364,7 @@ class QbtCleanup:
             if not torrent_files:
                 return False
             
-            # Check for matching files using multiple strategies
+            # Simple filename matching
             for file_path in torrent_files:
                 file_name = Path(file_path).name
                 file_stem = Path(file_path).stem  # Without extension
@@ -453,35 +373,10 @@ class QbtCleanup:
                     proc_file_name = Path(proc_path).name
                     proc_file_stem = Path(proc_path).stem
                     
-                    # Strategy 1: Exact filename match
-                    if file_name == proc_file_name:
-                        logger.info(f"✅ FileFlows protection: Exact filename match - {file_name}")
+                    # Exact filename match or stem match
+                    if file_name == proc_file_name or file_stem == proc_file_stem:
+                        logger.info(f"✅ FileFlows protection: Match found - {file_name}")
                         return True
-                    
-                    # Strategy 2: Stem match (without extension)
-                    if file_stem == proc_file_stem and len(file_stem) > 20:
-                        logger.info(f"✅ FileFlows protection: Stem match - {file_stem}")
-                        return True
-                    
-                    # Strategy 3: Handle truncated names - check if FileFlows name starts with qBittorrent name
-                    if len(file_stem) > 30 and proc_file_stem.startswith(file_stem):
-                        logger.info(f"✅ FileFlows protection: Prefix match - {file_stem}")
-                        return True
-                    
-                    # Strategy 4: Handle mid-word truncation (like "AVC" -> "A")
-                    if len(file_stem) > 40:
-                        # Find the longest common prefix
-                        common_len = 0
-                        for i, (c1, c2) in enumerate(zip(file_stem, proc_file_stem)):
-                            if c1 == c2:
-                                common_len = i + 1
-                            else:
-                                break
-                        
-                        # If the common prefix is most of the qBittorrent name and long enough
-                        if common_len >= len(file_stem) * 0.9 and common_len > 50:
-                            logger.info(f"✅ FileFlows protection: Truncation match - {file_stem[:common_len]}...")
-                            return True
             
             return False
         except Exception as e:
