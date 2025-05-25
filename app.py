@@ -105,24 +105,24 @@ class FileFlowsClient:
             response = requests.get(f"{self.base_url}/library-file", timeout=self.timeout)
             if response.status_code == 200:
                 all_files = response.json()
-                # Filter for files that are actually being processed right now
+                # Filter for files that are being processed or queued
                 processing_files = []
                 for file_info in all_files:
                     status = file_info.get('Status', -1)
-                    processing_started = file_info.get('ProcessingStarted', '')
                     processing_ended = file_info.get('ProcessingEnded', '')
                     
-                    # Check if file is actively being processed
-                    is_actively_processing = (
-                        status == 2 and  # Status 2 = currently processing
-                        processing_started != "1970-01-01T00:00:00Z" and  # Has started
+                    # Check if file is being processed or queued for processing
+                    # Status 1 = processing/queued, Status 2 = currently processing
+                    # ProcessingEnded = "1970-01-01T00:00:00Z" means not finished
+                    is_processing = (
+                        status in [1, 2] and  # Status 1 or 2
                         processing_ended == "1970-01-01T00:00:00Z"  # Hasn't ended
                     )
                     
-                    if is_actively_processing:
+                    if is_processing:
                         processing_files.append(file_info)
                         
-                logger.debug(f"Found {len(processing_files)} actively processing files in FileFlows")
+                logger.debug(f"Found {len(processing_files)} processing/queued files in FileFlows")
                 return processing_files
             else:
                 logger.warning(f"FileFlows API returned status {response.status_code}")
@@ -160,46 +160,47 @@ class FileFlowsClient:
             if 'Name' in file_info and file_info['Name']:
                 processing_paths.add(file_info['Name'])
         
-        logger.debug(f"FileFlows actively processing {len(processing_paths)} files")
+        logger.debug(f"FileFlows processing {len(processing_paths)} files for torrent check: {torrent_path}")
         
-        # Check if any torrent files match processing files
+        # Check if any torrent files match processing files exactly
         torrent_base_path = Path(torrent_path)
         
         for file_path in torrent_files:
             full_path = str(torrent_base_path / file_path)
             
-            # Check for exact path matches first
+            # Check for exact path matches
             for proc_path in processing_paths:
-                # Direct path match
-                if full_path == proc_path or proc_path.endswith(full_path):
-                    logger.info(f"FileFlows is processing: {file_path}")
+                # Direct exact path match
+                if full_path == proc_path:
+                    logger.info(f"FileFlows is processing exact file: {file_path}")
                     self._processing_cache[cache_key] = True
                     return True
                 
-                # Check if processing path contains the file
-                if file_path in proc_path:
-                    # Additional validation to avoid false positives
-                    file_name = Path(file_path).name
-                    if file_name in proc_path and len(file_name) > 10:  # Require substantial filename
-                        logger.info(f"FileFlows is processing file: {file_name}")
-                        self._processing_cache[cache_key] = True
-                        return True
+                # Check if processing path ends with our torrent file path
+                if proc_path.endswith(file_path) and len(file_path) > 15:
+                    logger.info(f"FileFlows is processing file: {file_path}")
+                    self._processing_cache[cache_key] = True
+                    return True
         
-        # Check for torrent folder name matches (conservative approach)
+        # Check for torrent folder matches (very conservative)
         if torrent_files:
-            # Get the first directory component if it exists
+            # Get torrent folder name from first file
             first_file = torrent_files[0]
             if '/' in first_file:
                 torrent_folder = first_file.split('/')[0]
                 
-                # Only check substantial folder names (avoid false positives)
-                if len(torrent_folder) > 20:  # Require meaningful folder names
+                # Only check very specific folder names to avoid false positives
+                if len(torrent_folder) > 30:  # Require very long, specific folder names
                     for proc_path in processing_paths:
-                        # Check if the processing path contains the exact torrent folder
+                        # Check if processing path contains the exact full torrent folder name
                         if f"/{torrent_folder}/" in proc_path or proc_path.endswith(f"/{torrent_folder}"):
-                            logger.info(f"FileFlows is processing torrent folder: {torrent_folder}")
-                            self._processing_cache[cache_key] = True
-                            return True
+                            # Additional validation: check if the processing path contains the same file extension
+                            proc_ext = Path(proc_path).suffix.lower()
+                            torrent_ext = Path(first_file).suffix.lower()
+                            if proc_ext == torrent_ext:
+                                logger.info(f"FileFlows is processing torrent folder: {torrent_folder}")
+                                self._processing_cache[cache_key] = True
+                                return True
         
         self._processing_cache[cache_key] = False
         return False
