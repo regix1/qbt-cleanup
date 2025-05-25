@@ -34,6 +34,7 @@ class QbtConfig:
         self.qb_port = int(os.environ.get("QB_PORT", "8080"))
         self.qb_username = os.environ.get("QB_USERNAME", "admin")
         self.qb_password = os.environ.get("QB_PASSWORD", "adminadmin")
+        self.qb_verify_ssl = self._get_bool("QB_VERIFY_SSL", False)
         
         # Fallback cleanup settings
         self.fallback_ratio = float(os.environ.get("FALLBACK_RATIO", "1.0"))
@@ -160,13 +161,14 @@ class QbtCleanup:
                     port=self.config.qb_port,
                     username=self.config.qb_username,
                     password=self.config.qb_password,
-                    VERIFY_WEBUI_CERTIFICATE=False,
+                    VERIFY_WEBUI_CERTIFICATE=self.config.qb_verify_ssl,
                     REQUESTS_ARGS=dict(timeout=DEFAULT_TIMEOUT),
                 )
                 self.client.auth_log_in()
                 ver = self.client.app.version
                 api_v = self.client.app.web_api_version
-                logger.info(f"Connected to qBittorrent {ver} (API: {api_v})")
+                ssl_status = "enabled" if self.config.qb_verify_ssl else "disabled"
+                logger.info(f"Connected to qBittorrent {ver} (API: {api_v}) - SSL verification {ssl_status}")
                 
                 # Initialize FileFlows if enabled
                 if self.config.fileflows_enabled:

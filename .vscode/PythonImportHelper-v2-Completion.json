@@ -139,7 +139,7 @@
         "kind": 6,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "class QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"\n    def __init__(self):\n        # Connection settings\n        self.qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n        self.qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n        self.qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n        self.qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n        # Fallback cleanup settings\n        self.fallback_ratio = float(os.environ.get(\"FALLBACK_RATIO\", \"1.0\"))",
+        "peekOfCode": "class QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"\n    def __init__(self):\n        # Connection settings\n        self.qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n        self.qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n        self.qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n        self.qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n        self.qb_verify_ssl = self._get_bool(\"QB_VERIFY_SSL\", False)\n        # Fallback cleanup settings",
         "detail": "app",
         "documentation": {}
     },
@@ -202,7 +202,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"\n    def __init__(self):\n        # Connection settings\n        self.qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n        self.qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n        self.qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n        self.qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n        # Fallback cleanup settings",
+        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"\n    def __init__(self):\n        # Connection settings\n        self.qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n        self.qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n        self.qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n        self.qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n        self.qb_verify_ssl = self._get_bool(\"QB_VERIFY_SSL\", False)",
         "detail": "app",
         "documentation": {}
     }
