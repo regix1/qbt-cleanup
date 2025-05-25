@@ -4,7 +4,7 @@ import os
 import sys
 import time
 import signal
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import List, Tuple, Dict, Any, Optional
 import requests
 from pathlib import Path
@@ -93,9 +93,10 @@ class FileFlowsClient:
         """Test connection to FileFlows API."""
         try:
             response = requests.get(f"{self.base_url}/status", timeout=self.timeout)
+            logger.debug(f"FileFlows connection test: {response.status_code} from {self.base_url}/status")
             return response.status_code == 200
         except Exception as e:
-            logger.warning(f"FileFlows connection test failed: {e}")
+            logger.warning(f"FileFlows connection test failed: {e} (URL: {self.base_url})")
             return False
     
     def get_processing_files(self) -> List[Dict[str, Any]]:
@@ -105,24 +106,32 @@ class FileFlowsClient:
             response = requests.get(f"{self.base_url}/library-file", timeout=self.timeout)
             if response.status_code == 200:
                 all_files = response.json()
-                # Filter for files that are ACTIVELY being processed right now
+                # Filter for files that are currently processing or recently processed
                 processing_files = []
                 for file_info in all_files:
                     status = file_info.get('Status', -1)
+                    processing_started = file_info.get('ProcessingStarted', '')
                     processing_ended = file_info.get('ProcessingEnded', '')
                     
-                    # Only check Status 2 = actively processing
-                    # Status 1 = completed processing (should NOT be protected)
-                    # ProcessingEnded = "1970-01-01T00:00:00Z" means not finished
-                    is_actively_processing = (
-                        status == 2 and  # Only Status 2 = currently processing
-                        processing_ended == "1970-01-01T00:00:00Z"  # Hasn't ended
-                    )
+                    # Check if actively processing (Status 2) regardless of end time
+                    # OR if it finished processing very recently (within last 10 minutes)
+                    is_actively_processing = status == 2
                     
-                    if is_actively_processing:
+                    # Also protect files that finished very recently (FileFlows may not update status immediately)
+                    is_recently_processed = False
+                    if status == 1 and processing_ended and processing_ended != "1970-01-01T00:00:00Z":
+                        try:
+                            end_time = datetime.fromisoformat(processing_ended.replace('Z', '+00:00'))
+                            now = datetime.now(timezone.utc)
+                            # Protect files that finished in the last 10 minutes
+                            is_recently_processed = (now - end_time) < timedelta(minutes=10)
+                        except:
+                            pass
+                    
+                    if is_actively_processing or is_recently_processed:
                         processing_files.append(file_info)
                         
-                logger.debug(f"Found {len(processing_files)} actively processing files in FileFlows")
+                logger.debug(f"Found {len(processing_files)} actively/recently processing files in FileFlows")
                 return processing_files
             else:
                 logger.warning(f"FileFlows API returned status {response.status_code}")
