@@ -69,6 +69,7 @@ class QbtConfig:
         self.fileflows_host = os.environ.get("FILEFLOWS_HOST", "localhost")
         self.fileflows_port = int(os.environ.get("FILEFLOWS_PORT", "19200"))
         self.fileflows_timeout = int(os.environ.get("FILEFLOWS_TIMEOUT", "10"))
+        self.fileflows_auto_fix_names = self._get_bool("FILEFLOWS_AUTO_FIX_NAMES", True)
     
     @staticmethod
     def _get_bool(env_var: str, default: bool) -> bool:
@@ -99,6 +100,59 @@ class FileFlowsClient:
             logger.warning(f"FileFlows connection test failed: {e} (URL: {self.base_url})")
             return False
     
+    def auto_fix_truncated_names(self, processing_files: List[Dict[str, Any]]) -> None:
+        """
+        Automatically fix truncated torrent names in qBittorrent to match FileFlows filenames.
+        This improves future matching reliability.
+        """
+        if not processing_files:
+            return
+            
+        try:
+            # Get all torrents to find potential matches for renaming
+            torrents = self.client.torrents.info()
+            
+            for file_info in processing_files:
+                # Get the FileFlows filename (without extension)
+                ff_relative_path = file_info.get('RelativePath', '')
+                ff_name_field = file_info.get('Name', '')
+                
+                # Try both RelativePath and Name fields
+                for ff_path in [ff_relative_path, ff_name_field]:
+                    if not ff_path:
+                        continue
+                        
+                    ff_filename = Path(ff_path).name
+                    ff_stem = Path(ff_path).stem  # Without extension
+                    
+                    # Look for qBittorrent torrents with truncated names that might match
+                    for torrent in torrents:
+                        qbt_name = torrent.name
+                        
+                        # Skip if names already match or qBt name is longer
+                        if qbt_name == ff_stem or len(qbt_name) >= len(ff_stem):
+                            continue
+                            
+                        # Check if qBt name appears to be a truncated version of FileFlows name
+                        if (len(qbt_name) > 40 and  # Only rename reasonably long names
+                            ff_stem.startswith(qbt_name) and  # FileFlows name starts with qBt name
+                            len(ff_stem) - len(qbt_name) < 50):  # Not too different in length
+                            
+                            logger.info(f"Auto-fixing truncated torrent name:")
+                            logger.info(f"  Old: '{qbt_name}'")
+                            logger.info(f"  New: '{ff_stem}'")
+                            
+                            try:
+                                # Rename the torrent in qBittorrent
+                                self.client.torrents.rename(torrent_hash=torrent.hash, new_torrent_name=ff_stem)
+                                logger.info(f"✅ Successfully renamed torrent {torrent.hash[:8]}")
+                                
+                            except Exception as e:
+                                logger.warning(f"Failed to rename torrent {torrent.hash[:8]}: {e}")
+                                
+        except Exception as e:
+            logger.warning(f"Error during auto-fix of truncated names: {e}")
+
     def get_processing_files(self) -> List[Dict[str, Any]]:
         """Get list of files currently being processed by FileFlows."""
         try:
@@ -132,6 +186,9 @@ class FileFlowsClient:
                         processing_files.append(file_info)
                         
                 logger.debug(f"Found {len(processing_files)} actively/recently processing files in FileFlows")
+                # Also log at INFO level for troubleshooting
+                if processing_files:
+                    logger.info(f"FileFlows is currently processing {len(processing_files)} files")
                 return processing_files
             else:
                 logger.warning(f"FileFlows API returned status {response.status_code}")
@@ -171,6 +228,11 @@ class FileFlowsClient:
         
         logger.debug(f"FileFlows actively processing {len(processing_paths)} files for torrent check: {torrent_path}")
         
+        # Debug: Log what we're comparing
+        if processing_paths:
+            logger.info(f"FileFlows processing {len(processing_paths)} files - checking for torrent matches...")
+            logger.info(f"Sample processing files: {list(processing_paths)[:2]}")  # First 2 paths
+        
         # Check for matching files using multiple strategies
         for file_path in torrent_files:
             file_name = Path(file_path).name
@@ -180,29 +242,43 @@ class FileFlowsClient:
                 proc_file_name = Path(proc_path).name
                 proc_file_stem = Path(proc_path).stem
                 
+                # Only log detailed comparison for the first file to avoid spam
+                if file_path == torrent_files[0] and processing_paths:
+                    logger.info(f"🔍 Matching torrent '{file_stem}' against FileFlows files...")
+                
                 # Strategy 1: Exact filename match
                 if file_name == proc_file_name:
-                    logger.info(f"FileFlows is processing exact file: {file_name}")
+                    logger.info(f"✅ FileFlows protection: Exact filename match - {file_name}")
                     self._processing_cache[cache_key] = True
                     return True
                 
                 # Strategy 2: Stem match (without extension)
                 if file_stem == proc_file_stem and len(file_stem) > 20:
-                    logger.info(f"FileFlows is processing file (stem match): {file_stem}")
+                    logger.info(f"✅ FileFlows protection: Stem match - {file_stem}")
                     self._processing_cache[cache_key] = True
                     return True
                 
                 # Strategy 3: Handle truncated names - check if qBittorrent name is prefix of FileFlows name
                 if len(file_stem) > 30 and proc_file_stem.startswith(file_stem):
-                    logger.info(f"FileFlows is processing file (prefix match): {file_stem}")
+                    logger.info(f"✅ FileFlows protection: Prefix match - {file_stem}")
                     self._processing_cache[cache_key] = True
                     return True
                 
                 # Strategy 4: Handle truncated names - check if FileFlows name starts with qBittorrent name
                 if len(file_stem) > 30 and file_stem.startswith(proc_file_stem[:len(file_stem)]):
-                    logger.info(f"FileFlows is processing file (reverse prefix match): {proc_file_stem}")
+                    logger.info(f"✅ FileFlows protection: Reverse prefix match - {proc_file_stem}")
                     self._processing_cache[cache_key] = True
                     return True
+                
+                # Strategy 5: More aggressive truncation matching for very similar names
+                if len(file_stem) > 40:
+                    # Extract first 40 characters for comparison
+                    qbt_prefix = file_stem[:40]
+                    proc_prefix = proc_file_stem[:40]
+                    if qbt_prefix == proc_prefix:
+                        logger.info(f"✅ FileFlows protection: 40-char prefix match - {qbt_prefix}")
+                        self._processing_cache[cache_key] = True
+                        return True
         
         # Check for torrent folder matches (very conservative)
         if torrent_files and len(set(Path(f).parts[0] if '/' in f else '' for f in torrent_files)) == 1:
@@ -217,11 +293,17 @@ class FileFlowsClient:
                         
                         # Exact folder name match
                         if torrent_folder == proc_folder:
-                            logger.info(f"FileFlows is processing exact torrent folder: {torrent_folder}")
+                            logger.info(f"✅ FileFlows protection: Exact folder match - {torrent_folder}")
                             self._processing_cache[cache_key] = True
                             return True
         
         self._processing_cache[cache_key] = False
+        
+        # Debug: Log when no match is found for first torrent file
+        if torrent_files and processing_paths:
+            first_file_stem = Path(torrent_files[0]).stem
+            logger.debug(f"No FileFlows match found for torrent: {first_file_stem}")
+        
         return False
     
     def clear_cache(self):
@@ -259,6 +341,7 @@ class QbtCleanup:
                 # Initialize FileFlows if enabled
                 if self.config.fileflows_enabled:
                     self.fileflows = FileFlowsClient(self.config)
+                    self.fileflows.client = self.client  # Set the client reference
                     if self.fileflows.test_connection():
                         logger.info("FileFlows integration enabled and connected")
                     else:
@@ -311,7 +394,7 @@ class QbtCleanup:
                 self._privacy_method_logged = True
             for attempt in range(MAX_SEARCH_ATTEMPTS):
                 try:
-                    trackers = self.client.torrents.trackers(hash=torrent_hash)
+                    trackers = self.client.torrents.trackers(torrent_hash=torrent_hash)
                     for tracker in trackers:
                         if tracker.status == 0 and tracker.msg and "private" in tracker.msg.lower():
                             is_priv = True
@@ -329,7 +412,7 @@ class QbtCleanup:
     def get_torrent_files(self, torrent_hash: str) -> List[str]:
         """Get list of files in a torrent."""
         try:
-            files = self.client.torrents.files(hash=torrent_hash)
+            files = self.client.torrents.files(torrent_hash=torrent_hash)
             return [f.name for f in files]
         except Exception as e:
             logger.warning(f"Could not get files for torrent {torrent_hash}: {e}")
@@ -399,6 +482,13 @@ class QbtCleanup:
         # Clear FileFlows cache for fresh status
         if self.fileflows:
             self.fileflows.clear_cache()
+            
+            # Auto-fix truncated torrent names to improve matching
+            if self.config.fileflows_auto_fix_names:
+                processing_files = self.fileflows.get_processing_files()
+                if processing_files:
+                    logger.info(f"Auto-fixing truncated torrent names for {len(processing_files)} processing files...")
+                    self.fileflows.auto_fix_truncated_names(processing_files)
         
         for torrent in torrents:
             is_priv = self.is_private(torrent)
@@ -436,9 +526,11 @@ class QbtCleanup:
             elif paused:
                 paused_not_ready.append((torrent, is_priv, ratio_limit, time_limit))
         
-        # Log FileFlows processing status
+        # Log FileFlows processing status and auto-fix summary
         if fileflows_processing:
             logger.info(f"{len(fileflows_processing)} torrents skipped due to FileFlows processing")
+        elif self.fileflows and self.config.fileflows_auto_fix_names:
+            logger.info("FileFlows auto-fix enabled - torrent names will be corrected automatically")
         
         return torrents_to_delete, paused_not_ready
     
@@ -457,18 +549,10 @@ class QbtCleanup:
             return True
         
         try:
-            # Try newer API parameter name first
-            try:
-                self.client.torrents.delete(
-                    delete_files=self.config.delete_files,
-                    torrent_hashes=hashes
-                )
-            except Exception:
-                # Fall back to older API parameter name
-                self.client.torrents.delete(
-                    delete_files=self.config.delete_files,
-                    hashes=hashes
-                )
+            self.client.torrents.delete(
+                delete_files=self.config.delete_files,
+                torrent_hashes=hashes
+            )
             
             logger.info(
                 f"Deleted {len(hashes)} torrents ({priv_count} priv, {nonpriv_count} non‑priv)"
