@@ -61,6 +61,17 @@ class QbtConfig:
         self.check_private_paused_only = self._get_bool("CHECK_PRIVATE_PAUSED_ONLY", self.check_paused_only)
         self.check_nonprivate_paused_only = self._get_bool("CHECK_NONPRIVATE_PAUSED_ONLY", self.check_paused_only)
         
+        # Force delete settings for non-paused torrents that meet criteria
+        self.force_delete_after_hours = float(os.environ.get("FORCE_DELETE_AFTER_HOURS", "0"))  # 0 = disabled
+        self.force_delete_private_after_hours = float(os.environ.get("FORCE_DELETE_PRIVATE_AFTER_HOURS", str(self.force_delete_after_hours)))
+        self.force_delete_nonprivate_after_hours = float(os.environ.get("FORCE_DELETE_NONPRIVATE_AFTER_HOURS", str(self.force_delete_after_hours)))
+        
+        # Stale download cleanup settings
+        self.cleanup_stale_downloads = self._get_bool("CLEANUP_STALE_DOWNLOADS", False)
+        self.max_download_days = float(os.environ.get("MAX_DOWNLOAD_DAYS", "7"))
+        self.max_download_private_days = float(os.environ.get("MAX_DOWNLOAD_PRIVATE_DAYS", str(self.max_download_days)))
+        self.max_download_nonprivate_days = float(os.environ.get("MAX_DOWNLOAD_NONPRIVATE_DAYS", str(self.max_download_days)))
+        
         # Schedule settings
         self.interval_hours = int(os.environ.get("SCHEDULE_HOURS", "24"))
         self.run_once = self._get_bool("RUN_ONCE", False)
@@ -237,7 +248,7 @@ class QbtCleanup:
                         logger.warning(f"Could not detect privacy for torrent {torrent_hash}: {e}")
                     else:
                         time.sleep(0.5)  # Brief delay before retry
-        
+
         self._private_cache[torrent_hash] = is_priv
         return is_priv
 
@@ -290,13 +301,14 @@ class QbtCleanup:
         return private_ratio, private_days, nonprivate_ratio, nonprivate_days
     
     def classify_torrents(self, torrents: List[Any], private_ratio: float, private_days: float, 
-                         nonprivate_ratio: float, nonprivate_days: float) -> Tuple[List[Tuple], List[Tuple]]:
+                         nonprivate_ratio: float, nonprivate_days: float) -> Tuple[List[Tuple], List[Tuple], List[Tuple]]:
         """Classify torrents for deletion and identify paused torrents not ready."""
         sec_priv = private_days * SECONDS_PER_DAY
         sec_nonpriv = nonprivate_days * SECONDS_PER_DAY
         
         torrents_to_delete = []
         paused_not_ready = []
+        stale_downloads = []
         fileflows_processing = []
         
         # Get FileFlows processing files once and cache them
@@ -317,10 +329,67 @@ class QbtCleanup:
         for torrent in torrents:
             is_priv = self.is_private(torrent)
             paused = torrent.state in ("pausedUP", "pausedDL")
+            downloading = torrent.state in ("downloading", "stalledDL", "queuedDL", "allocating", "metaDL")
             
-            # Skip if requiring paused-only and not paused
+            # Check for stale downloads first
+            if self.config.cleanup_stale_downloads and downloading:
+                max_download_days = self.config.max_download_private_days if is_priv else self.config.max_download_nonprivate_days
+                download_time_days = (time.time() - torrent.added_on) / SECONDS_PER_DAY
+                
+                if download_time_days > max_download_days:
+                    # Check if FileFlows is processing this torrent
+                    if self._is_torrent_being_processed_cached(torrent, processing_paths):
+                        logger.info(
+                            f"→ skipping stale download (FileFlows processing): {torrent.name[:60]!r} "
+                            f"(priv={is_priv}, state={torrent.state}, "
+                            f"downloading={download_time_days:.1f}/{max_download_days:.1f}d)"
+                        )
+                    else:
+                        stale_downloads.append((torrent, is_priv, max_download_days, download_time_days))
+                        logger.info(
+                            f"→ delete stale download: {torrent.name[:60]!r} "
+                            f"(priv={is_priv}, state={torrent.state}, "
+                            f"downloading={download_time_days:.1f}/{max_download_days:.1f}d)"
+                        )
+                continue  # Skip further processing for downloading torrents
+            
+            # Skip seeding/completed torrents if requiring paused-only and not paused
             if ((is_priv and self.config.check_private_paused_only and not paused) or 
                 (not is_priv and self.config.check_nonprivate_paused_only and not paused)):
+                
+                # Check for force delete if torrent meets criteria but isn't paused
+                ratio_limit = private_ratio if is_priv else nonprivate_ratio
+                time_limit = sec_priv if is_priv else sec_nonpriv
+                force_hours = self.config.force_delete_private_after_hours if is_priv else self.config.force_delete_nonprivate_after_hours
+                
+                if force_hours > 0 and (torrent.ratio >= ratio_limit or torrent.seeding_time >= time_limit):
+                    # Check if torrent has been over limits long enough for force delete
+                    excess_time_hours = max(
+                        (torrent.seeding_time - time_limit) / 3600 if torrent.seeding_time >= time_limit else 0,
+                        # For ratio, we estimate based on how far over the limit we are
+                        # This is imperfect but gives a reasonable approximation
+                        ((torrent.ratio - ratio_limit) / ratio_limit * time_limit / 3600) if torrent.ratio >= ratio_limit else 0
+                    )
+                    
+                    if excess_time_hours >= force_hours:
+                        # Check if FileFlows is processing this torrent
+                        if self._is_torrent_being_processed_cached(torrent, processing_paths):
+                            logger.info(
+                                f"→ skipping force delete (FileFlows processing): {torrent.name[:60]!r} "
+                                f"(priv={is_priv}, state={torrent.state}, "
+                                f"ratio={torrent.ratio:.2f}/{ratio_limit:.2f}, "
+                                f"time={torrent.seeding_time/SECONDS_PER_DAY:.1f}/{time_limit/SECONDS_PER_DAY:.1f}d, "
+                                f"excess={excess_time_hours:.1f}/{force_hours:.1f}h)"
+                            )
+                        else:
+                            torrents_to_delete.append((torrent, is_priv, ratio_limit, time_limit))
+                            logger.info(
+                                f"→ force delete (non-paused): {torrent.name[:60]!r} "
+                                f"(priv={is_priv}, state={torrent.state}, "
+                                f"ratio={torrent.ratio:.2f}/{ratio_limit:.2f}, "
+                                f"time={torrent.seeding_time/SECONDS_PER_DAY:.1f}/{time_limit/SECONDS_PER_DAY:.1f}d, "
+                                f"excess={excess_time_hours:.1f}/{force_hours:.1f}h)"
+                            )
                 continue
             
             ratio_limit = private_ratio if is_priv else nonprivate_ratio
@@ -350,11 +419,13 @@ class QbtCleanup:
             elif paused:
                 paused_not_ready.append((torrent, is_priv, ratio_limit, time_limit))
         
-        # Log FileFlows processing status
+        # Log status
         if fileflows_processing:
             logger.info(f"{len(fileflows_processing)} torrents skipped due to FileFlows processing")
+        if stale_downloads:
+            logger.info(f"{len(stale_downloads)} stale downloads found for deletion")
         
-        return torrents_to_delete, paused_not_ready
+        return torrents_to_delete, paused_not_ready, stale_downloads
     
     def _is_torrent_being_processed_cached(self, torrent: Any, processing_paths: set) -> bool:
         """Check if torrent matches any FileFlows processing files using cached data."""
@@ -385,18 +456,26 @@ class QbtCleanup:
             logger.warning(f"Error checking FileFlows status for {torrent.name}: {e}")
             return False
     
-    def delete_torrents(self, torrents_to_delete: List[Tuple]) -> bool:
+    def delete_torrents(self, torrents_to_delete: List[Tuple], stale_downloads: List[Tuple]) -> bool:
         """Delete the specified torrents."""
-        if not torrents_to_delete:
+        all_deletions = torrents_to_delete + stale_downloads
+        
+        if not all_deletions:
             logger.info("No torrents matched deletion criteria")
             return True
         
-        priv_count = sum(1 for _, is_priv, *_ in torrents_to_delete if is_priv)
-        nonpriv_count = len(torrents_to_delete) - priv_count
-        hashes = [torrent.hash for torrent, *_ in torrents_to_delete]
+        # Count by type
+        completed_priv = sum(1 for _, is_priv, *_ in torrents_to_delete if is_priv)
+        completed_nonpriv = len(torrents_to_delete) - completed_priv
+        stale_priv = sum(1 for _, is_priv, *_ in stale_downloads if is_priv)
+        stale_nonpriv = len(stale_downloads) - stale_priv
+        
+        hashes = [torrent.hash for torrent, *_ in all_deletions]
         
         if self.config.dry_run:
-            logger.info(f"DRY RUN: would delete {len(hashes)} ({priv_count} priv, {nonpriv_count} non‑priv)")
+            logger.info(f"DRY RUN: would delete {len(hashes)} torrents:")
+            logger.info(f"  Completed: {len(torrents_to_delete)} ({completed_priv} priv, {completed_nonpriv} non‑priv)")
+            logger.info(f"  Stale downloads: {len(stale_downloads)} ({stale_priv} priv, {stale_nonpriv} non‑priv)")
             return True
         
         try:
@@ -405,10 +484,9 @@ class QbtCleanup:
                 torrent_hashes=hashes
             )
             
-            logger.info(
-                f"Deleted {len(hashes)} torrents ({priv_count} priv, {nonpriv_count} non‑priv)"
-                + (" +files" if self.config.delete_files else "")
-            )
+            logger.info(f"Deleted {len(hashes)} torrents" + (" +files" if self.config.delete_files else ""))
+            logger.info(f"  Completed: {len(torrents_to_delete)} ({completed_priv} priv, {completed_nonpriv} non‑priv)")
+            logger.info(f"  Stale downloads: {len(stale_downloads)} ({stale_priv} priv, {stale_nonpriv} non‑priv)")
             return True
         except Exception as e:
             logger.error(f"Failed to delete torrents: {e}")
@@ -437,8 +515,15 @@ class QbtCleanup:
             nonprivate_count = len(torrents) - private_count
             logger.info(f"Torrent breakdown: {private_count} private, {nonprivate_count} non‑private")
             
+            # Log configuration for new features
+            if self.config.force_delete_private_after_hours > 0 or self.config.force_delete_nonprivate_after_hours > 0:
+                logger.info(f"Force delete enabled: Private={self.config.force_delete_private_after_hours:.1f}h, Non-private={self.config.force_delete_nonprivate_after_hours:.1f}h")
+            
+            if self.config.cleanup_stale_downloads:
+                logger.info(f"Stale download cleanup enabled: Private={self.config.max_download_private_days:.1f}d, Non-private={self.config.max_download_nonprivate_days:.1f}d")
+            
             # Classify torrents
-            torrents_to_delete, paused_not_ready = self.classify_torrents(
+            torrents_to_delete, paused_not_ready, stale_downloads = self.classify_torrents(
                 torrents, private_ratio, private_days, nonprivate_ratio, nonprivate_days
             )
             
@@ -447,7 +532,7 @@ class QbtCleanup:
                 logger.info(f"{len(paused_not_ready)} paused torrents not yet at their limits")
             
             # Delete torrents
-            return self.delete_torrents(torrents_to_delete)
+            return self.delete_torrents(torrents_to_delete, stale_downloads)
             
         except Exception as e:
             logger.error(f"Error during cleanup: {e}")

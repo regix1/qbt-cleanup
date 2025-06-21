@@ -16,6 +16,8 @@ This tool bridges this gap by:
 * Supporting different cleanup criteria for private and non-private torrents
 * Allowing separate pause monitoring for private and non-private torrents
 * **NEW:** FileFlows integration to protect files currently being processed
+* **NEW:** Force deletion of non-paused torrents that meet criteria but fail to auto-pause
+* **NEW:** Stale download cleanup for torrents stuck downloading too long
 * Giving you control over whether associated files are deleted
 * Providing scheduled cleanup to prevent torrent buildup
 * Manual scan triggering via Docker signals
@@ -69,10 +71,67 @@ docker run -d \
 | `CHECK_PAUSED_ONLY` | Legacy setting (use specific settings below instead) | `false` |
 | `CHECK_PRIVATE_PAUSED_ONLY` | Only check paused private torrents | Same as CHECK_PAUSED_ONLY |
 | `CHECK_NONPRIVATE_PAUSED_ONLY` | Only check paused non-private torrents | Same as CHECK_PAUSED_ONLY |
+| `FORCE_DELETE_AFTER_HOURS` | Force delete non-paused torrents after X hours of meeting criteria (0=disabled) | `0` |
+| `FORCE_DELETE_PRIVATE_AFTER_HOURS` | Force delete non-paused private torrents after X hours (0=disabled) | Same as FORCE_DELETE_AFTER_HOURS |
+| `FORCE_DELETE_NONPRIVATE_AFTER_HOURS` | Force delete non-paused non-private torrents after X hours (0=disabled) | Same as FORCE_DELETE_AFTER_HOURS |
+| `CLEANUP_STALE_DOWNLOADS` | Enable cleanup of stale downloading torrents | `false` |
+| `MAX_DOWNLOAD_DAYS` | Maximum days a torrent can be downloading before deletion | `7` |
+| `MAX_DOWNLOAD_PRIVATE_DAYS` | Maximum download days for private torrents | Same as MAX_DOWNLOAD_DAYS |
+| `MAX_DOWNLOAD_NONPRIVATE_DAYS` | Maximum download days for non-private torrents | Same as MAX_DOWNLOAD_DAYS |
 | `FILEFLOWS_ENABLED` | Enable FileFlows integration to protect processing files | `false` |
 | `FILEFLOWS_HOST` | FileFlows server host | `localhost` |
 | `FILEFLOWS_PORT` | FileFlows server port | `19200` |
 | `FILEFLOWS_TIMEOUT` | FileFlows API timeout in seconds | `10` |
+
+## Force Delete Feature
+
+Sometimes qBittorrent fails to automatically pause torrents when they meet seeding criteria. The force delete feature addresses this by allowing deletion of torrents that meet your ratio/time criteria but remain unpaused.
+
+### How it works:
+- When `CHECK_*_PAUSED_ONLY=true` is set, normally only paused torrents are considered for deletion
+- If force delete is enabled, torrents that meet criteria but aren't paused will be deleted after the specified time
+- The tool estimates how long a torrent has exceeded the deletion criteria
+- Once this "excess time" exceeds your force delete threshold, the torrent is removed
+
+### Configuration:
+```bash
+# Force delete non-paused torrents after 24 hours of meeting criteria
+-e FORCE_DELETE_AFTER_HOURS=24 \
+# Or set different values for private vs non-private
+-e FORCE_DELETE_PRIVATE_AFTER_HOURS=48 \
+-e FORCE_DELETE_NONPRIVATE_AFTER_HOURS=12 \
+```
+
+### Benefits:
+- Prevents torrents from getting "stuck" when qBittorrent fails to pause them
+- Maintains your paused-only workflow while providing a safety net
+- Different timeouts for private vs non-private torrents allow for careful ratio management
+
+## Stale Download Cleanup
+
+Torrents that fail to complete downloading can accumulate over time. The stale download cleanup feature automatically removes torrents that have been downloading for too long.
+
+### How it works:
+- Monitors torrents in downloading states (downloading, stalledDL, queuedDL, allocating, metaDL)
+- Compares download time against your maximum allowed download time
+- Removes torrents that exceed the time limit based on when they were added to qBittorrent
+- Respects FileFlows protection (won't delete if files are being processed)
+
+### Configuration:
+```bash
+# Enable stale download cleanup with 7-day limit
+-e CLEANUP_STALE_DOWNLOADS=true \
+-e MAX_DOWNLOAD_DAYS=7 \
+# Or set different limits for private vs non-private
+-e MAX_DOWNLOAD_PRIVATE_DAYS=14 \
+-e MAX_DOWNLOAD_NONPRIVATE_DAYS=3 \
+```
+
+### Benefits:
+- Automatically removes failed or extremely slow downloads
+- Prevents download queue from getting cluttered
+- Different limits for private vs non-private torrents
+- Reduces manual intervention needed for stuck downloads
 
 ## FileFlows Integration
 
@@ -111,6 +170,7 @@ This feature allows you to:
 - Remove non-private torrents more aggressively to free up resources
 - Maintain different ratios for each type based on your needs
 - Independently control which torrents are monitored based on pause state
+- Set different force delete and stale download timeouts
 
 For example, you might set:
 - Private torrents: higher ratio requirement (2.0), longer seed time (14 days), and only process paused torrents
@@ -169,6 +229,13 @@ services:
       - CHECK_NONPRIVATE_PAUSED_ONLY=false
       - SCHEDULE_HOURS=24
       - RUN_ONCE=false
+      # Force delete settings
+      - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
+      - FORCE_DELETE_NONPRIVATE_AFTER_HOURS=12
+      # Stale download cleanup
+      - CLEANUP_STALE_DOWNLOADS=true
+      - MAX_DOWNLOAD_PRIVATE_DAYS=14
+      - MAX_DOWNLOAD_NONPRIVATE_DAYS=3
       # FileFlows integration (optional)
       - FILEFLOWS_ENABLED=true
       - FILEFLOWS_HOST=192.168.1.200
@@ -187,6 +254,8 @@ When using qBittorrent with Sonarr and Radarr, several issues can occur in speci
 3. Using qBittorrent's built-in removal feature interferes with Sonarr/Radarr file management and triggers health check errors
 4. Without proper cleanup, your torrent client becomes cluttered with completed torrents
 5. File processing tools like FileFlows may be working on files from torrents that get deleted prematurely
+6. qBittorrent may fail to pause torrents when they meet seeding criteria, leaving them running indefinitely
+7. Failed or stalled downloads can accumulate over time, cluttering the download queue
 
 ### The Solution
 
@@ -195,6 +264,8 @@ This tool provides a safe way to clean up your torrents:
 - It applies different criteria to private and non-private torrents based on your preferences
 - It allows for independent monitoring of pause state for private vs. non-private torrents
 - It protects files currently being processed by FileFlows from premature deletion
+- It provides force deletion for torrents that meet criteria but fail to auto-pause
+- It automatically cleans up stale downloads that are stuck or failing
 - It gives you control over file deletion to match your media management setup
 - It runs on a schedule to keep your torrent client tidy
 - It supports manual triggering for immediate cleanup when needed
@@ -204,9 +275,10 @@ This tool provides a safe way to clean up your torrents:
 1. The tool connects to your qBittorrent WebUI
 2. If FileFlows integration is enabled, it checks for currently processing files
 3. It checks torrents against the specified criteria:
-   - For private torrents: PRIVATE_RATIO and PRIVATE_DAYS (or qBittorrent's settings)
-   - For non-private torrents: NONPRIVATE_RATIO and NONPRIVATE_DAYS (or fallback values)
+   - For downloading torrents: Checks against MAX_DOWNLOAD_*_DAYS if stale cleanup is enabled
+   - For seeding torrents: Checks against PRIVATE_RATIO/DAYS and NONPRIVATE_RATIO/DAYS (or qBittorrent's settings)
    - It applies CHECK_PRIVATE_PAUSED_ONLY to private torrents and CHECK_NONPRIVATE_PAUSED_ONLY to non-private torrents
+   - If force delete is enabled, it also checks non-paused torrents that have exceeded criteria for the specified time
 4. Torrents are protected from deletion if their files are being processed by FileFlows
 5. When torrents meet or exceed deletion criteria and are not protected, they are deleted from qBittorrent (with or without their files, as configured)
 6. The process repeats on the schedule you define
@@ -240,5 +312,3 @@ By providing a reliable cleanup mechanism that doesn't interfere with these appl
 For issues, questions, or contributions, please visit the [GitHub repository](https://github.com/regix1/qbt-cleanup).
 
 ## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
