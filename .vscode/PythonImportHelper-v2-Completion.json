@@ -45,6 +45,15 @@
         "documentation": {}
     },
     {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
+        "documentation": {}
+    },
+    {
         "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
@@ -144,6 +153,15 @@
         "documentation": {}
     },
     {
+        "label": "StateManager",
+        "kind": 6,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "class StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        self.state_file = state_file\n        self.state = self._load_state()\n    def _load_state(self) -> Dict[str, Any]:\n        \"\"\"Load state from file.\"\"\"\n        try:\n            if os.path.exists(self.state_file):\n                with open(self.state_file, 'r') as f:",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
         "label": "FileFlowsClient",
         "kind": 6,
         "importPath": "app",
@@ -157,7 +175,7 @@
         "kind": 6,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "class QbtCleanup:\n    \"\"\"Main cleanup class for qBittorrent torrents.\"\"\"\n    def __init__(self, config: QbtConfig):\n        self.config = config\n        self.client: Optional[qbittorrentapi.Client] = None\n        self.fileflows: Optional[FileFlowsClient] = None\n        self._private_cache: Dict[str, bool] = {}\n        self._privacy_method_logged = False\n    def connect(self) -> bool:\n        \"\"\"Connect to qBittorrent client and optionally FileFlows.\"\"\"",
+        "peekOfCode": "class QbtCleanup:\n    \"\"\"Main cleanup class for qBittorrent torrents.\"\"\"\n    def __init__(self, config: QbtConfig):\n        self.config = config\n        self.client: Optional[qbittorrentapi.Client] = None\n        self.fileflows: Optional[FileFlowsClient] = None\n        self.state_manager = StateManager()\n        self._private_cache: Dict[str, bool] = {}\n        self._privacy_method_logged = False\n    def connect(self) -> bool:",
         "detail": "app",
         "documentation": {}
     },
@@ -175,7 +193,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "SECONDS_PER_DAY = 86400\nDEFAULT_TIMEOUT = 30\nMAX_SEARCH_ATTEMPTS = 3\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")",
+        "peekOfCode": "SECONDS_PER_DAY = 86400\nDEFAULT_TIMEOUT = 30\nMAX_SEARCH_ATTEMPTS = 3\nSTATE_FILE = \"/config/qbt_cleanup_state.json\"\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)",
         "detail": "app",
         "documentation": {}
     },
@@ -184,7 +202,7 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "DEFAULT_TIMEOUT = 30\nMAX_SEARCH_ATTEMPTS = 3\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:",
+        "peekOfCode": "DEFAULT_TIMEOUT = 30\nMAX_SEARCH_ATTEMPTS = 3\nSTATE_FILE = \"/config/qbt_cleanup_state.json\"\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")",
         "detail": "app",
         "documentation": {}
     },
@@ -193,7 +211,16 @@
         "kind": 5,
         "importPath": "app",
         "description": "app",
-        "peekOfCode": "MAX_SEARCH_ATTEMPTS = 3\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"",
+        "peekOfCode": "MAX_SEARCH_ATTEMPTS = 3\nSTATE_FILE = \"/config/qbt_cleanup_state.json\"\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:",
+        "detail": "app",
+        "documentation": {}
+    },
+    {
+        "label": "STATE_FILE",
+        "kind": 5,
+        "importPath": "app",
+        "description": "app",
+        "peekOfCode": "STATE_FILE = \"/config/qbt_cleanup_state.json\"\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"",
         "detail": "app",
         "documentation": {}
     },

@@ -4,6 +4,7 @@ import os
 import sys
 import time
 import signal
+import json
 from datetime import datetime, timezone, timedelta
 from typing import List, Tuple, Dict, Any, Optional
 import requests
@@ -15,6 +16,7 @@ import qbittorrentapi
 SECONDS_PER_DAY = 86400
 DEFAULT_TIMEOUT = 30
 MAX_SEARCH_ATTEMPTS = 3
+STATE_FILE = "/config/qbt_cleanup_state.json"
 
 # ─── Logging setup ─────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -66,11 +68,11 @@ class QbtConfig:
         self.force_delete_private_after_hours = float(os.environ.get("FORCE_DELETE_PRIVATE_AFTER_HOURS", str(self.force_delete_after_hours)))
         self.force_delete_nonprivate_after_hours = float(os.environ.get("FORCE_DELETE_NONPRIVATE_AFTER_HOURS", str(self.force_delete_after_hours)))
         
-        # Stale download cleanup settings
+        # Stale download cleanup settings - now based on stalled time
         self.cleanup_stale_downloads = self._get_bool("CLEANUP_STALE_DOWNLOADS", False)
-        self.max_download_days = float(os.environ.get("MAX_DOWNLOAD_DAYS", "7"))
-        self.max_download_private_days = float(os.environ.get("MAX_DOWNLOAD_PRIVATE_DAYS", str(self.max_download_days)))
-        self.max_download_nonprivate_days = float(os.environ.get("MAX_DOWNLOAD_NONPRIVATE_DAYS", str(self.max_download_days)))
+        self.max_stalled_days = float(os.environ.get("MAX_STALLED_DAYS", "3"))
+        self.max_stalled_private_days = float(os.environ.get("MAX_STALLED_PRIVATE_DAYS", str(self.max_stalled_days)))
+        self.max_stalled_nonprivate_days = float(os.environ.get("MAX_STALLED_NONPRIVATE_DAYS", str(self.max_stalled_days)))
         
         # Schedule settings
         self.interval_hours = int(os.environ.get("SCHEDULE_HOURS", "24"))
@@ -86,6 +88,100 @@ class QbtConfig:
     def _get_bool(env_var: str, default: bool) -> bool:
         """Parse boolean environment variable."""
         return os.environ.get(env_var, str(default)).lower() == "true"
+
+
+class StateManager:
+    """Manages persistent state for tracking torrent status over time."""
+    
+    def __init__(self, state_file: str = STATE_FILE):
+        self.state_file = state_file
+        self.state = self._load_state()
+    
+    def _load_state(self) -> Dict[str, Any]:
+        """Load state from file."""
+        try:
+            if os.path.exists(self.state_file):
+                with open(self.state_file, 'r') as f:
+                    state = json.load(f)
+                    logger.debug(f"Loaded state for {len(state.get('torrents', {}))} torrents")
+                    return state
+        except Exception as e:
+            logger.warning(f"Failed to load state file: {e}")
+        
+        return {"torrents": {}, "last_update": None}
+    
+    def _save_state(self) -> None:
+        """Save state to file."""
+        try:
+            self.state["last_update"] = datetime.now(timezone.utc).isoformat()
+            with open(self.state_file, 'w') as f:
+                json.dump(self.state, f, indent=2)
+            logger.debug(f"Saved state for {len(self.state['torrents'])} torrents")
+        except Exception as e:
+            logger.warning(f"Failed to save state file: {e}")
+    
+    def update_torrent_state(self, torrent_hash: str, current_state: str) -> None:
+        """Update the state of a torrent and track stall time."""
+        now = datetime.now(timezone.utc).isoformat()
+        
+        if torrent_hash not in self.state["torrents"]:
+            self.state["torrents"][torrent_hash] = {
+                "first_seen": now,
+                "current_state": current_state,
+                "state_since": now,
+                "stalled_since": None
+            }
+        else:
+            torrent_data = self.state["torrents"][torrent_hash]
+            previous_state = torrent_data.get("current_state")
+            
+            # State changed
+            if previous_state != current_state:
+                torrent_data["current_state"] = current_state
+                torrent_data["state_since"] = now
+                
+                # Track when stalling starts/stops
+                if current_state == "stalledDL":
+                    if not torrent_data.get("stalled_since"):
+                        torrent_data["stalled_since"] = now
+                        logger.debug(f"Torrent {torrent_hash[:8]} entered stalled state")
+                else:
+                    if torrent_data.get("stalled_since"):
+                        logger.debug(f"Torrent {torrent_hash[:8]} exited stalled state")
+                        torrent_data["stalled_since"] = None
+    
+    def get_stalled_duration_days(self, torrent_hash: str) -> float:
+        """Get how many days a torrent has been continuously stalled."""
+        if torrent_hash not in self.state["torrents"]:
+            return 0.0
+        
+        torrent_data = self.state["torrents"][torrent_hash]
+        stalled_since = torrent_data.get("stalled_since")
+        
+        if not stalled_since:
+            return 0.0
+        
+        try:
+            stalled_start = datetime.fromisoformat(stalled_since)
+            now = datetime.now(timezone.utc)
+            duration = (now - stalled_start).total_seconds() / SECONDS_PER_DAY
+            return duration
+        except Exception as e:
+            logger.warning(f"Error calculating stalled duration for {torrent_hash}: {e}")
+            return 0.0
+    
+    def cleanup_old_torrents(self, current_hashes: List[str]) -> None:
+        """Remove state for torrents that no longer exist."""
+        old_hashes = set(self.state["torrents"].keys()) - set(current_hashes)
+        for hash_to_remove in old_hashes:
+            del self.state["torrents"][hash_to_remove]
+        
+        if old_hashes:
+            logger.debug(f"Cleaned up state for {len(old_hashes)} removed torrents")
+    
+    def save(self) -> None:
+        """Save current state to file."""
+        self._save_state()
 
 
 class FileFlowsClient:
@@ -160,6 +256,7 @@ class QbtCleanup:
         self.config = config
         self.client: Optional[qbittorrentapi.Client] = None
         self.fileflows: Optional[FileFlowsClient] = None
+        self.state_manager = StateManager()
         self._private_cache: Dict[str, bool] = {}
         self._privacy_method_logged = False
     
@@ -326,32 +423,43 @@ class QbtCleanup:
                     processing_paths.add(file_info['Name'])
             logger.info(f"FileFlows is processing {len(processing_files)} files ({len(processing_paths)} paths cached for matching)")
         
+        # Update state for all torrents and clean up old ones
+        current_hashes = [t.hash for t in torrents]
+        self.state_manager.cleanup_old_torrents(current_hashes)
+        
         for torrent in torrents:
             is_priv = self.is_private(torrent)
             paused = torrent.state in ("pausedUP", "pausedDL")
             downloading = torrent.state in ("downloading", "stalledDL", "queuedDL", "allocating", "metaDL")
             
-            # Check for stale downloads first
-            if self.config.cleanup_stale_downloads and downloading:
-                max_download_days = self.config.max_download_private_days if is_priv else self.config.max_download_nonprivate_days
-                download_time_days = (time.time() - torrent.added_on) / SECONDS_PER_DAY
+            # Update state tracking
+            self.state_manager.update_torrent_state(torrent.hash, torrent.state)
+            
+            # Check for stale downloads - now based on stall time
+            if self.config.cleanup_stale_downloads and torrent.state == "stalledDL":
+                max_stalled_days = self.config.max_stalled_private_days if is_priv else self.config.max_stalled_nonprivate_days
+                stalled_days = self.state_manager.get_stalled_duration_days(torrent.hash)
                 
-                if download_time_days > max_download_days:
+                if stalled_days > max_stalled_days:
                     # Check if FileFlows is processing this torrent
                     if self._is_torrent_being_processed_cached(torrent, processing_paths):
                         logger.info(
-                            f"→ skipping stale download (FileFlows processing): {torrent.name[:60]!r} "
+                            f"→ skipping stalled download (FileFlows processing): {torrent.name[:60]!r} "
                             f"(priv={is_priv}, state={torrent.state}, "
-                            f"downloading={download_time_days:.1f}/{max_download_days:.1f}d)"
+                            f"stalled={stalled_days:.1f}/{max_stalled_days:.1f}d)"
                         )
                     else:
-                        stale_downloads.append((torrent, is_priv, max_download_days, download_time_days))
+                        stale_downloads.append((torrent, is_priv, max_stalled_days, stalled_days))
                         logger.info(
-                            f"→ delete stale download: {torrent.name[:60]!r} "
+                            f"→ delete stalled download: {torrent.name[:60]!r} "
                             f"(priv={is_priv}, state={torrent.state}, "
-                            f"downloading={download_time_days:.1f}/{max_download_days:.1f}d)"
+                            f"stalled={stalled_days:.1f}/{max_stalled_days:.1f}d)"
                         )
-                continue  # Skip further processing for downloading torrents
+                continue  # Skip further processing for stalled downloads
+            
+            # Skip other downloading states from seeding/completed logic
+            if downloading and torrent.state != "stalledDL":
+                continue
             
             # Skip seeding/completed torrents if requiring paused-only and not paused
             if ((is_priv and self.config.check_private_paused_only and not paused) or 
@@ -419,11 +527,14 @@ class QbtCleanup:
             elif paused:
                 paused_not_ready.append((torrent, is_priv, ratio_limit, time_limit))
         
+        # Save state after processing all torrents
+        self.state_manager.save()
+        
         # Log status
         if fileflows_processing:
             logger.info(f"{len(fileflows_processing)} torrents skipped due to FileFlows processing")
         if stale_downloads:
-            logger.info(f"{len(stale_downloads)} stale downloads found for deletion")
+            logger.info(f"{len(stale_downloads)} stalled downloads found for deletion")
         
         return torrents_to_delete, paused_not_ready, stale_downloads
     
@@ -475,7 +586,7 @@ class QbtCleanup:
         if self.config.dry_run:
             logger.info(f"DRY RUN: would delete {len(hashes)} torrents:")
             logger.info(f"  Completed: {len(torrents_to_delete)} ({completed_priv} priv, {completed_nonpriv} non‑priv)")
-            logger.info(f"  Stale downloads: {len(stale_downloads)} ({stale_priv} priv, {stale_nonpriv} non‑priv)")
+            logger.info(f"  Stalled downloads: {len(stale_downloads)} ({stale_priv} priv, {stale_nonpriv} non‑priv)")
             return True
         
         try:
@@ -486,7 +597,7 @@ class QbtCleanup:
             
             logger.info(f"Deleted {len(hashes)} torrents" + (" +files" if self.config.delete_files else ""))
             logger.info(f"  Completed: {len(torrents_to_delete)} ({completed_priv} priv, {completed_nonpriv} non‑priv)")
-            logger.info(f"  Stale downloads: {len(stale_downloads)} ({stale_priv} priv, {stale_nonpriv} non‑priv)")
+            logger.info(f"  Stalled downloads: {len(stale_downloads)} ({stale_priv} priv, {stale_nonpriv} non‑priv)")
             return True
         except Exception as e:
             logger.error(f"Failed to delete torrents: {e}")
@@ -520,7 +631,7 @@ class QbtCleanup:
                 logger.info(f"Force delete enabled: Private={self.config.force_delete_private_after_hours:.1f}h, Non-private={self.config.force_delete_nonprivate_after_hours:.1f}h")
             
             if self.config.cleanup_stale_downloads:
-                logger.info(f"Stale download cleanup enabled: Private={self.config.max_download_private_days:.1f}d, Non-private={self.config.max_download_nonprivate_days:.1f}d")
+                logger.info(f"Stalled download cleanup enabled: Private={self.config.max_stalled_private_days:.1f}d, Non-private={self.config.max_stalled_nonprivate_days:.1f}d")
             
             # Classify torrents
             torrents_to_delete, paused_not_ready, stale_downloads = self.classify_torrents(

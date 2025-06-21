@@ -28,6 +28,7 @@ This tool bridges this gap by:
 docker run -d \
   --name qbt-cleanup \
   --restart unless-stopped \
+  -v /path/to/config:/config \
   -e QB_HOST=192.168.1.100 \
   -e QB_PORT=8080 \
   -e QB_USERNAME=admin \
@@ -74,10 +75,10 @@ docker run -d \
 | `FORCE_DELETE_AFTER_HOURS` | Force delete non-paused torrents after X hours of meeting criteria (0=disabled) | `0` |
 | `FORCE_DELETE_PRIVATE_AFTER_HOURS` | Force delete non-paused private torrents after X hours (0=disabled) | Same as FORCE_DELETE_AFTER_HOURS |
 | `FORCE_DELETE_NONPRIVATE_AFTER_HOURS` | Force delete non-paused non-private torrents after X hours (0=disabled) | Same as FORCE_DELETE_AFTER_HOURS |
-| `CLEANUP_STALE_DOWNLOADS` | Enable cleanup of stale downloading torrents | `false` |
-| `MAX_DOWNLOAD_DAYS` | Maximum days a torrent can be downloading before deletion | `7` |
-| `MAX_DOWNLOAD_PRIVATE_DAYS` | Maximum download days for private torrents | Same as MAX_DOWNLOAD_DAYS |
-| `MAX_DOWNLOAD_NONPRIVATE_DAYS` | Maximum download days for non-private torrents | Same as MAX_DOWNLOAD_DAYS |
+| `CLEANUP_STALE_DOWNLOADS` | Enable cleanup of stalled downloading torrents | `false` |
+| `MAX_STALLED_DAYS` | Maximum days a torrent can be stalled before deletion (0=disabled) | `3` |
+| `MAX_STALLED_PRIVATE_DAYS` | Maximum stalled days for private torrents (0=disabled) | Same as MAX_STALLED_DAYS |
+| `MAX_STALLED_NONPRIVATE_DAYS` | Maximum stalled days for non-private torrents (0=disabled) | Same as MAX_STALLED_DAYS |
 | `FILEFLOWS_ENABLED` | Enable FileFlows integration to protect processing files | `false` |
 | `FILEFLOWS_HOST` | FileFlows server host | `localhost` |
 | `FILEFLOWS_PORT` | FileFlows server port | `19200` |
@@ -109,29 +110,38 @@ Sometimes qBittorrent fails to automatically pause torrents when they meet seedi
 
 ## Stale Download Cleanup
 
-Torrents that fail to complete downloading can accumulate over time. The stale download cleanup feature automatically removes torrents that have been downloading for too long.
+Torrents that get stuck in a stalled state can accumulate over time. The stale download cleanup feature automatically removes torrents that have been continuously stalled for too long.
 
 ### How it works:
-- Monitors torrents in downloading states (downloading, stalledDL, queuedDL, allocating, metaDL)
-- Compares download time against your maximum allowed download time
-- Removes torrents that exceed the time limit based on when they were added to qBittorrent
+- Tracks torrents specifically in the `stalledDL` state (no progress being made)
+- Uses persistent state storage to monitor how long each torrent has been continuously stalled
+- Only counts consecutive stall time - if a torrent resumes downloading, the stall timer resets
+- Removes torrents that exceed your maximum allowed stall time
 - Respects FileFlows protection (won't delete if files are being processed)
+- Actively downloading torrents are never affected, only stalled ones
 
 ### Configuration:
 ```bash
-# Enable stale download cleanup with 7-day limit
+# Enable stalled download cleanup with 3-day stall limit
 -e CLEANUP_STALE_DOWNLOADS=true \
--e MAX_DOWNLOAD_DAYS=7 \
+-e MAX_STALLED_DAYS=3 \
 # Or set different limits for private vs non-private
--e MAX_DOWNLOAD_PRIVATE_DAYS=14 \
--e MAX_DOWNLOAD_NONPRIVATE_DAYS=3 \
+-e MAX_STALLED_PRIVATE_DAYS=7 \
+-e MAX_STALLED_NONPRIVATE_DAYS=1 \
 ```
 
+**Important:** For persistence across container restarts, mount a volume to `/config`:
+```bash
+-v /path/to/config:/config
+```
+The script stores state tracking data in `/config/qbt_cleanup_state.json`.
+
 ### Benefits:
-- Automatically removes failed or extremely slow downloads
-- Prevents download queue from getting cluttered
+- Only removes truly problematic torrents (stalled, not just slow)
+- Preserves legitimate slow downloads that are still making progress
 - Different limits for private vs non-private torrents
-- Reduces manual intervention needed for stuck downloads
+- Persistent tracking across script restarts
+- Reduces manual intervention for genuinely stuck downloads
 
 ## FileFlows Integration
 
@@ -210,6 +220,8 @@ services:
     restart: unless-stopped
     depends_on:
       - qbittorrent
+    volumes:
+      - ./qbt-cleanup-config:/config
     environment:
       - QB_HOST=192.168.1.100
       - QB_PORT=8080
@@ -232,10 +244,10 @@ services:
       # Force delete settings
       - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
       - FORCE_DELETE_NONPRIVATE_AFTER_HOURS=12
-      # Stale download cleanup
+      # Stalled download cleanup
       - CLEANUP_STALE_DOWNLOADS=true
-      - MAX_DOWNLOAD_PRIVATE_DAYS=14
-      - MAX_DOWNLOAD_NONPRIVATE_DAYS=3
+      - MAX_STALLED_PRIVATE_DAYS=7
+      - MAX_STALLED_NONPRIVATE_DAYS=1
       # FileFlows integration (optional)
       - FILEFLOWS_ENABLED=true
       - FILEFLOWS_HOST=192.168.1.200
@@ -255,7 +267,7 @@ When using qBittorrent with Sonarr and Radarr, several issues can occur in speci
 4. Without proper cleanup, your torrent client becomes cluttered with completed torrents
 5. File processing tools like FileFlows may be working on files from torrents that get deleted prematurely
 6. qBittorrent may fail to pause torrents when they meet seeding criteria, leaving them running indefinitely
-7. Failed or stalled downloads can accumulate over time, cluttering the download queue
+7. Downloads can get stuck in a stalled state with no progress, cluttering the download queue
 
 ### The Solution
 
@@ -265,7 +277,7 @@ This tool provides a safe way to clean up your torrents:
 - It allows for independent monitoring of pause state for private vs. non-private torrents
 - It protects files currently being processed by FileFlows from premature deletion
 - It provides force deletion for torrents that meet criteria but fail to auto-pause
-- It automatically cleans up stale downloads that are stuck or failing
+- It automatically cleans up downloads that are stuck in stalled states
 - It gives you control over file deletion to match your media management setup
 - It runs on a schedule to keep your torrent client tidy
 - It supports manual triggering for immediate cleanup when needed
@@ -275,7 +287,7 @@ This tool provides a safe way to clean up your torrents:
 1. The tool connects to your qBittorrent WebUI
 2. If FileFlows integration is enabled, it checks for currently processing files
 3. It checks torrents against the specified criteria:
-   - For downloading torrents: Checks against MAX_DOWNLOAD_*_DAYS if stale cleanup is enabled
+   - For stalled downloads: Checks against MAX_STALLED_*_DAYS if stall cleanup is enabled
    - For seeding torrents: Checks against PRIVATE_RATIO/DAYS and NONPRIVATE_RATIO/DAYS (or qBittorrent's settings)
    - It applies CHECK_PRIVATE_PAUSED_ONLY to private torrents and CHECK_NONPRIVATE_PAUSED_ONLY to non-private torrents
    - If force delete is enabled, it also checks non-paused torrents that have exceeded criteria for the specified time
