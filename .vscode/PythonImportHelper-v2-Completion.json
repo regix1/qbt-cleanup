@@ -918,7 +918,7 @@
         "kind": 6,
         "importPath": "state",
         "description": "state",
-        "peekOfCode": "class StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        \"\"\"\n        Initialize state manager.\n        Args:\n            state_file: Path to state file\n        \"\"\"\n        self.state_file = state_file\n        self.state: Dict[str, Any] = self._load_state()",
+        "peekOfCode": "class StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        \"\"\"\n        Initialize state manager.\n        Args:\n            state_file: Path to state file\n        \"\"\"\n        self.state_file = state_file\n        self.state_enabled = True",
         "detail": "state",
         "documentation": {}
     },

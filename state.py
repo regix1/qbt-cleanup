@@ -24,13 +24,28 @@ class StateManager:
             state_file: Path to state file
         """
         self.state_file = state_file
+        self.state_enabled = True
         self.state: Dict[str, Any] = self._load_state()
         self._ensure_state_dir()
     
     def _ensure_state_dir(self) -> None:
-        """Ensure state file directory exists."""
-        state_dir = Path(self.state_file).parent
-        state_dir.mkdir(parents=True, exist_ok=True)
+        """Ensure state file directory exists and is writable."""
+        try:
+            state_dir = Path(self.state_file).parent
+            state_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Test write permissions
+            test_file = state_dir / ".write_test"
+            try:
+                test_file.touch()
+                test_file.unlink()
+            except (PermissionError, OSError) as e:
+                logger.warning(f"State directory not writable: {e}")
+                logger.warning("State persistence disabled - tracking will reset on restart")
+                self.state_enabled = False
+        except Exception as e:
+            logger.warning(f"Could not ensure state directory: {e}")
+            self.state_enabled = False
     
     def _load_state(self) -> Dict[str, Any]:
         """Load state from file."""
@@ -40,6 +55,10 @@ class StateManager:
                     state = json.load(f)
                     logger.debug(f"Loaded state for {len(state.get('torrents', {}))} torrents")
                     return state
+        except PermissionError as e:
+            logger.warning(f"Permission denied reading state file: {e}")
+            logger.warning("State persistence disabled - tracking will reset on restart")
+            self.state_enabled = False
         except json.JSONDecodeError as e:
             logger.error(f"Corrupted state file, starting fresh: {e}")
         except Exception as e:
@@ -54,6 +73,9 @@ class StateManager:
         Returns:
             True if successful, False otherwise
         """
+        if not self.state_enabled:
+            return False
+            
         try:
             self.state["last_update"] = datetime.now(timezone.utc).isoformat()
             
@@ -67,6 +89,12 @@ class StateManager:
             
             logger.debug(f"Saved state for {len(self.state['torrents'])} torrents")
             return True
+        except PermissionError as e:
+            if self.state_enabled:  # Only warn once
+                logger.warning(f"Permission denied saving state: {e}")
+                logger.warning("State persistence disabled - tracking will reset on restart")
+                self.state_enabled = False
+            return False
         except Exception as e:
             logger.error(f"Failed to save state file: {e}")
             return False
@@ -117,8 +145,12 @@ class StateManager:
             torrent_hash: Torrent hash
             
         Returns:
-            Days stalled (0 if not stalled)
+            Days stalled (0 if not stalled or state disabled)
         """
+        # If state persistence is disabled, we can't track stall duration
+        if not self.state_enabled:
+            return 0.0
+            
         if torrent_hash not in self.state["torrents"]:
             return 0.0
         
