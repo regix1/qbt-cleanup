@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -6,8 +6,15 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application
-COPY app.py .
+# Copy application files
+COPY *.py ./
 
-# Run the script
-CMD ["python", "app.py"]
+# Create config directory
+RUN mkdir -p /config
+
+# Run as non-root user
+RUN useradd -m -u 1000 qbtuser && \
+    chown -R qbtuser:qbtuser /app /config
+USER qbtuser
+
+ENTRYPOINT ["python", "-u", "main.py"]
