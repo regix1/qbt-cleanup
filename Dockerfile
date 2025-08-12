@@ -9,15 +9,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY *.py ./
 
-# Create config directory with proper permissions
-RUN mkdir -p /config && \
-    chmod 777 /config
+# Create config directory
+RUN mkdir -p /config
 
-# Create non-root user
-RUN useradd -m -u 1000 qbtuser && \
-    chown -R qbtuser:qbtuser /app
+# Create entrypoint script that handles permissions
+RUN echo '#!/bin/sh\n\
+if [ ! -z "$PUID" ] && [ ! -z "$PGID" ]; then\n\
+    echo "Setting ownership to $PUID:$PGID"\n\
+    chown -R $PUID:$PGID /config\n\
+fi\n\
+exec python -u main.py "$@"' > /entrypoint.sh && \
+    chmod +x /entrypoint.sh
 
-# Switch to non-root user
-USER qbtuser
-
-ENTRYPOINT ["python", "-u", "main.py"]
+ENTRYPOINT ["/entrypoint.sh"]
