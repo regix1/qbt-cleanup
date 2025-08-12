@@ -9,12 +9,15 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application files
 COPY *.py ./
 
-# Create config directory
-RUN mkdir -p /config
+# Create config directory with proper permissions
+RUN mkdir -p /config && \
+    chmod 777 /config
 
-# Run as non-root user
+# Create non-root user
 RUN useradd -m -u 1000 qbtuser && \
-    chown -R qbtuser:qbtuser /app /config
+    chown -R qbtuser:qbtuser /app
+
+# Switch to non-root user
 USER qbtuser
 
 ENTRYPOINT ["python", "-u", "main.py"]
