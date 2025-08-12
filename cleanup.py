@@ -50,9 +50,9 @@ class QbtCleanup:
             # Test FileFlows connection if enabled
             if self.fileflows and self.fileflows.is_enabled:
                 if self.fileflows.test_connection():
-                    logger.info("FileFlows integration active")
+                    logger.info("📁 FileFlows: Connected")
                 else:
-                    logger.warning("FileFlows enabled but connection failed")
+                    logger.warning("📁 FileFlows: Connection failed")
                     self.fileflows = None
             
             # Initialize classifier
@@ -61,10 +61,10 @@ class QbtCleanup:
             # Get torrents
             raw_torrents = self.client.get_torrents()
             if not raw_torrents:
-                logger.info("No torrents found")
+                logger.info("📭 No torrents found")
                 return True
             
-            logger.info(f"Processing {len(raw_torrents)} torrents")
+            logger.info(f"📊 Found {len(raw_torrents)} torrents")
             
             # Process torrents
             torrents = [self.client.process_torrent(t) for t in raw_torrents]
@@ -72,7 +72,7 @@ class QbtCleanup:
             # Log torrent breakdown
             private_count = sum(1 for t in torrents if t.is_private)
             public_count = len(torrents) - private_count
-            logger.info(f"Breakdown: {private_count} private, {public_count} public")
+            logger.info(f"🔐 Private: {private_count} | 🌐 Public: {public_count}")
             
             # Get limits
             limits = self.client.get_qbt_limits(self.config.limits)
@@ -87,7 +87,7 @@ class QbtCleanup:
             return self._delete_torrents(result)
             
         except Exception as e:
-            logger.error(f"Cleanup failed: {e}", exc_info=True)
+            logger.error(f"❌ Cleanup failed: {e}", exc_info=True)
             return False
         finally:
             self.client.disconnect()
@@ -96,26 +96,27 @@ class QbtCleanup:
         """Log active configuration features."""
         behavior = self.config.behavior
         
+        features = []
+        
         # Force delete
         if behavior.force_delete_private_hours > 0 or behavior.force_delete_public_hours > 0:
-            logger.info(
-                f"Force delete: Private={behavior.force_delete_private_hours:.1f}h, "
-                f"Public={behavior.force_delete_public_hours:.1f}h"
-            )
+            features.append(f"⏰ Force delete after {behavior.force_delete_private_hours:.0f}h/{behavior.force_delete_public_hours:.0f}h")
         
         # Stalled cleanup
         if behavior.cleanup_stale_downloads:
-            logger.info(
-                f"Stalled cleanup: Private={behavior.max_stalled_private_days:.1f}d, "
-                f"Public={behavior.max_stalled_public_days:.1f}d"
-            )
+            features.append(f"🐌 Stalled cleanup after {behavior.max_stalled_private_days:.0f}d/{behavior.max_stalled_public_days:.0f}d")
         
         # Paused only
         if behavior.check_private_paused_only or behavior.check_public_paused_only:
-            logger.info(
-                f"Paused-only: Private={behavior.check_private_paused_only}, "
-                f"Public={behavior.check_public_paused_only}"
-            )
+            paused_status = []
+            if behavior.check_private_paused_only:
+                paused_status.append("Private")
+            if behavior.check_public_paused_only:
+                paused_status.append("Public")
+            features.append(f"⏸️  Paused-only: {', '.join(paused_status)}")
+        
+        if features:
+            logger.info(f"⚙️  Features: {' | '.join(features)}")
     
     def _delete_torrents(self, result: ClassificationResult) -> bool:
         """
@@ -128,7 +129,7 @@ class QbtCleanup:
             True if successful
         """
         if result.total_deletions == 0:
-            logger.info("No torrents matched deletion criteria")
+            logger.info("✨ No torrents need cleanup")
             return True
         
         # Get statistics
@@ -140,12 +141,14 @@ class QbtCleanup:
         
         # Dry run check
         if self.config.behavior.dry_run:
-            logger.info(f"DRY RUN: Would delete {len(hashes)} torrents:")
+            logger.info(f"🔍 DRY RUN: Would delete {len(hashes)} torrents")
             self._log_deletion_stats(stats)
             
-            # Log individual torrents in dry run
-            for candidate in all_candidates:
-                logger.info(f"  - {truncate_name(candidate.info.name, 50)}: {candidate.format_reason()}")
+            # Log sample torrents in dry run
+            for i, candidate in enumerate(all_candidates[:5]):
+                logger.info(f"  {i+1}. {truncate_name(candidate.info.name, 40)}")
+            if len(all_candidates) > 5:
+                logger.info(f"  ... and {len(all_candidates) - 5} more")
             
             return True
         
@@ -153,24 +156,23 @@ class QbtCleanup:
         success = self.client.delete_torrents(hashes, self.config.behavior.delete_files)
         
         if success:
-            files_msg = " (with files)" if self.config.behavior.delete_files else " (torrents only)"
-            logger.info(f"Deleted {len(hashes)} torrents{files_msg}")
+            action = "🗑️  Deleted" if self.config.behavior.delete_files else "📤 Removed"
+            logger.info(f"{action} {len(hashes)} torrents")
             self._log_deletion_stats(stats)
         else:
-            logger.error("Failed to delete torrents")
+            logger.error("❌ Failed to delete torrents")
         
         return success
     
     def _log_deletion_stats(self, stats: dict) -> None:
         """Log deletion statistics."""
+        parts = []
+        
         if stats["completed"] > 0:
-            logger.info(
-                f"  Completed: {stats['completed']} "
-                f"({stats['private_completed']} private, {stats['public_completed']} public)"
-            )
+            parts.append(f"Completed: {stats['completed']}")
         
         if stats["stalled"] > 0:
-            logger.info(
-                f"  Stalled: {stats['stalled']} "
-                f"({stats['private_stalled']} private, {stats['public_stalled']} public)"
-            )
+            parts.append(f"Stalled: {stats['stalled']}")
+        
+        if parts:
+            logger.info(f"   📈 {' | '.join(parts)}")
