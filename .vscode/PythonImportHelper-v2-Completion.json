@@ -614,6 +614,14 @@
         "documentation": {}
     },
     {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "timezone",
         "importPath": "datetime",
         "description": "datetime",
@@ -686,6 +694,14 @@
         "description": "cleanup",
         "isExtraImport": true,
         "detail": "cleanup",
+        "documentation": {}
+    },
+    {
+        "label": "at the top",
+        "importPath": "datetime import timedelta  # Add this",
+        "description": "datetime import timedelta  # Add this",
+        "isExtraImport": true,
+        "detail": "datetime import timedelta  # Add this",
         "documentation": {}
     },
     {
@@ -851,11 +867,38 @@
         "documentation": {}
     },
     {
+        "label": "PrettyFormatter",
+        "kind": 6,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "class PrettyFormatter(logging.Formatter):\n    \"\"\"Custom formatter with colors and symbols for prettier output.\"\"\"\n    # ANSI color codes\n    COLORS = {\n        'DEBUG': '\\033[36m',    # Cyan\n        'INFO': '\\033[32m',     # Green\n        'WARNING': '\\033[33m',  # Yellow\n        'ERROR': '\\033[31m',    # Red\n        'CRITICAL': '\\033[35m', # Magenta\n        'RESET': '\\033[0m',     # Reset",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "setup_logging",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def setup_logging(debug=False):\n    \"\"\"Set up logging with pretty formatting.\"\"\"\n    # Remove all existing handlers\n    root_logger = logging.getLogger()\n    for handler in root_logger.handlers[:]:\n        root_logger.removeHandler(handler)\n    # Create console handler with pretty formatter\n    console_handler = logging.StreamHandler(sys.stdout)\n    console_handler.setFormatter(PrettyFormatter(use_colors=True, use_symbols=True))\n    # Set levels",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
         "label": "signal_handler",
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def signal_handler(signum, frame):\n    \"\"\"Handle manual scan trigger signal.\"\"\"\n    logger.info(\"Manual scan triggered via signal\")\n    manual_scan_event.set()\ndef run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.\n    Args:\n        config: Application configuration\n    Returns:",
+        "peekOfCode": "def signal_handler(signum, frame):\n    \"\"\"Handle manual scan trigger signal.\"\"\"\n    logger.info(\"Manual scan triggered via signal\")\n    manual_scan_event.set()\ndef print_banner():\n    \"\"\"Print a nice startup banner.\"\"\"\n    banner = \"\"\"\n╔══════════════════════════════════════════════════════════╗\n║          🧹 qBittorrent Cleanup Tool v2.0 🧹            ║\n╚══════════════════════════════════════════════════════════╝\"\"\"",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "print_banner",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def print_banner():\n    \"\"\"Print a nice startup banner.\"\"\"\n    banner = \"\"\"\n╔══════════════════════════════════════════════════════════╗\n║          🧹 qBittorrent Cleanup Tool v2.0 🧹            ║\n╚══════════════════════════════════════════════════════════╝\"\"\"\n    print(banner)\ndef run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.",
         "detail": "main",
         "documentation": {}
     },
@@ -864,7 +907,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.\n    Args:\n        config: Application configuration\n    Returns:\n        True if successful\n    \"\"\"\n    try:\n        cleanup = QbtCleanup(config)",
+        "peekOfCode": "def run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.\n    Args:\n        config: Application configuration\n    Returns:\n        True if successful\n    \"\"\"\n    try:\n        logger.info(\"Starting cleanup cycle...\")",
         "detail": "main",
         "documentation": {}
     },
@@ -873,16 +916,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    # Load configuration\n    config = Config.from_environment()\n    # Set up signal handler for manual scan\n    signal.signal(signal.SIGUSR1, signal_handler)\n    # Log startup information\n    logger.info(\"=\" * 60)\n    logger.info(\"qBittorrent Cleanup Tool Started\")\n    logger.info(\"=\" * 60)",
-        "detail": "main",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "kind": 5,
-        "importPath": "main",
-        "description": "main",
-        "peekOfCode": "logger = logging.getLogger(__name__)\n# Global event for manual scan triggering\nmanual_scan_event = Event()\ndef signal_handler(signum, frame):\n    \"\"\"Handle manual scan trigger signal.\"\"\"\n    logger.info(\"Manual scan triggered via signal\")\n    manual_scan_event.set()\ndef run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.",
+        "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    # Set up pretty logging\n    setup_logging(debug=False)\n    # Print banner\n    print_banner()\n    # Load configuration\n    config = Config.from_environment()\n    # Set up signal handler for manual scan\n    signal.signal(signal.SIGUSR1, signal_handler)",
         "detail": "main",
         "documentation": {}
     },
@@ -891,7 +925,16 @@
         "kind": 5,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "manual_scan_event = Event()\ndef signal_handler(signum, frame):\n    \"\"\"Handle manual scan trigger signal.\"\"\"\n    logger.info(\"Manual scan triggered via signal\")\n    manual_scan_event.set()\ndef run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.\n    Args:\n        config: Application configuration",
+        "peekOfCode": "manual_scan_event = Event()\ndef signal_handler(signum, frame):\n    \"\"\"Handle manual scan trigger signal.\"\"\"\n    logger.info(\"Manual scan triggered via signal\")\n    manual_scan_event.set()\ndef print_banner():\n    \"\"\"Print a nice startup banner.\"\"\"\n    banner = \"\"\"\n╔══════════════════════════════════════════════════════════╗\n║          🧹 qBittorrent Cleanup Tool v2.0 🧹            ║",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "logger = logging.getLogger(__name__)\ndef main():\n    \"\"\"Main entry point.\"\"\"\n    # Set up pretty logging\n    setup_logging(debug=False)\n    # Print banner\n    print_banner()\n    # Load configuration\n    config = Config.from_environment()\n    # Set up signal handler for manual scan",
         "detail": "main",
         "documentation": {}
     },
