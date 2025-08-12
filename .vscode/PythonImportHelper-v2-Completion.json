@@ -482,12 +482,30 @@
         "documentation": {}
     },
     {
+        "label": "warnings",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "warnings",
+        "description": "warnings",
+        "detail": "warnings",
+        "documentation": {}
+    },
+    {
         "label": "qbittorrentapi",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "qbittorrentapi",
         "description": "qbittorrentapi",
         "detail": "qbittorrentapi",
+        "documentation": {}
+    },
+    {
+        "label": "urllib3",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "urllib3",
+        "description": "urllib3",
+        "detail": "urllib3",
         "documentation": {}
     },
     {

@@ -3,12 +3,17 @@
 
 import logging
 import time
+import warnings
 from typing import Optional, List, Any, Dict, Tuple
 import qbittorrentapi
-import os
+import urllib3
+
 from constants import DEFAULT_TIMEOUT, MAX_RETRY_ATTEMPTS, RETRY_DELAY
 from config import ConnectionConfig, LimitsConfig
 from models import TorrentInfo
+
+# Suppress SSL warnings when SSL verification is disabled
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +47,12 @@ class QBittorrentClient:
         Returns:
             True if connection successful
         """
+        # Suppress SSL warnings if SSL verification is disabled
+        if not self.config.verify_ssl:
+            import requests
+            from requests.packages.urllib3.exceptions import InsecureRequestWarning
+            requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+        
         for attempt in range(MAX_RETRY_ATTEMPTS):
             try:
                 self._client = qbittorrentapi.Client(
@@ -53,7 +64,15 @@ class QBittorrentClient:
                     REQUESTS_ARGS={'timeout': DEFAULT_TIMEOUT}
                 )
                 
-                self._client.auth_log_in()
+                # Suppress SSL logging for connection
+                original_level = logging.getLogger("urllib3.connectionpool").level
+                logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
+                
+                try:
+                    self._client.auth_log_in()
+                finally:
+                    # Restore original logging level
+                    logging.getLogger("urllib3.connectionpool").setLevel(original_level)
                 
                 version = self._client.app.version
                 api_version = self._client.app.web_api_version
@@ -70,7 +89,9 @@ class QBittorrentClient:
                     logger.error(f"Connection failed after {MAX_RETRY_ATTEMPTS} attempts: {e}")
                     return False
                 else:
-                    logger.warning(f"Connection attempt {attempt + 1} failed, retrying: {e}")
+                    # Only log if not SSL-related on first attempt
+                    if attempt > 0 or "SSL" not in str(e):
+                        logger.warning(f"Connection attempt {attempt + 1} failed, retrying: {e}")
                     time.sleep(RETRY_DELAY)
             except Exception as e:
                 logger.error(f"Unexpected error during connection: {e}")
@@ -209,6 +230,7 @@ class QBittorrentClient:
         if prefs.get("max_ratio_enabled", False):
             global_ratio = prefs.get("max_ratio", limits_config.fallback_ratio)
             
+            import os
             if not limits_config.ignore_qbt_ratio_private and os.environ.get("PRIVATE_RATIO") is None:
                 private_ratio = global_ratio
             if not limits_config.ignore_qbt_ratio_public and os.environ.get("NONPRIVATE_RATIO") is None:
@@ -221,6 +243,7 @@ class QBittorrentClient:
             global_minutes = prefs.get("max_seeding_time", limits_config.fallback_days * 24 * 60)
             global_days = global_minutes / 60 / 24
             
+            import os
             if not limits_config.ignore_qbt_time_private and os.environ.get("PRIVATE_DAYS") is None:
                 private_days = global_days
             if not limits_config.ignore_qbt_time_public and os.environ.get("NONPRIVATE_DAYS") is None:
