@@ -9,72 +9,43 @@
         "documentation": {}
     },
     {
-        "label": "os",
-        "kind": 6,
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "importPath": "os",
-        "description": "os",
-        "detail": "os",
+        "detail": "typing",
         "documentation": {}
     },
     {
-        "label": "sys",
-        "kind": 6,
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
+        "detail": "typing",
         "documentation": {}
     },
     {
-        "label": "time",
-        "kind": 6,
+        "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "importPath": "time",
-        "description": "time",
-        "detail": "time",
+        "detail": "typing",
         "documentation": {}
     },
     {
-        "label": "signal",
-        "kind": 6,
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "importPath": "signal",
-        "description": "signal",
-        "detail": "signal",
+        "detail": "typing",
         "documentation": {}
     },
     {
-        "label": "json",
-        "kind": 6,
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "importPath": "json",
-        "description": "json",
-        "detail": "json",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timezone",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
+        "detail": "typing",
         "documentation": {}
     },
     {
@@ -86,7 +57,103 @@
         "documentation": {}
     },
     {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "Tuple",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Final",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Dict",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Set",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Any",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "List",
         "importPath": "typing",
         "description": "typing",
         "isExtraImport": true,
@@ -118,20 +185,300 @@
         "documentation": {}
     },
     {
-        "label": "requests",
-        "kind": 6,
+        "label": "List",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "importPath": "requests",
-        "description": "requests",
-        "detail": "requests",
+        "detail": "typing",
         "documentation": {}
     },
     {
-        "label": "Path",
-        "importPath": "pathlib",
-        "description": "pathlib",
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
         "isExtraImport": true,
-        "detail": "pathlib",
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Config",
+        "importPath": "config",
+        "description": "config",
+        "isExtraImport": true,
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "Config",
+        "importPath": "config",
+        "description": "config",
+        "isExtraImport": true,
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "ConnectionConfig",
+        "importPath": "config",
+        "description": "config",
+        "isExtraImport": true,
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "LimitsConfig",
+        "importPath": "config",
+        "description": "config",
+        "isExtraImport": true,
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "FileFlowsConfig",
+        "importPath": "config",
+        "description": "config",
+        "isExtraImport": true,
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "Config",
+        "importPath": "config",
+        "description": "config",
+        "isExtraImport": true,
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentInfo",
+        "importPath": "models",
+        "description": "models",
+        "isExtraImport": true,
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentLimits",
+        "importPath": "models",
+        "description": "models",
+        "isExtraImport": true,
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "DeletionCandidate",
+        "importPath": "models",
+        "description": "models",
+        "isExtraImport": true,
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "ClassificationResult",
+        "importPath": "models",
+        "description": "models",
+        "isExtraImport": true,
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "DeletionReason",
+        "importPath": "models",
+        "description": "models",
+        "isExtraImport": true,
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "ClassificationResult",
+        "importPath": "models",
+        "description": "models",
+        "isExtraImport": true,
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentInfo",
+        "importPath": "models",
+        "description": "models",
+        "isExtraImport": true,
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "StateManager",
+        "importPath": "state",
+        "description": "state",
+        "isExtraImport": true,
+        "detail": "state",
+        "documentation": {}
+    },
+    {
+        "label": "StateManager",
+        "importPath": "state",
+        "description": "state",
+        "isExtraImport": true,
+        "detail": "state",
+        "documentation": {}
+    },
+    {
+        "label": "FileFlowsClient",
+        "importPath": "fileflows",
+        "description": "fileflows",
+        "isExtraImport": true,
+        "detail": "fileflows",
+        "documentation": {}
+    },
+    {
+        "label": "FileFlowsClient",
+        "importPath": "fileflows",
+        "description": "fileflows",
+        "isExtraImport": true,
+        "detail": "fileflows",
+        "documentation": {}
+    },
+    {
+        "label": "SECONDS_PER_DAY",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "SECONDS_PER_HOUR",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_TIMEOUT",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "MAX_RETRY_ATTEMPTS",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "RETRY_DELAY",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "FILEFLOWS_RECENT_THRESHOLD_MINUTES",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "SECONDS_PER_HOUR",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "DeletionReason",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentType",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "STATE_FILE",
+        "importPath": "constants",
+        "description": "constants",
+        "isExtraImport": true,
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "truncate_name",
+        "importPath": "utils",
+        "description": "utils",
+        "isExtraImport": true,
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "truncate_name",
+        "importPath": "utils",
+        "description": "utils",
+        "isExtraImport": true,
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "parse_bool",
+        "importPath": "utils",
+        "description": "utils",
+        "isExtraImport": true,
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "parse_float",
+        "importPath": "utils",
+        "description": "utils",
+        "isExtraImport": true,
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "parse_int",
+        "importPath": "utils",
+        "description": "utils",
+        "isExtraImport": true,
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "QBittorrentClient",
+        "importPath": "client",
+        "description": "client",
+        "isExtraImport": true,
+        "detail": "client",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentClassifier",
+        "importPath": "classifier",
+        "description": "classifier",
+        "isExtraImport": true,
+        "detail": "classifier",
+        "documentation": {}
+    },
+    {
+        "label": "time",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "time",
+        "description": "time",
+        "detail": "time",
         "documentation": {}
     },
     {
@@ -144,93 +491,498 @@
         "documentation": {}
     },
     {
-        "label": "QbtConfig",
+        "label": "os",
         "kind": 6,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "class QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"\n    def __init__(self):\n        # Connection settings\n        self.qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n        self.qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n        self.qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n        self.qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n        self.qb_verify_ssl = self._get_bool(\"QB_VERIFY_SSL\", False)\n        # Fallback cleanup settings",
-        "detail": "app",
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
         "documentation": {}
     },
     {
-        "label": "StateManager",
-        "kind": 6,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "class StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        self.state_file = state_file\n        self.state = self._load_state()\n    def _load_state(self) -> Dict[str, Any]:\n        \"\"\"Load state from file.\"\"\"\n        try:\n            if os.path.exists(self.state_file):\n                with open(self.state_file, 'r') as f:",
-        "detail": "app",
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
         "documentation": {}
     },
     {
-        "label": "FileFlowsClient",
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "Enum",
+        "importPath": "enum",
+        "description": "enum",
+        "isExtraImport": true,
+        "detail": "enum",
+        "documentation": {}
+    },
+    {
+        "label": "auto",
+        "importPath": "enum",
+        "description": "enum",
+        "isExtraImport": true,
+        "detail": "enum",
+        "documentation": {}
+    },
+    {
+        "label": "Enum",
+        "importPath": "enum",
+        "description": "enum",
+        "isExtraImport": true,
+        "detail": "enum",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timezone",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "timedelta",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "Path",
+        "importPath": "pathlib",
+        "description": "pathlib",
+        "isExtraImport": true,
+        "detail": "pathlib",
+        "documentation": {}
+    },
+    {
+        "label": "requests",
         "kind": 6,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "class FileFlowsClient:\n    \"\"\"Client for FileFlows API integration.\"\"\"\n    def __init__(self, config: QbtConfig):\n        self.config = config\n        self.base_url = f\"http://{config.fileflows_host}:{config.fileflows_port}/api\"\n        self.timeout = config.fileflows_timeout\n        self.client = None  # Will be set by QbtCleanup\n    def is_enabled(self) -> bool:\n        \"\"\"Check if FileFlows integration is enabled.\"\"\"\n        return self.config.fileflows_enabled",
-        "detail": "app",
+        "isExtraImport": true,
+        "importPath": "requests",
+        "description": "requests",
+        "detail": "requests",
+        "documentation": {}
+    },
+    {
+        "label": "signal",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "signal",
+        "description": "signal",
+        "detail": "signal",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "Event",
+        "importPath": "threading",
+        "description": "threading",
+        "isExtraImport": true,
+        "detail": "threading",
         "documentation": {}
     },
     {
         "label": "QbtCleanup",
+        "importPath": "cleanup",
+        "description": "cleanup",
+        "isExtraImport": true,
+        "detail": "cleanup",
+        "documentation": {}
+    },
+    {
+        "label": "json",
         "kind": 6,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "class QbtCleanup:\n    \"\"\"Main cleanup class for qBittorrent torrents.\"\"\"\n    def __init__(self, config: QbtConfig):\n        self.config = config\n        self.client: Optional[qbittorrentapi.Client] = None\n        self.fileflows: Optional[FileFlowsClient] = None\n        self.state_manager = StateManager()\n        self._private_cache: Dict[str, bool] = {}\n        self._privacy_method_logged = False\n    def connect(self) -> bool:",
-        "detail": "app",
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
         "documentation": {}
     },
     {
-        "label": "main",
-        "kind": 2,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    config = QbtConfig()\n    cleanup = QbtCleanup(config)\n    # Flag to trigger manual scan\n    manual_scan_requested = {\"value\": False}\n    def signal_handler(signum, frame):\n        \"\"\"Handle manual scan trigger signal.\"\"\"\n        logger.info(\"Manual scan triggered via signal\")\n        manual_scan_requested[\"value\"] = True",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
-        "label": "SECONDS_PER_DAY",
-        "kind": 5,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "SECONDS_PER_DAY = 86400\nDEFAULT_TIMEOUT = 30\nMAX_SEARCH_ATTEMPTS = 3\nSTATE_FILE = \"/config/qbt_cleanup_state.json\"\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
-        "label": "DEFAULT_TIMEOUT",
-        "kind": 5,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "DEFAULT_TIMEOUT = 30\nMAX_SEARCH_ATTEMPTS = 3\nSTATE_FILE = \"/config/qbt_cleanup_state.json\"\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
-        "label": "MAX_SEARCH_ATTEMPTS",
-        "kind": 5,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "MAX_SEARCH_ATTEMPTS = 3\nSTATE_FILE = \"/config/qbt_cleanup_state.json\"\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:",
-        "detail": "app",
-        "documentation": {}
-    },
-    {
-        "label": "STATE_FILE",
-        "kind": 5,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "STATE_FILE = \"/config/qbt_cleanup_state.json\"\n# ─── Logging setup ─────────────────────────────────────────────────────────\nlogging.basicConfig(\n    level=logging.INFO,\n    format=\"%(asctime)s - %(levelname)s - %(message)s\",\n    handlers=[logging.StreamHandler(sys.stdout)],\n)\nlogger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"",
-        "detail": "app",
+        "label": "TorrentClassifier",
+        "kind": 6,
+        "importPath": "classifier",
+        "description": "classifier",
+        "peekOfCode": "class TorrentClassifier:\n    \"\"\"Classifies torrents for deletion based on configured criteria.\"\"\"\n    def __init__(self, config: Config, state_manager: StateManager, \n                 fileflows: Optional[FileFlowsClient] = None):\n        \"\"\"\n        Initialize classifier.\n        Args:\n            config: Application configuration\n            state_manager: State manager for persistence\n            fileflows: Optional FileFlows client",
+        "detail": "classifier",
         "documentation": {}
     },
     {
         "label": "logger",
         "kind": 5,
-        "importPath": "app",
-        "description": "app",
-        "peekOfCode": "logger = logging.getLogger(\"qbt-cleanup\")\nclass QbtConfig:\n    \"\"\"Configuration class for qBittorrent cleanup settings.\"\"\"\n    def __init__(self):\n        # Connection settings\n        self.qb_host = os.environ.get(\"QB_HOST\", \"localhost\")\n        self.qb_port = int(os.environ.get(\"QB_PORT\", \"8080\"))\n        self.qb_username = os.environ.get(\"QB_USERNAME\", \"admin\")\n        self.qb_password = os.environ.get(\"QB_PASSWORD\", \"adminadmin\")\n        self.qb_verify_ssl = self._get_bool(\"QB_VERIFY_SSL\", False)",
-        "detail": "app",
+        "importPath": "classifier",
+        "description": "classifier",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nclass TorrentClassifier:\n    \"\"\"Classifies torrents for deletion based on configured criteria.\"\"\"\n    def __init__(self, config: Config, state_manager: StateManager, \n                 fileflows: Optional[FileFlowsClient] = None):\n        \"\"\"\n        Initialize classifier.\n        Args:\n            config: Application configuration\n            state_manager: State manager for persistence",
+        "detail": "classifier",
+        "documentation": {}
+    },
+    {
+        "label": "QbtCleanup",
+        "kind": 6,
+        "importPath": "cleanup",
+        "description": "cleanup",
+        "peekOfCode": "class QbtCleanup:\n    \"\"\"Main cleanup orchestration class.\"\"\"\n    def __init__(self, config: Config):\n        \"\"\"\n        Initialize cleanup orchestrator.\n        Args:\n            config: Application configuration\n        \"\"\"\n        self.config = config\n        self.client = QBittorrentClient(config.connection)",
+        "detail": "cleanup",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "cleanup",
+        "description": "cleanup",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nclass QbtCleanup:\n    \"\"\"Main cleanup orchestration class.\"\"\"\n    def __init__(self, config: Config):\n        \"\"\"\n        Initialize cleanup orchestrator.\n        Args:\n            config: Application configuration\n        \"\"\"\n        self.config = config",
+        "detail": "cleanup",
+        "documentation": {}
+    },
+    {
+        "label": "QBittorrentClient",
+        "kind": 6,
+        "importPath": "client",
+        "description": "client",
+        "peekOfCode": "class QBittorrentClient:\n    \"\"\"Enhanced qBittorrent client wrapper.\"\"\"\n    def __init__(self, config: ConnectionConfig):\n        \"\"\"\n        Initialize client wrapper.\n        Args:\n            config: Connection configuration\n        \"\"\"\n        self.config = config\n        self._client: Optional[qbittorrentapi.Client] = None",
+        "detail": "client",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "client",
+        "description": "client",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nclass QBittorrentClient:\n    \"\"\"Enhanced qBittorrent client wrapper.\"\"\"\n    def __init__(self, config: ConnectionConfig):\n        \"\"\"\n        Initialize client wrapper.\n        Args:\n            config: Connection configuration\n        \"\"\"\n        self.config = config",
+        "detail": "client",
+        "documentation": {}
+    },
+    {
+        "label": "ConnectionConfig",
+        "kind": 6,
+        "importPath": "config",
+        "description": "config",
+        "peekOfCode": "class ConnectionConfig:\n    \"\"\"qBittorrent connection configuration.\"\"\"\n    host: str = field(default_factory=lambda: os.environ.get(\"QB_HOST\", \"localhost\"))\n    port: int = field(default_factory=lambda: parse_int(\"QB_PORT\", 8080))\n    username: str = field(default_factory=lambda: os.environ.get(\"QB_USERNAME\", \"admin\"))\n    password: str = field(default_factory=lambda: os.environ.get(\"QB_PASSWORD\", \"adminadmin\"))\n    verify_ssl: bool = field(default_factory=lambda: parse_bool(\"QB_VERIFY_SSL\", False))\n@dataclass\nclass LimitsConfig:\n    \"\"\"Torrent cleanup limits configuration.\"\"\"",
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "LimitsConfig",
+        "kind": 6,
+        "importPath": "config",
+        "description": "config",
+        "peekOfCode": "class LimitsConfig:\n    \"\"\"Torrent cleanup limits configuration.\"\"\"\n    # Fallback values\n    fallback_ratio: float = field(default_factory=lambda: parse_float(\"FALLBACK_RATIO\", 1.0, 0))\n    fallback_days: float = field(default_factory=lambda: parse_float(\"FALLBACK_DAYS\", 7.0, 0))\n    # Private torrent limits\n    private_ratio: float = field(init=False)\n    private_days: float = field(init=False)\n    # Public torrent limits  \n    public_ratio: float = field(init=False)",
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "BehaviorConfig",
+        "kind": 6,
+        "importPath": "config",
+        "description": "config",
+        "peekOfCode": "class BehaviorConfig:\n    \"\"\"Cleanup behavior configuration.\"\"\"\n    delete_files: bool = field(default_factory=lambda: parse_bool(\"DELETE_FILES\", True))\n    dry_run: bool = field(default_factory=lambda: parse_bool(\"DRY_RUN\", False))\n    # Paused-only checking\n    check_paused_only: bool = field(default_factory=lambda: parse_bool(\"CHECK_PAUSED_ONLY\", False))\n    check_private_paused_only: bool = field(init=False)\n    check_public_paused_only: bool = field(init=False)\n    # Force delete settings\n    force_delete_hours: float = field(default_factory=lambda: parse_float(\"FORCE_DELETE_AFTER_HOURS\", 0, 0))",
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "ScheduleConfig",
+        "kind": 6,
+        "importPath": "config",
+        "description": "config",
+        "peekOfCode": "class ScheduleConfig:\n    \"\"\"Schedule configuration.\"\"\"\n    interval_hours: int = field(default_factory=lambda: parse_int(\"SCHEDULE_HOURS\", 24, 1))\n    run_once: bool = field(default_factory=lambda: parse_bool(\"RUN_ONCE\", False))\n@dataclass\nclass FileFlowsConfig:\n    \"\"\"FileFlows integration configuration.\"\"\"\n    enabled: bool = field(default_factory=lambda: parse_bool(\"FILEFLOWS_ENABLED\", False))\n    host: str = field(default_factory=lambda: os.environ.get(\"FILEFLOWS_HOST\", \"localhost\"))\n    port: int = field(default_factory=lambda: parse_int(\"FILEFLOWS_PORT\", 19200))",
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "FileFlowsConfig",
+        "kind": 6,
+        "importPath": "config",
+        "description": "config",
+        "peekOfCode": "class FileFlowsConfig:\n    \"\"\"FileFlows integration configuration.\"\"\"\n    enabled: bool = field(default_factory=lambda: parse_bool(\"FILEFLOWS_ENABLED\", False))\n    host: str = field(default_factory=lambda: os.environ.get(\"FILEFLOWS_HOST\", \"localhost\"))\n    port: int = field(default_factory=lambda: parse_int(\"FILEFLOWS_PORT\", 19200))\n    timeout: int = field(default_factory=lambda: parse_int(\"FILEFLOWS_TIMEOUT\", 10, 1))\n@dataclass\nclass Config:\n    \"\"\"Main configuration container.\"\"\"\n    connection: ConnectionConfig = field(default_factory=ConnectionConfig)",
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "Config",
+        "kind": 6,
+        "importPath": "config",
+        "description": "config",
+        "peekOfCode": "class Config:\n    \"\"\"Main configuration container.\"\"\"\n    connection: ConnectionConfig = field(default_factory=ConnectionConfig)\n    limits: LimitsConfig = field(default_factory=LimitsConfig)\n    behavior: BehaviorConfig = field(default_factory=BehaviorConfig)\n    schedule: ScheduleConfig = field(default_factory=ScheduleConfig)\n    fileflows: FileFlowsConfig = field(default_factory=FileFlowsConfig)\n    @classmethod\n    def from_environment(cls) -> \"Config\":\n        \"\"\"Create configuration from environment variables.\"\"\"",
+        "detail": "config",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentState",
+        "kind": 6,
+        "importPath": "constants",
+        "description": "constants",
+        "peekOfCode": "class TorrentState(str, Enum):\n    \"\"\"qBittorrent torrent states.\"\"\"\n    PAUSED_UP = \"pausedUP\"\n    PAUSED_DL = \"pausedDL\"\n    DOWNLOADING = \"downloading\"\n    STALLED_DL = \"stalledDL\"\n    QUEUED_DL = \"queuedDL\"\n    ALLOCATING = \"allocating\"\n    META_DL = \"metaDL\"\n    UPLOADING = \"uploading\"",
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "DeletionReason",
+        "kind": 6,
+        "importPath": "constants",
+        "description": "constants",
+        "peekOfCode": "class DeletionReason(str, Enum):\n    \"\"\"Reasons for torrent deletion.\"\"\"\n    RATIO_EXCEEDED = \"ratio_exceeded\"\n    TIME_EXCEEDED = \"time_exceeded\"\n    FORCE_DELETE = \"force_delete\"\n    STALLED_TOO_LONG = \"stalled_too_long\"\n    BOTH_LIMITS_EXCEEDED = \"both_limits_exceeded\"\nclass TorrentType(str, Enum):\n    \"\"\"Torrent privacy type.\"\"\"\n    PRIVATE = \"private\"",
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentType",
+        "kind": 6,
+        "importPath": "constants",
+        "description": "constants",
+        "peekOfCode": "class TorrentType(str, Enum):\n    \"\"\"Torrent privacy type.\"\"\"\n    PRIVATE = \"private\"\n    PUBLIC = \"public\"",
+        "detail": "constants",
+        "documentation": {}
+    },
+    {
+        "label": "FileFlowsClient",
+        "kind": 6,
+        "importPath": "fileflows",
+        "description": "fileflows",
+        "peekOfCode": "class FileFlowsClient:\n    \"\"\"Client for FileFlows API integration.\"\"\"\n    def __init__(self, config: FileFlowsConfig):\n        \"\"\"\n        Initialize FileFlows client.\n        Args:\n            config: FileFlows configuration\n        \"\"\"\n        self.config = config\n        self.base_url = f\"http://{config.host}:{config.port}/api\"",
+        "detail": "fileflows",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "fileflows",
+        "description": "fileflows",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nclass FileFlowsClient:\n    \"\"\"Client for FileFlows API integration.\"\"\"\n    def __init__(self, config: FileFlowsConfig):\n        \"\"\"\n        Initialize FileFlows client.\n        Args:\n            config: FileFlows configuration\n        \"\"\"\n        self.config = config",
+        "detail": "fileflows",
+        "documentation": {}
+    },
+    {
+        "label": "signal_handler",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def signal_handler(signum, frame):\n    \"\"\"Handle manual scan trigger signal.\"\"\"\n    logger.info(\"Manual scan triggered via signal\")\n    manual_scan_event.set()\ndef run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.\n    Args:\n        config: Application configuration\n    Returns:",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "run_cleanup_cycle",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.\n    Args:\n        config: Application configuration\n    Returns:\n        True if successful\n    \"\"\"\n    try:\n        cleanup = QbtCleanup(config)",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    # Load configuration\n    config = Config.from_environment()\n    # Set up signal handler for manual scan\n    signal.signal(signal.SIGUSR1, signal_handler)\n    # Log startup information\n    logger.info(\"=\" * 60)\n    logger.info(\"qBittorrent Cleanup Tool Started\")\n    logger.info(\"=\" * 60)",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "logger = logging.getLogger(__name__)\n# Global event for manual scan triggering\nmanual_scan_event = Event()\ndef signal_handler(signum, frame):\n    \"\"\"Handle manual scan trigger signal.\"\"\"\n    logger.info(\"Manual scan triggered via signal\")\n    manual_scan_event.set()\ndef run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "manual_scan_event",
+        "kind": 5,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "manual_scan_event = Event()\ndef signal_handler(signum, frame):\n    \"\"\"Handle manual scan trigger signal.\"\"\"\n    logger.info(\"Manual scan triggered via signal\")\n    manual_scan_event.set()\ndef run_cleanup_cycle(config: Config) -> bool:\n    \"\"\"\n    Run a single cleanup cycle.\n    Args:\n        config: Application configuration",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentInfo",
+        "kind": 6,
+        "importPath": "models",
+        "description": "models",
+        "peekOfCode": "class TorrentInfo:\n    \"\"\"Processed torrent information.\"\"\"\n    torrent: Any  # qbittorrentapi torrent object\n    hash: str\n    name: str\n    is_private: bool\n    state: str\n    ratio: float\n    seeding_time: float  # in seconds\n    files: List[str] = field(default_factory=list)",
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "TorrentLimits",
+        "kind": 6,
+        "importPath": "models",
+        "description": "models",
+        "peekOfCode": "class TorrentLimits:\n    \"\"\"Limits for a specific torrent type.\"\"\"\n    ratio: float\n    days: float\n    @property\n    def seconds(self) -> float:\n        \"\"\"Get time limit in seconds.\"\"\"\n        return self.days * 86400\n@dataclass\nclass DeletionCandidate:",
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "DeletionCandidate",
+        "kind": 6,
+        "importPath": "models",
+        "description": "models",
+        "peekOfCode": "class DeletionCandidate:\n    \"\"\"Torrent marked for deletion.\"\"\"\n    info: TorrentInfo\n    reason: DeletionReason\n    limits: TorrentLimits\n    excess_time_hours: Optional[float] = None  # For force delete\n    stalled_days: Optional[float] = None  # For stalled downloads\n    def format_reason(self) -> str:\n        \"\"\"Format deletion reason for logging.\"\"\"\n        parts = [f\"state={self.info.state}\"]",
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "ClassificationResult",
+        "kind": 6,
+        "importPath": "models",
+        "description": "models",
+        "peekOfCode": "class ClassificationResult:\n    \"\"\"Result of torrent classification.\"\"\"\n    to_delete: List[DeletionCandidate] = field(default_factory=list)\n    stalled: List[DeletionCandidate] = field(default_factory=list)\n    paused_not_ready: List[TorrentInfo] = field(default_factory=list)\n    protected_by_fileflows: List[TorrentInfo] = field(default_factory=list)\n    @property\n    def total_deletions(self) -> int:\n        \"\"\"Total number of torrents to delete.\"\"\"\n        return len(self.to_delete) + len(self.stalled)",
+        "detail": "models",
+        "documentation": {}
+    },
+    {
+        "label": "StateManager",
+        "kind": 6,
+        "importPath": "state",
+        "description": "state",
+        "peekOfCode": "class StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        \"\"\"\n        Initialize state manager.\n        Args:\n            state_file: Path to state file\n        \"\"\"\n        self.state_file = state_file\n        self.state: Dict[str, Any] = self._load_state()",
+        "detail": "state",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "state",
+        "description": "state",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nclass StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        \"\"\"\n        Initialize state manager.\n        Args:\n            state_file: Path to state file\n        \"\"\"\n        self.state_file = state_file",
+        "detail": "state",
+        "documentation": {}
+    },
+    {
+        "label": "parse_bool",
+        "kind": 2,
+        "importPath": "utils",
+        "description": "utils",
+        "peekOfCode": "def parse_bool(env_var: str, default: bool = False) -> bool:\n    \"\"\"\n    Parse boolean environment variable.\n    Args:\n        env_var: Environment variable name\n        default: Default value if not set\n    Returns:\n        Parsed boolean value\n    \"\"\"\n    value = os.environ.get(env_var, str(default))",
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "parse_float",
+        "kind": 2,
+        "importPath": "utils",
+        "description": "utils",
+        "peekOfCode": "def parse_float(env_var: str, default: float, min_val: Optional[float] = None) -> float:\n    \"\"\"\n    Parse float environment variable with optional minimum value.\n    Args:\n        env_var: Environment variable name\n        default: Default value if not set\n        min_val: Minimum allowed value\n    Returns:\n        Parsed float value\n    \"\"\"",
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "parse_int",
+        "kind": 2,
+        "importPath": "utils",
+        "description": "utils",
+        "peekOfCode": "def parse_int(env_var: str, default: int, min_val: Optional[int] = None) -> int:\n    \"\"\"\n    Parse integer environment variable with optional minimum value.\n    Args:\n        env_var: Environment variable name\n        default: Default value if not set\n        min_val: Minimum allowed value\n    Returns:\n        Parsed integer value\n    \"\"\"",
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "truncate_name",
+        "kind": 2,
+        "importPath": "utils",
+        "description": "utils",
+        "peekOfCode": "def truncate_name(name: str, max_length: int = 60) -> str:\n    \"\"\"\n    Truncate a torrent name for display.\n    Args:\n        name: Torrent name to truncate\n        max_length: Maximum length\n    Returns:\n        Truncated name with ellipsis if needed\n    \"\"\"\n    if len(name) <= max_length:",
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "format_duration",
+        "kind": 2,
+        "importPath": "utils",
+        "description": "utils",
+        "peekOfCode": "def format_duration(seconds: float) -> str:\n    \"\"\"\n    Format duration in seconds to human-readable string.\n    Args:\n        seconds: Duration in seconds\n    Returns:\n        Formatted string (e.g., \"2.5d\", \"3.2h\")\n    \"\"\"\n    if seconds >= 86400:  # Days\n        return f\"{seconds / 86400:.1f}d\"",
+        "detail": "utils",
+        "documentation": {}
+    },
+    {
+        "label": "logger",
+        "kind": 5,
+        "importPath": "utils",
+        "description": "utils",
+        "peekOfCode": "logger = logging.getLogger(__name__)\ndef parse_bool(env_var: str, default: bool = False) -> bool:\n    \"\"\"\n    Parse boolean environment variable.\n    Args:\n        env_var: Environment variable name\n        default: Default value if not set\n    Returns:\n        Parsed boolean value\n    \"\"\"",
+        "detail": "utils",
         "documentation": {}
     }
 ]
