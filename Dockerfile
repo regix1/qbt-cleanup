@@ -7,7 +7,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
-COPY *.py ./
+COPY src/ ./src/
 
 # Create config directory
 RUN mkdir -p /config
@@ -18,7 +18,7 @@ if [ ! -z "$PUID" ] && [ ! -z "$PGID" ]; then\n\
     echo "Setting ownership to $PUID:$PGID"\n\
     chown -R $PUID:$PGID /config\n\
 fi\n\
-exec python -u main.py "$@"' > /entrypoint.sh && \
+exec python -u -m src.qbt_cleanup.main "$@"' > /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]

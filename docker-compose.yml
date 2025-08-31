@@ -7,22 +7,47 @@ services:
     restart: unless-stopped
     depends_on:
       - qbittorrent
+    volumes:
+      - ./qbt-cleanup/config:/config
     environment:
-      - QB_HOST=192.168.1.100
+      # Connection
+      - QB_HOST=qbittorrent
       - QB_PORT=8080
       - QB_USERNAME=admin
       - QB_PASSWORD=adminadmin
+      - QB_VERIFY_SSL=false
+      
+      # Cleanup rules
       - FALLBACK_RATIO=1.0
       - FALLBACK_DAYS=7
       - PRIVATE_RATIO=2.0
       - PRIVATE_DAYS=14
-      - NONPRIVATE_RATIO=1.0
-      - NONPRIVATE_DAYS=3
-      - IGNORE_QBT_RATIO_NONPRIVATE=true
-      - IGNORE_QBT_TIME_NONPRIVATE=true
+      - PUBLIC_RATIO=1.0
+      - PUBLIC_DAYS=3
+      
+      # Override qBittorrent settings (optional)
+      - IGNORE_QBT_RATIO_PRIVATE=false
+      - IGNORE_QBT_RATIO_PUBLIC=true
+      - IGNORE_QBT_TIME_PRIVATE=false
+      - IGNORE_QBT_TIME_PUBLIC=true
+      
+      # Behavior
       - DELETE_FILES=true
       - DRY_RUN=false
       - CHECK_PRIVATE_PAUSED_ONLY=true
-      - CHECK_NONPRIVATE_PAUSED_ONLY=false
-      - SCHEDULE_HOURS=24
+      - CHECK_PUBLIC_PAUSED_ONLY=false
+      - SCHEDULE_HOURS=6
       - RUN_ONCE=false
+      
+      # Advanced features
+      - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
+      - FORCE_DELETE_PUBLIC_AFTER_HOURS=12
+      - CLEANUP_STALE_DOWNLOADS=true
+      - MAX_STALLED_PRIVATE_DAYS=7
+      - MAX_STALLED_PUBLIC_DAYS=3
+      
+      # FileFlows integration (optional)
+      - FILEFLOWS_ENABLED=false
+      - FILEFLOWS_HOST=localhost
+      - FILEFLOWS_PORT=19200
+      - FILEFLOWS_TIMEOUT=10

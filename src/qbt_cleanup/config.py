@@ -5,7 +5,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Optional
 
-from utils import parse_bool, parse_float, parse_int
+from .utils import parse_bool, parse_float, parse_int
 
 
 @dataclass
@@ -35,17 +35,16 @@ class LimitsConfig:
     
     # Override flags for qBittorrent settings
     ignore_qbt_ratio_private: bool = field(default_factory=lambda: parse_bool("IGNORE_QBT_RATIO_PRIVATE", False))
-    ignore_qbt_ratio_public: bool = field(default_factory=lambda: parse_bool("IGNORE_QBT_RATIO_NONPRIVATE", False))
+    ignore_qbt_ratio_public: bool = field(default_factory=lambda: parse_bool("IGNORE_QBT_RATIO_PUBLIC", False))
     ignore_qbt_time_private: bool = field(default_factory=lambda: parse_bool("IGNORE_QBT_TIME_PRIVATE", False))
-    ignore_qbt_time_public: bool = field(default_factory=lambda: parse_bool("IGNORE_QBT_TIME_NONPRIVATE", False))
+    ignore_qbt_time_public: bool = field(default_factory=lambda: parse_bool("IGNORE_QBT_TIME_PUBLIC", False))
     
     def __post_init__(self):
         """Initialize derived values after dataclass creation."""
-        # Use NONPRIVATE for backwards compatibility but internally call it public
         self.private_ratio = parse_float("PRIVATE_RATIO", self.fallback_ratio, 0)
         self.private_days = parse_float("PRIVATE_DAYS", self.fallback_days, 0)
-        self.public_ratio = parse_float("NONPRIVATE_RATIO", self.fallback_ratio, 0)
-        self.public_days = parse_float("NONPRIVATE_DAYS", self.fallback_days, 0)
+        self.public_ratio = parse_float("PUBLIC_RATIO", self.fallback_ratio, 0)
+        self.public_days = parse_float("PUBLIC_DAYS", self.fallback_days, 0)
 
 
 @dataclass 
@@ -75,17 +74,17 @@ class BehaviorConfig:
         # Paused-only settings
         default_paused = self.check_paused_only
         self.check_private_paused_only = parse_bool("CHECK_PRIVATE_PAUSED_ONLY", default_paused)
-        self.check_public_paused_only = parse_bool("CHECK_NONPRIVATE_PAUSED_ONLY", default_paused)
+        self.check_public_paused_only = parse_bool("CHECK_PUBLIC_PAUSED_ONLY", default_paused)
         
         # Force delete settings
         default_force = self.force_delete_hours
         self.force_delete_private_hours = parse_float("FORCE_DELETE_PRIVATE_AFTER_HOURS", default_force, 0)
-        self.force_delete_public_hours = parse_float("FORCE_DELETE_NONPRIVATE_AFTER_HOURS", default_force, 0)
+        self.force_delete_public_hours = parse_float("FORCE_DELETE_PUBLIC_AFTER_HOURS", default_force, 0)
         
         # Stalled settings
         default_stalled = self.max_stalled_days
         self.max_stalled_private_days = parse_float("MAX_STALLED_PRIVATE_DAYS", default_stalled, 0)
-        self.max_stalled_public_days = parse_float("MAX_STALLED_NONPRIVATE_DAYS", default_stalled, 0)
+        self.max_stalled_public_days = parse_float("MAX_STALLED_PUBLIC_DAYS", default_stalled, 0)
 
 
 @dataclass

@@ -6,11 +6,11 @@ import signal
 import sys
 import time
 from threading import Event
-from datetime import datetime
+from datetime import datetime, timedelta
 
-from config import Config
-from cleanup import QbtCleanup
-from constants import SECONDS_PER_HOUR
+from .config import Config
+from .cleanup import QbtCleanup
+from .constants import SECONDS_PER_HOUR
 
 # Custom log formatter with colors and symbols
 class PrettyFormatter(logging.Formatter):
@@ -31,7 +31,7 @@ class PrettyFormatter(logging.Formatter):
     # Log level symbols
     SYMBOLS = {
         'DEBUG': '🔍',
-        'INFO': '✓',
+        'INFO': '✔',
         'WARNING': '⚠',
         'ERROR': '✗',
         'CRITICAL': '💀',
@@ -117,7 +117,7 @@ def print_banner():
     """Print a nice startup banner."""
     banner = """
 ╔══════════════════════════════════════════════════════════╗
-║          🧹 qBittorrent Cleanup Tool v2.0 🧹            ║
+║          🧹 qBittorrent Cleanup Tool v2.1 🧹            ║
 ╚══════════════════════════════════════════════════════════╝"""
     print(banner)
 
@@ -210,8 +210,6 @@ def main():
             logger.info("Retrying in 60 seconds...")
             time.sleep(60)
 
-
-from datetime import timedelta  # Add this import at the top
 
 if __name__ == "__main__":
     main()
