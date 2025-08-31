@@ -8,9 +8,9 @@ from typing import Optional, List, Any, Dict, Tuple
 import qbittorrentapi
 import urllib3
 
-from constants import DEFAULT_TIMEOUT, MAX_RETRY_ATTEMPTS, RETRY_DELAY
-from config import ConnectionConfig, LimitsConfig
-from models import TorrentInfo
+from .constants import DEFAULT_TIMEOUT, MAX_RETRY_ATTEMPTS, RETRY_DELAY
+from .config import ConnectionConfig, LimitsConfig
+from .models import TorrentInfo
 
 # Suppress SSL warnings when SSL verification is disabled
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -233,7 +233,7 @@ class QBittorrentClient:
             import os
             if not limits_config.ignore_qbt_ratio_private and os.environ.get("PRIVATE_RATIO") is None:
                 private_ratio = global_ratio
-            if not limits_config.ignore_qbt_ratio_public and os.environ.get("NONPRIVATE_RATIO") is None:
+            if not limits_config.ignore_qbt_ratio_public and os.environ.get("PUBLIC_RATIO") is None:
                 public_ratio = global_ratio
             
             logger.info(f"Using qBittorrent ratio limits: Private={private_ratio:.1f}, Public={public_ratio:.1f}")
@@ -246,7 +246,7 @@ class QBittorrentClient:
             import os
             if not limits_config.ignore_qbt_time_private and os.environ.get("PRIVATE_DAYS") is None:
                 private_days = global_days
-            if not limits_config.ignore_qbt_time_public and os.environ.get("NONPRIVATE_DAYS") is None:
+            if not limits_config.ignore_qbt_time_public and os.environ.get("PUBLIC_DAYS") is None:
                 public_days = global_days
             
             logger.info(f"Using qBittorrent time limits: Private={private_days:.1f}d, Public={public_days:.1f}d")

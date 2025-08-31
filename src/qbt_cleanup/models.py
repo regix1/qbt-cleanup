@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Optional, List
 from enum import Enum
 
-from constants import DeletionReason, TorrentType
+from .constants import DeletionReason, TorrentType
 
 
 @dataclass

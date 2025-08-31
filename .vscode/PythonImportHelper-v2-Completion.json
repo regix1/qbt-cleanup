@@ -201,238 +201,6 @@
         "documentation": {}
     },
     {
-        "label": "Config",
-        "importPath": "config",
-        "description": "config",
-        "isExtraImport": true,
-        "detail": "config",
-        "documentation": {}
-    },
-    {
-        "label": "Config",
-        "importPath": "config",
-        "description": "config",
-        "isExtraImport": true,
-        "detail": "config",
-        "documentation": {}
-    },
-    {
-        "label": "ConnectionConfig",
-        "importPath": "config",
-        "description": "config",
-        "isExtraImport": true,
-        "detail": "config",
-        "documentation": {}
-    },
-    {
-        "label": "LimitsConfig",
-        "importPath": "config",
-        "description": "config",
-        "isExtraImport": true,
-        "detail": "config",
-        "documentation": {}
-    },
-    {
-        "label": "FileFlowsConfig",
-        "importPath": "config",
-        "description": "config",
-        "isExtraImport": true,
-        "detail": "config",
-        "documentation": {}
-    },
-    {
-        "label": "TorrentInfo",
-        "importPath": "models",
-        "description": "models",
-        "isExtraImport": true,
-        "detail": "models",
-        "documentation": {}
-    },
-    {
-        "label": "TorrentLimits",
-        "importPath": "models",
-        "description": "models",
-        "isExtraImport": true,
-        "detail": "models",
-        "documentation": {}
-    },
-    {
-        "label": "DeletionCandidate",
-        "importPath": "models",
-        "description": "models",
-        "isExtraImport": true,
-        "detail": "models",
-        "documentation": {}
-    },
-    {
-        "label": "ClassificationResult",
-        "importPath": "models",
-        "description": "models",
-        "isExtraImport": true,
-        "detail": "models",
-        "documentation": {}
-    },
-    {
-        "label": "DeletionReason",
-        "importPath": "models",
-        "description": "models",
-        "isExtraImport": true,
-        "detail": "models",
-        "documentation": {}
-    },
-    {
-        "label": "ClassificationResult",
-        "importPath": "models",
-        "description": "models",
-        "isExtraImport": true,
-        "detail": "models",
-        "documentation": {}
-    },
-    {
-        "label": "TorrentInfo",
-        "importPath": "models",
-        "description": "models",
-        "isExtraImport": true,
-        "detail": "models",
-        "documentation": {}
-    },
-    {
-        "label": "StateManager",
-        "importPath": "state",
-        "description": "state",
-        "isExtraImport": true,
-        "detail": "state",
-        "documentation": {}
-    },
-    {
-        "label": "StateManager",
-        "importPath": "state",
-        "description": "state",
-        "isExtraImport": true,
-        "detail": "state",
-        "documentation": {}
-    },
-    {
-        "label": "FileFlowsClient",
-        "importPath": "fileflows",
-        "description": "fileflows",
-        "isExtraImport": true,
-        "detail": "fileflows",
-        "documentation": {}
-    },
-    {
-        "label": "FileFlowsClient",
-        "importPath": "fileflows",
-        "description": "fileflows",
-        "isExtraImport": true,
-        "detail": "fileflows",
-        "documentation": {}
-    },
-    {
-        "label": "SECONDS_PER_DAY",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "SECONDS_PER_HOUR",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "DEFAULT_TIMEOUT",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "MAX_RETRY_ATTEMPTS",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "RETRY_DELAY",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "FILEFLOWS_RECENT_THRESHOLD_MINUTES",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "DeletionReason",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "TorrentType",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "STATE_FILE",
-        "importPath": "constants",
-        "description": "constants",
-        "isExtraImport": true,
-        "detail": "constants",
-        "documentation": {}
-    },
-    {
-        "label": "truncate_name",
-        "importPath": "utils",
-        "description": "utils",
-        "isExtraImport": true,
-        "detail": "utils",
-        "documentation": {}
-    },
-    {
-        "label": "truncate_name",
-        "importPath": "utils",
-        "description": "utils",
-        "isExtraImport": true,
-        "detail": "utils",
-        "documentation": {}
-    },
-    {
-        "label": "QBittorrentClient",
-        "importPath": "client",
-        "description": "client",
-        "isExtraImport": true,
-        "detail": "client",
-        "documentation": {}
-    },
-    {
-        "label": "TorrentClassifier",
-        "importPath": "classifier",
-        "description": "classifier",
-        "isExtraImport": true,
-        "detail": "classifier",
-        "documentation": {}
-    },
-    {
         "label": "time",
         "kind": 6,
         "isExtraImport": true,
@@ -657,12 +425,20 @@
         "documentation": {}
     },
     {
-        "label": "json",
+        "label": "sqlite3",
         "kind": 6,
         "isExtraImport": true,
-        "importPath": "json",
-        "description": "json",
-        "detail": "json",
+        "importPath": "sqlite3",
+        "description": "sqlite3",
+        "detail": "sqlite3",
+        "documentation": {}
+    },
+    {
+        "label": "contextmanager",
+        "importPath": "contextlib",
+        "description": "contextlib",
+        "isExtraImport": true,
+        "detail": "contextlib",
         "documentation": {}
     },
     {
@@ -931,7 +707,7 @@
         "kind": 6,
         "importPath": "src.qbt_cleanup.state",
         "description": "src.qbt_cleanup.state",
-        "peekOfCode": "class StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        \"\"\"\n        Initialize state manager.\n        Args:\n            state_file: Path to state file\n        \"\"\"\n        self.state_file = state_file\n        self.state_enabled = True",
+        "peekOfCode": "class StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time using SQLite.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        \"\"\"\n        Initialize state manager with SQLite backend.\n        Args:\n            state_file: Path to state file (will use .db extension)\n        \"\"\"\n        # Change extension to .db\n        base_path = os.path.splitext(state_file)[0]",
         "detail": "src.qbt_cleanup.state",
         "documentation": {}
     },
@@ -940,7 +716,7 @@
         "kind": 5,
         "importPath": "src.qbt_cleanup.state",
         "description": "src.qbt_cleanup.state",
-        "peekOfCode": "logger = logging.getLogger(__name__)\nclass StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        \"\"\"\n        Initialize state manager.\n        Args:\n            state_file: Path to state file\n        \"\"\"\n        self.state_file = state_file",
+        "peekOfCode": "logger = logging.getLogger(__name__)\nclass StateManager:\n    \"\"\"Manages persistent state for tracking torrent status over time using SQLite.\"\"\"\n    def __init__(self, state_file: str = STATE_FILE):\n        \"\"\"\n        Initialize state manager with SQLite backend.\n        Args:\n            state_file: Path to state file (will use .db extension)\n        \"\"\"\n        # Change extension to .db",
         "detail": "src.qbt_cleanup.state",
         "documentation": {}
     },

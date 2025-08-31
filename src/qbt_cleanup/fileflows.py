@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import List, Dict, Any, Set, Optional
 import requests
 
-from config import FileFlowsConfig
-from constants import FILEFLOWS_RECENT_THRESHOLD_MINUTES
+from .config import FileFlowsConfig
+from .constants import FILEFLOWS_RECENT_THRESHOLD_MINUTES
 
 logger = logging.getLogger(__name__)
 

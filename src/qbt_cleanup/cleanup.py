@@ -4,13 +4,13 @@
 import logging
 from typing import Optional
 
-from config import Config
-from client import QBittorrentClient
-from state import StateManager
-from fileflows import FileFlowsClient
-from classifier import TorrentClassifier
-from models import ClassificationResult
-from utils import truncate_name
+from .config import Config
+from .client import QBittorrentClient
+from .state import StateManager
+from .fileflows import FileFlowsClient
+from .classifier import TorrentClassifier
+from .models import ClassificationResult
+from .utils import truncate_name
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,7 @@ class QbtCleanup:
             # Log torrent breakdown
             private_count = sum(1 for t in torrents if t.is_private)
             public_count = len(torrents) - private_count
-            logger.info(f"🔐 Private: {private_count} | 🌐 Public: {public_count}")
+            logger.info(f"🔐 Private: {private_count} | 🌍 Public: {public_count}")
             
             # Get limits
             limits = self.client.get_qbt_limits(self.config.limits)
@@ -104,7 +104,7 @@ class QbtCleanup:
         
         # Stalled cleanup
         if behavior.cleanup_stale_downloads:
-            features.append(f"🐌 Stalled cleanup after {behavior.max_stalled_private_days:.0f}d/{behavior.max_stalled_public_days:.0f}d")
+            features.append(f"🌀 Stalled cleanup after {behavior.max_stalled_private_days:.0f}d/{behavior.max_stalled_public_days:.0f}d")
         
         # Paused only
         if behavior.check_private_paused_only or behavior.check_public_paused_only:

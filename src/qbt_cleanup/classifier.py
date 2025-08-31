@@ -4,15 +4,15 @@
 import logging
 from typing import List, Optional, Tuple
 
-from config import Config
-from models import (
+from .config import Config
+from .models import (
     TorrentInfo, TorrentLimits, DeletionCandidate, 
     ClassificationResult, DeletionReason
 )
-from state import StateManager
-from fileflows import FileFlowsClient
-from constants import SECONDS_PER_DAY, SECONDS_PER_HOUR
-from utils import truncate_name
+from .state import StateManager
+from .fileflows import FileFlowsClient
+from .constants import SECONDS_PER_DAY, SECONDS_PER_HOUR
+from .utils import truncate_name
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,7 @@ class TorrentClassifier:
             # Check if meets deletion criteria
             self._check_deletion_criteria(torrent, limits, result)
         
-        # Save state after processing
+        # Save state after processing (for SQLite this is mostly a no-op)
         self.state.save()
         
         # Log summary
