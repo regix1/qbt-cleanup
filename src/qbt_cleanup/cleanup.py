@@ -50,9 +50,9 @@ class QbtCleanup:
             # Test FileFlows connection if enabled
             if self.fileflows and self.fileflows.is_enabled:
                 if self.fileflows.test_connection():
-                    logger.info("📁 FileFlows: Connected")
+                    logger.info("[FileFlows] Connected")
                 else:
-                    logger.warning("📁 FileFlows: Connection failed")
+                    logger.warning("[FileFlows] Connection failed")
                     self.fileflows = None
             
             # Initialize classifier
@@ -61,10 +61,10 @@ class QbtCleanup:
             # Get torrents
             raw_torrents = self.client.get_torrents()
             if not raw_torrents:
-                logger.info("📭 No torrents found")
+                logger.info("No torrents found")
                 return True
             
-            logger.info(f"📊 Found {len(raw_torrents)} torrents")
+            logger.info(f"Found {len(raw_torrents)} torrents")
             
             # Process torrents
             torrents = [self.client.process_torrent(t) for t in raw_torrents]
@@ -72,7 +72,7 @@ class QbtCleanup:
             # Log torrent breakdown
             private_count = sum(1 for t in torrents if t.is_private)
             public_count = len(torrents) - private_count
-            logger.info(f"🔐 Private: {private_count} | 🌍 Public: {public_count}")
+            logger.info(f"Private: {private_count} | Public: {public_count}")
             
             # Get limits
             limits = self.client.get_qbt_limits(self.config.limits)
@@ -87,7 +87,7 @@ class QbtCleanup:
             return self._delete_torrents(result)
             
         except Exception as e:
-            logger.error(f"❌ Cleanup failed: {e}", exc_info=True)
+            logger.error(f"Cleanup failed: {e}", exc_info=True)
             return False
         finally:
             self.client.disconnect()
@@ -100,11 +100,11 @@ class QbtCleanup:
         
         # Force delete
         if behavior.force_delete_private_hours > 0 or behavior.force_delete_public_hours > 0:
-            features.append(f"⏰ Force delete after {behavior.force_delete_private_hours:.0f}h/{behavior.force_delete_public_hours:.0f}h")
+            features.append(f"Force delete: {behavior.force_delete_private_hours:.0f}h/{behavior.force_delete_public_hours:.0f}h")
         
         # Stalled cleanup
         if behavior.cleanup_stale_downloads:
-            features.append(f"🌀 Stalled cleanup after {behavior.max_stalled_private_days:.0f}d/{behavior.max_stalled_public_days:.0f}d")
+            features.append(f"Stalled cleanup: {behavior.max_stalled_private_days:.0f}d/{behavior.max_stalled_public_days:.0f}d")
         
         # Paused only
         if behavior.check_private_paused_only or behavior.check_public_paused_only:
@@ -113,10 +113,10 @@ class QbtCleanup:
                 paused_status.append("Private")
             if behavior.check_public_paused_only:
                 paused_status.append("Public")
-            features.append(f"⏸️  Paused-only: {', '.join(paused_status)}")
+            features.append(f"Paused-only: {', '.join(paused_status)}")
         
         if features:
-            logger.info(f"⚙️  Features: {' | '.join(features)}")
+            logger.info(f"[Config] {' | '.join(features)}")
     
     def _delete_torrents(self, result: ClassificationResult) -> bool:
         """
@@ -129,7 +129,7 @@ class QbtCleanup:
             True if successful
         """
         if result.total_deletions == 0:
-            logger.info("✨ No torrents need cleanup")
+            logger.info("No torrents need cleanup")
             return True
         
         # Get statistics
@@ -141,7 +141,7 @@ class QbtCleanup:
         
         # Dry run check
         if self.config.behavior.dry_run:
-            logger.info(f"🔍 DRY RUN: Would delete {len(hashes)} torrents")
+            logger.info(f"[DRY RUN] Would delete {len(hashes)} torrents")
             self._log_deletion_stats(stats)
             
             # Log sample torrents in dry run
@@ -156,11 +156,11 @@ class QbtCleanup:
         success = self.client.delete_torrents(hashes, self.config.behavior.delete_files)
         
         if success:
-            action = "🗑️  Deleted" if self.config.behavior.delete_files else "📤 Removed"
-            logger.info(f"{action} {len(hashes)} torrents")
+            action = "Deleted (with files)" if self.config.behavior.delete_files else "Removed (torrent only)"
+            logger.info(f"[{action}] {len(hashes)} torrents")
             self._log_deletion_stats(stats)
         else:
-            logger.error("❌ Failed to delete torrents")
+            logger.error("Failed to delete torrents")
         
         return success
     
@@ -175,4 +175,4 @@ class QbtCleanup:
             parts.append(f"Stalled: {stats['stalled']}")
         
         if parts:
-            logger.info(f"   📈 {' | '.join(parts)}")
+            logger.info(f"  -> {' | '.join(parts)}")

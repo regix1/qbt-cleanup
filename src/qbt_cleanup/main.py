@@ -12,9 +12,9 @@ from .config import Config
 from .cleanup import QbtCleanup
 from .constants import SECONDS_PER_HOUR
 
-# Custom log formatter with colors and symbols
+# Custom log formatter with colors and clean text
 class PrettyFormatter(logging.Formatter):
-    """Custom formatter with colors and symbols for prettier output."""
+    """Custom formatter with colors and clean text output."""
     
     # ANSI color codes
     COLORS = {
@@ -28,28 +28,17 @@ class PrettyFormatter(logging.Formatter):
         'DIM': '\033[2m',       # Dim
     }
     
-    # Log level symbols
-    SYMBOLS = {
-        'DEBUG': '🔍',
-        'INFO': '✔',
-        'WARNING': '⚠',
-        'ERROR': '✗',
-        'CRITICAL': '💀',
-    }
-    
-    def __init__(self, use_colors=True, use_symbols=True):
+    def __init__(self, use_colors=True):
         """Initialize formatter."""
         self.use_colors = use_colors and sys.stdout.isatty()
-        self.use_symbols = use_symbols
         super().__init__()
     
     def format(self, record):
-        """Format log record with colors and symbols."""
-        # Get color and symbol for level
+        """Format log record with colors."""
+        # Get color for level
         levelname = record.levelname
         color = self.COLORS.get(levelname, '')
         reset = self.COLORS['RESET'] if self.use_colors else ''
-        symbol = self.SYMBOLS.get(levelname, '•') if self.use_symbols else ''
         
         # Format time
         time_str = datetime.fromtimestamp(record.created).strftime('%H:%M:%S')
@@ -58,17 +47,16 @@ class PrettyFormatter(logging.Formatter):
         if self.use_colors:
             # Colored output
             if levelname in ('ERROR', 'CRITICAL'):
-                formatted = f"{self.COLORS['DIM']}{time_str}{reset} {color}{symbol} {levelname:8}{reset} {record.getMessage()}"
+                formatted = f"{self.COLORS['DIM']}{time_str}{reset} {color}[{levelname}]{reset} {record.getMessage()}"
             elif levelname == 'WARNING':
-                formatted = f"{self.COLORS['DIM']}{time_str}{reset} {color}{symbol} {levelname:8}{reset} {record.getMessage()}"
-            elif record.name == '__main__':
-                # Main module messages in bold
-                formatted = f"{self.COLORS['DIM']}{time_str}{reset} {color}{symbol}{reset} {self.COLORS['BOLD']}{record.getMessage()}{reset}"
+                formatted = f"{self.COLORS['DIM']}{time_str}{reset} {color}[WARN]{reset} {record.getMessage()}"
+            elif levelname == 'INFO':
+                formatted = f"{self.COLORS['DIM']}{time_str}{reset} {record.getMessage()}"
             else:
-                formatted = f"{self.COLORS['DIM']}{time_str}{reset} {color}{symbol}{reset} {record.getMessage()}"
+                formatted = f"{self.COLORS['DIM']}{time_str}{reset} [{levelname}] {record.getMessage()}"
         else:
             # Plain output
-            formatted = f"{time_str} {symbol} {levelname:8} {record.getMessage()}"
+            formatted = f"{time_str} [{levelname:5}] {record.getMessage()}"
         
         # Add exception info if present
         if record.exc_info:
@@ -87,7 +75,7 @@ def setup_logging(debug=False):
     
     # Create console handler with pretty formatter
     console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(PrettyFormatter(use_colors=True, use_symbols=True))
+    console_handler.setFormatter(PrettyFormatter(use_colors=True))
     
     # Set levels
     if debug:
@@ -114,11 +102,11 @@ def signal_handler(signum, frame):
 
 
 def print_banner():
-    """Print a nice startup banner."""
+    """Print a startup banner."""
     banner = """
-╔══════════════════════════════════════════════════════════╗
-║          🧹 qBittorrent Cleanup Tool v2.1 🧹            ║
-╚══════════════════════════════════════════════════════════╝"""
+================================================================
+          qBittorrent Cleanup Tool v2.1
+================================================================"""
     print(banner)
 
 
@@ -137,7 +125,7 @@ def run_cleanup_cycle(config: Config) -> bool:
         cleanup = QbtCleanup(config)
         result = cleanup.run()
         if result:
-            logger.info("Cleanup cycle completed successfully 🎉")
+            logger.info("Cleanup cycle completed successfully")
         else:
             logger.warning("Cleanup cycle completed with issues")
         return result
@@ -171,7 +159,7 @@ def main():
         logger.info(f"Mode: Scheduled (every {config.schedule.interval_hours}h)")
         logger.info(f"Manual trigger: docker kill --signal=SIGUSR1 qbt-cleanup")
     
-    print("─" * 60)
+    print("-" * 64)
     
     # Run once mode
     if config.schedule.run_once:
@@ -192,18 +180,18 @@ def main():
             next_run_seconds = config.schedule.interval_hours * SECONDS_PER_HOUR
             next_run_time = datetime.now() + timedelta(seconds=next_run_seconds)
             logger.info(f"Next run: {next_run_time.strftime('%H:%M:%S')} ({config.schedule.interval_hours}h)")
-            print("─" * 60)
+            print("-" * 64)
             
             # Wait for next run or manual trigger
             manual_scan_event.clear()
             triggered = manual_scan_event.wait(timeout=next_run_seconds)
             
             if triggered:
-                logger.info("Manual scan requested 🚀")
-                print("─" * 60)
+                logger.info("Manual scan requested")
+                print("-" * 64)
             
         except KeyboardInterrupt:
-            logger.info("Shutdown requested - goodbye! 👋")
+            logger.info("Shutdown requested - goodbye")
             sys.exit(0)
         except Exception as e:
             logger.error(f"Unexpected error: {e}", exc_info=True)
