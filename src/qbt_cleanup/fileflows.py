@@ -160,37 +160,40 @@ class FileFlowsClient:
     def is_torrent_protected(self, torrent_files: List[str]) -> bool:
         """
         Check if any torrent files are being processed by FileFlows.
-        
+
         Args:
             torrent_files: List of file paths in torrent
-            
+
         Returns:
             True if any files are being processed
         """
         if not self.is_enabled or not torrent_files:
             return False
-        
+
         # Use cache if available, otherwise build it
         if self._processing_cache is None:
             self.build_processing_cache()
-        
+
         if not self._processing_cache:
             return False
-        
+
+        # Build sets of processing names and stems for O(1) lookup
+        proc_names = set()
+        proc_stems = set()
+        for proc_path in self._processing_cache:
+            proc_names.add(Path(proc_path).name)
+            proc_stems.add(Path(proc_path).stem)
+
         # Check each torrent file against processing cache
         for file_path in torrent_files:
             file_name = Path(file_path).name
             file_stem = Path(file_path).stem
-            
-            for proc_path in self._processing_cache:
-                proc_name = Path(proc_path).name
-                proc_stem = Path(proc_path).stem
-                
-                # Match on filename or stem
-                if file_name == proc_name or file_stem == proc_stem:
-                    logger.info(f"FileFlows protection active: {file_name}")
-                    return True
-        
+
+            # Match on filename or stem
+            if file_name in proc_names or file_stem in proc_stems:
+                logger.info(f"FileFlows protection active: {file_name}")
+                return True
+
         return False
     
     def clear_cache(self) -> None:

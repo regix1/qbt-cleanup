@@ -5,6 +5,8 @@ import logging
 import os
 from typing import Optional
 
+from .constants import SECONDS_PER_DAY, SECONDS_PER_HOUR, MINUTES_PER_HOUR
+
 logger = logging.getLogger(__name__)
 
 
@@ -88,18 +90,18 @@ def truncate_name(name: str, max_length: int = 60) -> str:
 def format_duration(seconds: float) -> str:
     """
     Format duration in seconds to human-readable string.
-    
+
     Args:
         seconds: Duration in seconds
-        
+
     Returns:
         Formatted string (e.g., "2.5d", "3.2h")
     """
-    if seconds >= 86400:  # Days
-        return f"{seconds / 86400:.1f}d"
-    elif seconds >= 3600:  # Hours
-        return f"{seconds / 3600:.1f}h"
-    elif seconds >= 60:  # Minutes
-        return f"{seconds / 60:.0f}m"
+    if seconds >= SECONDS_PER_DAY:
+        return f"{seconds / SECONDS_PER_DAY:.1f}d"
+    elif seconds >= SECONDS_PER_HOUR:
+        return f"{seconds / SECONDS_PER_HOUR:.1f}h"
+    elif seconds >= MINUTES_PER_HOUR:
+        return f"{seconds / MINUTES_PER_HOUR:.0f}m"
     else:
         return f"{seconds:.0f}s"

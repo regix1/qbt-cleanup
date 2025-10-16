@@ -9,7 +9,7 @@ from typing import Dict, Any, Optional, List
 from pathlib import Path
 from contextlib import contextmanager
 
-from .constants import STATE_FILE
+from .constants import STATE_FILE, TorrentState, SECONDS_PER_DAY
 
 logger = logging.getLogger(__name__)
 
@@ -223,7 +223,7 @@ class StateManager:
             
             if result is None:
                 # New torrent
-                stalled_since = now if current_state == "stalledDL" else None
+                stalled_since = now if current_state == TorrentState.STALLED_DL.value else None
                 conn.execute("""
                     INSERT INTO torrents 
                     (hash, first_seen, current_state, state_since, stalled_since, last_updated)
@@ -235,7 +235,7 @@ class StateManager:
                 
                 if previous_state != current_state:
                     # State changed
-                    if current_state == "stalledDL" and not result["stalled_since"]:
+                    if current_state == TorrentState.STALLED_DL.value and not result["stalled_since"]:
                         # Entering stalled state
                         conn.execute("""
                             UPDATE torrents 
@@ -243,7 +243,7 @@ class StateManager:
                             WHERE hash = ?
                         """, (current_state, now, now, now, torrent_hash))
                         logger.debug(f"Torrent {torrent_hash[:8]} entered stalled state")
-                    elif current_state != "stalledDL" and result["stalled_since"]:
+                    elif current_state != TorrentState.STALLED_DL.value and result["stalled_since"]:
                         # Exiting stalled state
                         conn.execute("""
                             UPDATE torrents 
@@ -298,7 +298,7 @@ class StateManager:
                 stalled_start = stalled_start.replace(tzinfo=timezone.utc)
             
             now = datetime.now(timezone.utc)
-            duration = (now - stalled_start).total_seconds() / 86400
+            duration = (now - stalled_start).total_seconds() / SECONDS_PER_DAY
             return max(0, duration)
         except Exception as e:
             logger.warning(f"Error calculating stalled duration for {torrent_hash}: {e}")

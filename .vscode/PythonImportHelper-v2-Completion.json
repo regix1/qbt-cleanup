@@ -201,21 +201,21 @@
         "documentation": {}
     },
     {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
         "label": "time",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "time",
         "description": "time",
         "detail": "time",
-        "documentation": {}
-    },
-    {
-        "label": "warnings",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "warnings",
-        "description": "warnings",
-        "detail": "warnings",
         "documentation": {}
     },
     {
@@ -237,15 +237,6 @@
         "documentation": {}
     },
     {
-        "label": "os",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "os",
-        "description": "os",
-        "detail": "os",
-        "documentation": {}
-    },
-    {
         "label": "dataclass",
         "importPath": "dataclasses",
         "description": "dataclasses",
@@ -275,22 +266,6 @@
         "description": "dataclasses",
         "isExtraImport": true,
         "detail": "dataclasses",
-        "documentation": {}
-    },
-    {
-        "label": "Enum",
-        "importPath": "enum",
-        "description": "enum",
-        "isExtraImport": true,
-        "detail": "enum",
-        "documentation": {}
-    },
-    {
-        "label": "auto",
-        "importPath": "enum",
-        "description": "enum",
-        "isExtraImport": true,
-        "detail": "enum",
         "documentation": {}
     },
     {
@@ -335,14 +310,6 @@
     },
     {
         "label": "timedelta",
-        "importPath": "datetime",
-        "description": "datetime",
-        "isExtraImport": true,
-        "detail": "datetime",
-        "documentation": {}
-    },
-    {
-        "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
         "isExtraImport": true,
@@ -680,7 +647,7 @@
         "kind": 6,
         "importPath": "src.qbt_cleanup.models",
         "description": "src.qbt_cleanup.models",
-        "peekOfCode": "class TorrentLimits:\n    \"\"\"Limits for a specific torrent type.\"\"\"\n    ratio: float\n    days: float\n    @property\n    def seconds(self) -> float:\n        \"\"\"Get time limit in seconds.\"\"\"\n        return self.days * 86400\n@dataclass\nclass DeletionCandidate:",
+        "peekOfCode": "class TorrentLimits:\n    \"\"\"Limits for a specific torrent type.\"\"\"\n    ratio: float\n    days: float\n    @property\n    def seconds(self) -> float:\n        \"\"\"Get time limit in seconds.\"\"\"\n        return self.days * SECONDS_PER_DAY\n@dataclass\nclass DeletionCandidate:",
         "detail": "src.qbt_cleanup.models",
         "documentation": {}
     },
@@ -761,7 +728,7 @@
         "kind": 2,
         "importPath": "src.qbt_cleanup.utils",
         "description": "src.qbt_cleanup.utils",
-        "peekOfCode": "def format_duration(seconds: float) -> str:\n    \"\"\"\n    Format duration in seconds to human-readable string.\n    Args:\n        seconds: Duration in seconds\n    Returns:\n        Formatted string (e.g., \"2.5d\", \"3.2h\")\n    \"\"\"\n    if seconds >= 86400:  # Days\n        return f\"{seconds / 86400:.1f}d\"",
+        "peekOfCode": "def format_duration(seconds: float) -> str:\n    \"\"\"\n    Format duration in seconds to human-readable string.\n    Args:\n        seconds: Duration in seconds\n    Returns:\n        Formatted string (e.g., \"2.5d\", \"3.2h\")\n    \"\"\"\n    if seconds >= SECONDS_PER_DAY:\n        return f\"{seconds / SECONDS_PER_DAY:.1f}d\"",
         "detail": "src.qbt_cleanup.utils",
         "documentation": {}
     },

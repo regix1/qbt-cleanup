@@ -1,20 +1,26 @@
 # qBittorrent Cleanup Tool
 
-Automated torrent management for qBittorrent with Sonarr/Radarr compatibility
+Automated torrent management for qBittorrent with Sonarr/Radarr compatibility.
 
 [![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fregix1%2Fqbittorrent--cleanup-blue)](https://github.com/regix1/qbt-cleanup/pkgs/container/qbittorrent-cleanup)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ![Version](https://img.shields.io/badge/version-2.1-green)
 
-## Features
+## Overview
 
-- **Smart Cleanup** - Removes torrents based on ratio and seeding time without breaking Sonarr/Radarr imports
-- **Private/Public Differentiation** - Apply different rules for private vs public trackers
-- **High Performance** - SQLite backend with indexed queries for instant operations
-- **FileFlows Protection** - Prevents deletion of torrents while files are being processed
-- **Force Delete** - Removes stuck torrents that won't auto-pause after meeting criteria
-- **Stalled Detection** - Cleans up downloads that are stuck with no progress
-- **Persistent State** - Tracks torrent history across container restarts using SQLite
+This tool automates torrent cleanup in qBittorrent based on ratio and seeding time. It's designed to work alongside Sonarr/Radarr without breaking their imports, and it can handle private and public trackers with different rules.
+
+The main benefit is that you can maintain good ratios on private trackers while automatically cleaning up public torrents more aggressively. Everything runs in Docker and persists state using SQLite, so tracking continues even after restarts.
+
+## Key Features
+
+- **Smart Cleanup** - Removes torrents when they hit ratio or time limits without interfering with Sonarr/Radarr imports
+- **Private/Public Differentiation** - Different rules for private vs public trackers to maintain good standing
+- **High Performance** - Uses SQLite with indexed queries for instant operations even with thousands of torrents
+- **FileFlows Protection** - Won't delete torrents while files are being post-processed
+- **Force Delete** - Can remove stuck torrents that meet criteria but won't auto-pause
+- **Stalled Detection** - Cleans up downloads that are stuck without progress
+- **Persistent State** - Tracks torrent history across restarts using SQLite database
 - **Manual Trigger** - Run cleanup on-demand via Docker signals
 
 ## Quick Start
@@ -173,19 +179,19 @@ services:
       - QB_PORT=8080
       - QB_USERNAME=admin
       - QB_PASSWORD=adminadmin
-      
+
       # Cleanup rules
       - PRIVATE_RATIO=2.0
       - PRIVATE_DAYS=14
       - PUBLIC_RATIO=1.0
       - PUBLIC_DAYS=3
-      
+
       # Behavior
       - DELETE_FILES=true
       - CHECK_PRIVATE_PAUSED_ONLY=true
       - CHECK_PUBLIC_PAUSED_ONLY=false
       - SCHEDULE_HOURS=6
-      
+
       # Advanced features (optional)
       - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
       - FORCE_DELETE_PUBLIC_AFTER_HOURS=12
@@ -209,7 +215,7 @@ docker logs -f qbt-cleanup
 
 ## Performance
 
-The tool uses SQLite for state management, providing excellent performance even with thousands of torrents:
+The tool uses SQLite for state management, which provides excellent performance even with large numbers of torrents:
 
 | Torrents | Load Time | Save Time | Memory Usage |
 |----------|-----------|-----------|--------------|
@@ -360,4 +366,4 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ## Acknowledgments
 
-Built for the self-hosting community to provide better torrent management that works seamlessly with the *arr ecosystem.
+Built for the self-hosting community to provide better torrent management that works seamlessly with the arr ecosystem.

@@ -2,11 +2,9 @@
 """Data models for qBittorrent cleanup."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any, Optional, List
-from enum import Enum
 
-from .constants import DeletionReason, TorrentType
+from .constants import DeletionReason, TorrentType, TorrentState, SECONDS_PER_DAY
 
 
 @dataclass
@@ -29,17 +27,17 @@ class TorrentInfo:
     @property
     def is_paused(self) -> bool:
         """Check if torrent is paused."""
-        return self.state in ("pausedUP", "pausedDL")
-    
+        return self.state in TorrentState.paused_states()
+
     @property
     def is_downloading(self) -> bool:
         """Check if torrent is downloading."""
-        return self.state in ("downloading", "stalledDL", "queuedDL", "allocating", "metaDL")
-    
+        return self.state in TorrentState.downloading_states()
+
     @property
     def is_stalled(self) -> bool:
         """Check if torrent is stalled."""
-        return self.state == "stalledDL"
+        return self.state == TorrentState.STALLED_DL.value
 
 
 @dataclass
@@ -51,7 +49,7 @@ class TorrentLimits:
     @property
     def seconds(self) -> float:
         """Get time limit in seconds."""
-        return self.days * 86400
+        return self.days * SECONDS_PER_DAY
 
 
 @dataclass
@@ -71,7 +69,7 @@ class DeletionCandidate:
             parts.append(f"stalled={self.stalled_days:.1f}/{self.limits.days:.1f}d")
         else:
             parts.append(f"ratio={self.info.ratio:.2f}/{self.limits.ratio:.2f}")
-            parts.append(f"time={self.info.seeding_time/86400:.1f}/{self.limits.days:.1f}d")
+            parts.append(f"time={self.info.seeding_time/SECONDS_PER_DAY:.1f}/{self.limits.days:.1f}d")
             
             if self.reason == DeletionReason.FORCE_DELETE and self.excess_time_hours:
                 parts.append(f"excess={self.excess_time_hours:.1f}h")

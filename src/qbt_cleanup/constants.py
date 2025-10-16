@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Constants and enumerations for qBittorrent cleanup."""
 
-from enum import Enum, auto
+from enum import Enum
 from typing import Final
 
 # Time constants
@@ -19,6 +19,15 @@ STATE_FILE: Final[str] = "/config/qbt_cleanup_state.json"
 
 # FileFlows constants
 FILEFLOWS_RECENT_THRESHOLD_MINUTES: Final[int] = 10
+FILEFLOWS_STATUS_COMPLETED: Final[int] = 1
+FILEFLOWS_STATUS_PROCESSING: Final[int] = 2
+
+# Logging and display constants
+DRY_RUN_SAMPLE_LIMIT: Final[int] = 5
+STATE_CLEANUP_DAYS: Final[int] = 30
+
+# Tracker status codes
+TRACKER_STATUS_DISABLED: Final[int] = 0
 
 
 class TorrentState(str, Enum):
