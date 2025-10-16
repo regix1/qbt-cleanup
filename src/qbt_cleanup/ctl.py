@@ -184,6 +184,94 @@ def cmd_list_torrents(args) -> int:
         return 1
 
 
+def cmd_select_torrents(args) -> int:
+    """Interactive torrent selection for blacklisting."""
+    try:
+        config = Config.from_environment()
+        client = QBittorrentClient(config.connection)
+
+        if not client.connect():
+            print("Failed to connect to qBittorrent", file=sys.stderr)
+            return 1
+
+        torrents = client.get_torrents()
+        client.disconnect()
+
+        if not torrents:
+            print("No torrents found")
+            return 0
+
+        # Sort by name
+        torrents = sorted(torrents, key=lambda t: t.name.lower())
+
+        # Check blacklist status
+        state = StateManager()
+        blacklisted_hashes = {entry['hash'] for entry in state.get_blacklist()}
+
+        print(f"\n{'#':<4} {'Status':<3} {'Name':<60} {'Hash':<16}")
+        print("=" * 90)
+
+        for i, torrent in enumerate(torrents, 1):
+            status = "[B]" if torrent.hash in blacklisted_hashes else "[ ]"
+            truncated_name = torrent.name[:60] if len(torrent.name) > 60 else torrent.name
+            truncated_hash = torrent.hash[:16]
+            print(f"{i:<4} {status:<3} {truncated_name:<60} {truncated_hash}...")
+
+        print("\n[B] = Already blacklisted")
+        print("\nEnter torrent numbers to toggle blacklist (space-separated, e.g., '1 3 5')")
+        print("Or enter 'q' to quit without changes")
+
+        try:
+            selection = input("\nSelect torrents: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print("\nCancelled")
+            return 0
+
+        if selection.lower() == 'q':
+            print("Cancelled")
+            return 0
+
+        # Parse selection
+        try:
+            selected_indices = [int(x) for x in selection.split()]
+        except ValueError:
+            print("Invalid input. Please enter numbers separated by spaces.", file=sys.stderr)
+            return 1
+
+        # Process selections
+        changes = []
+        for idx in selected_indices:
+            if idx < 1 or idx > len(torrents):
+                print(f"Skipping invalid number: {idx}")
+                continue
+
+            torrent = torrents[idx - 1]
+            is_blacklisted = torrent.hash in blacklisted_hashes
+
+            if is_blacklisted:
+                # Remove from blacklist
+                if state.remove_from_blacklist(torrent.hash):
+                    changes.append(f"Removed: {torrent.name}")
+            else:
+                # Add to blacklist
+                reason = "Manually protected" if not args.reason else args.reason
+                if state.add_to_blacklist(torrent.hash, torrent.name, reason):
+                    changes.append(f"Added: {torrent.name}")
+
+        if changes:
+            print("\nChanges applied:")
+            for change in changes:
+                print(f"  {change}")
+            return 0
+        else:
+            print("\nNo changes made")
+            return 0
+
+    except Exception as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -223,6 +311,10 @@ def main():
     list_parser = subparsers.add_parser('list', help='List tracked torrents')
     list_parser.add_argument('--limit', type=int, help='Limit number of results')
 
+    # Select torrents command (interactive)
+    select_parser = subparsers.add_parser('select', help='Interactively select torrents to blacklist/unblacklist')
+    select_parser.add_argument('--reason', help='Reason for blacklisting (optional)')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -247,6 +339,8 @@ def main():
         return cmd_status(args)
     elif args.command == 'list':
         return cmd_list_torrents(args)
+    elif args.command == 'select':
+        return cmd_select_torrents(args)
 
     parser.print_help()
     return 1

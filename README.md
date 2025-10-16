@@ -219,7 +219,37 @@ docker logs -f qbt-cleanup
 
 ### Blacklist Management
 
-Protect specific torrents from automatic deletion using the built-in control utility:
+Protect specific torrents from automatic deletion using the built-in control utility.
+
+#### Interactive Selection (Easiest)
+
+Use the interactive selector to see all torrents and toggle blacklist status by number:
+
+```bash
+docker exec -it qbt-cleanup qbt-cleanup-ctl select
+```
+
+This displays a numbered list like:
+```
+#    Status Name                                                         Hash
+==========================================================================================
+1    [ ]    Ubuntu 22.04 LTS                                             a1b2c3d4e5f6...
+2    [B]    Important Movie (2023)                                       b2c3d4e5f6a1...
+3    [ ]    My Favorite Show S01E01                                      c3d4e5f6a1b2...
+
+[B] = Already blacklisted
+
+Enter torrent numbers to toggle blacklist (space-separated, e.g., '1 3 5')
+Or enter 'q' to quit without changes
+
+Select torrents: 1 3
+```
+
+This will toggle the blacklist status - adding if not blacklisted, removing if already blacklisted.
+
+#### Manual Commands
+
+For scripting or specific hash-based operations:
 
 ```bash
 # Add a torrent to the blacklist (prevents deletion)
@@ -244,8 +274,7 @@ docker exec qbt-cleanup qbt-cleanup-ctl status
 docker exec qbt-cleanup qbt-cleanup-ctl list --limit 10
 ```
 
-**Finding Torrent Hashes:**
-You can find torrent hashes in qBittorrent's WebUI by right-clicking a torrent and selecting "Copy > Hash".
+**Note:** The interactive `select` command requires the `-it` flags for Docker to enable interactive input.
 
 ## Performance
 

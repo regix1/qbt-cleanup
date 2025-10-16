@@ -632,6 +632,15 @@
         "documentation": {}
     },
     {
+        "label": "cmd_select_torrents",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def cmd_select_torrents(args) -> int:\n    \"\"\"Interactive torrent selection for blacklisting.\"\"\"\n    try:\n        config = Config.from_environment()\n        client = QBittorrentClient(config.connection)\n        if not client.connect():\n            print(\"Failed to connect to qBittorrent\", file=sys.stderr)\n            return 1\n        torrents = client.get_torrents()\n        client.disconnect()",
+        "detail": "src.qbt_cleanup.ctl",
+        "documentation": {}
+    },
+    {
         "label": "main",
         "kind": 2,
         "importPath": "src.qbt_cleanup.ctl",
