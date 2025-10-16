@@ -627,7 +627,7 @@
         "kind": 2,
         "importPath": "src.qbt_cleanup.ctl",
         "description": "src.qbt_cleanup.ctl",
-        "peekOfCode": "def cmd_list_torrents(args) -> int:\n    \"\"\"List tracked torrents.\"\"\"\n    state = StateManager()\n    try:\n        conn = state._get_connection()\n        query = \"SELECT hash, current_state, state_since FROM torrents ORDER BY state_since DESC\"\n        if args.limit:\n            query += f\" LIMIT {args.limit}\"\n        cursor = conn.execute(query)\n        results = cursor.fetchall()",
+        "peekOfCode": "def cmd_list_torrents(args) -> int:\n    \"\"\"List tracked torrents with names from qBittorrent.\"\"\"\n    try:\n        # Get torrent info from qBittorrent\n        config = Config.from_environment()\n        client = QBittorrentClient(config.connection)\n        if not client.connect():\n            print(\"Failed to connect to qBittorrent\", file=sys.stderr)\n            return 1\n        torrents = client.get_torrents()",
         "detail": "src.qbt_cleanup.ctl",
         "documentation": {}
     },

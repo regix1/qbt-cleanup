@@ -152,31 +152,50 @@ def cmd_status(args) -> int:
 
 
 def cmd_list_torrents(args) -> int:
-    """List tracked torrents."""
-    state = StateManager()
-
+    """List tracked torrents with names from qBittorrent."""
     try:
-        conn = state._get_connection()
+        # Get torrent info from qBittorrent
+        config = Config.from_environment()
+        client = QBittorrentClient(config.connection)
 
-        query = "SELECT hash, current_state, state_since FROM torrents ORDER BY state_since DESC"
-        if args.limit:
-            query += f" LIMIT {args.limit}"
+        if not client.connect():
+            print("Failed to connect to qBittorrent", file=sys.stderr)
+            return 1
 
-        cursor = conn.execute(query)
-        results = cursor.fetchall()
+        torrents = client.get_torrents()
+        client.disconnect()
 
-        if not results:
-            print("No tracked torrents")
+        if not torrents:
+            print("No torrents found")
             return 0
 
-        print(f"Tracked torrents ({len(results)}):")
-        print()
+        # Create hash to name mapping
+        hash_to_name = {t.hash: t.name for t in torrents}
 
-        for row in results:
-            print(f"Hash: {row['hash']}")
-            print(f"  State: {row['current_state']}")
-            print(f"  Since: {format_timestamp(row['state_since'])}")
-            print()
+        # Get state info
+        state = StateManager()
+        blacklisted = {entry['hash'] for entry in state.get_blacklist()}
+
+        # Sort by name
+        torrents_sorted = sorted(torrents, key=lambda t: t.name.lower())
+
+        # Apply limit if specified
+        if args.limit:
+            torrents_sorted = torrents_sorted[:args.limit]
+
+        print(f"\nAll torrents ({len(torrents_sorted)}):\n")
+        print(f"{'#':<4} {'Status':<3} {'State':<12} {'Name':<60}")
+        print("=" * 90)
+
+        for i, torrent in enumerate(torrents_sorted, 1):
+            status = "[B]" if torrent.hash in blacklisted else "[ ]"
+            truncated_name = torrent.name[:60] if len(torrent.name) > 60 else torrent.name
+            print(f"{i:<4} {status:<3} {torrent.state:<12} {truncated_name}")
+
+        print(f"\n[B] = Blacklisted")
+        print(f"\nTotal: {len(torrents_sorted)} torrents")
+        if blacklisted:
+            print(f"Blacklisted: {len(blacklisted)} torrents")
 
         return 0
     except Exception as e:

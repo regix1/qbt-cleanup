@@ -55,9 +55,14 @@ class TorrentClassifier:
         # Update state for all torrents
         current_hashes = [t.hash for t in torrents]
         self.state.cleanup_old_torrents(current_hashes)
-        
+
+        # Check blacklist count
+        blacklist_count = len(self.state.get_blacklist())
+        if blacklist_count > 0:
+            logger.info(f"Blacklist protection: {blacklist_count} torrent(s)")
+
         result = ClassificationResult()
-        
+
         for torrent in torrents:
             # Update state tracking
             self.state.update_torrent_state(torrent.hash, torrent.state)
