@@ -97,6 +97,14 @@
         "documentation": {}
     },
     {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "List",
         "importPath": "typing",
         "description": "typing",
@@ -277,6 +285,32 @@
         "documentation": {}
     },
     {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "argparse",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "argparse",
+        "description": "argparse",
+        "detail": "argparse",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
+        "documentation": {}
+    },
+    {
         "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
@@ -372,15 +406,6 @@
         "importPath": "signal",
         "description": "signal",
         "detail": "signal",
-        "documentation": {}
-    },
-    {
-        "label": "sys",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
         "documentation": {}
     },
     {
@@ -541,6 +566,78 @@
         "description": "src.qbt_cleanup.constants",
         "peekOfCode": "class TorrentType(str, Enum):\n    \"\"\"Torrent privacy type.\"\"\"\n    PRIVATE = \"private\"\n    PUBLIC = \"public\"",
         "detail": "src.qbt_cleanup.constants",
+        "documentation": {}
+    },
+    {
+        "label": "format_timestamp",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def format_timestamp(iso_timestamp: str) -> str:\n    \"\"\"Format ISO timestamp to readable format.\"\"\"\n    try:\n        dt = datetime.fromisoformat(iso_timestamp.replace('Z', '+00:00'))\n        return dt.strftime('%Y-%m-%d %H:%M:%S UTC')\n    except Exception:\n        return iso_timestamp\ndef cmd_blacklist_add(args) -> int:\n    \"\"\"Add torrent to blacklist.\"\"\"\n    state = StateManager()",
+        "detail": "src.qbt_cleanup.ctl",
+        "documentation": {}
+    },
+    {
+        "label": "cmd_blacklist_add",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def cmd_blacklist_add(args) -> int:\n    \"\"\"Add torrent to blacklist.\"\"\"\n    state = StateManager()\n    # Get torrent name from qBittorrent if not provided\n    name = args.name\n    if not name and not args.no_lookup:\n        try:\n            config = Config.from_environment()\n            client = QBittorrentClient(config.connection)\n            if client.connect():",
+        "detail": "src.qbt_cleanup.ctl",
+        "documentation": {}
+    },
+    {
+        "label": "cmd_blacklist_remove",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def cmd_blacklist_remove(args) -> int:\n    \"\"\"Remove torrent from blacklist.\"\"\"\n    state = StateManager()\n    success = state.remove_from_blacklist(args.hash)\n    if success:\n        print(f\"Removed torrent from blacklist: {args.hash[:16]}...\")\n        return 0\n    else:\n        print(f\"Torrent not found in blacklist\", file=sys.stderr)\n        return 1",
+        "detail": "src.qbt_cleanup.ctl",
+        "documentation": {}
+    },
+    {
+        "label": "cmd_blacklist_list",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def cmd_blacklist_list(args) -> int:\n    \"\"\"List all blacklisted torrents.\"\"\"\n    state = StateManager()\n    entries = state.get_blacklist()\n    if not entries:\n        print(\"No torrents in blacklist\")\n        return 0\n    print(f\"Blacklisted torrents ({len(entries)}):\")\n    print()\n    for entry in entries:",
+        "detail": "src.qbt_cleanup.ctl",
+        "documentation": {}
+    },
+    {
+        "label": "cmd_blacklist_clear",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def cmd_blacklist_clear(args) -> int:\n    \"\"\"Clear all blacklisted torrents.\"\"\"\n    state = StateManager()\n    if not args.yes:\n        response = input(\"Are you sure you want to clear the entire blacklist? (y/N): \")\n        if response.lower() not in ('y', 'yes'):\n            print(\"Cancelled\")\n            return 0\n    success = state.clear_blacklist()\n    if success:",
+        "detail": "src.qbt_cleanup.ctl",
+        "documentation": {}
+    },
+    {
+        "label": "cmd_status",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def cmd_status(args) -> int:\n    \"\"\"Show status information.\"\"\"\n    state = StateManager()\n    if not state.state_enabled:\n        print(\"State: DISABLED (database not accessible)\")\n        return 1\n    print(\"State: ENABLED\")\n    print(f\"Database: {state.state_file}\")\n    print()\n    # Get counts",
+        "detail": "src.qbt_cleanup.ctl",
+        "documentation": {}
+    },
+    {
+        "label": "cmd_list_torrents",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def cmd_list_torrents(args) -> int:\n    \"\"\"List tracked torrents.\"\"\"\n    state = StateManager()\n    try:\n        conn = state._get_connection()\n        query = \"SELECT hash, current_state, state_since FROM torrents ORDER BY state_since DESC\"\n        if args.limit:\n            query += f\" LIMIT {args.limit}\"\n        cursor = conn.execute(query)\n        results = cursor.fetchall()",
+        "detail": "src.qbt_cleanup.ctl",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "src.qbt_cleanup.ctl",
+        "description": "src.qbt_cleanup.ctl",
+        "peekOfCode": "def main():\n    \"\"\"Main entry point.\"\"\"\n    parser = argparse.ArgumentParser(\n        prog='qbt-cleanup-ctl',\n        description='Control utility for qBittorrent cleanup tool'\n    )\n    subparsers = parser.add_subparsers(dest='command', help='Command to execute')\n    # Blacklist commands\n    blacklist_parser = subparsers.add_parser('blacklist', help='Manage blacklist')\n    blacklist_subparsers = blacklist_parser.add_subparsers(dest='blacklist_command')",
+        "detail": "src.qbt_cleanup.ctl",
         "documentation": {}
     },
     {

@@ -61,7 +61,12 @@ class TorrentClassifier:
         for torrent in torrents:
             # Update state tracking
             self.state.update_torrent_state(torrent.hash, torrent.state)
-            
+
+            # Check if blacklisted
+            if self.state.is_blacklisted(torrent.hash):
+                logger.debug(f"Skipping blacklisted torrent: {truncate_name(torrent.name)}")
+                continue
+
             # Check for stalled downloads first
             if self._check_stalled_download(torrent, result):
                 continue

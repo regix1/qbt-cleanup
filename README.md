@@ -201,17 +201,51 @@ services:
 
 ## Manual Control
 
+### Trigger Immediate Cleanup
+
 Trigger an immediate cleanup without waiting for the schedule:
 
 ```bash
 docker kill --signal=SIGUSR1 qbt-cleanup
 ```
 
+### View Logs
+
 View real-time logs:
 
 ```bash
 docker logs -f qbt-cleanup
 ```
+
+### Blacklist Management
+
+Protect specific torrents from automatic deletion using the built-in control utility:
+
+```bash
+# Add a torrent to the blacklist (prevents deletion)
+docker exec qbt-cleanup qbt-cleanup-ctl blacklist add <TORRENT_HASH>
+
+# Add with name and reason (optional)
+docker exec qbt-cleanup qbt-cleanup-ctl blacklist add <TORRENT_HASH> --name "Important Movie" --reason "Keep forever"
+
+# List all blacklisted torrents
+docker exec qbt-cleanup qbt-cleanup-ctl blacklist list
+
+# Remove a torrent from the blacklist
+docker exec qbt-cleanup qbt-cleanup-ctl blacklist remove <TORRENT_HASH>
+
+# Clear entire blacklist
+docker exec qbt-cleanup qbt-cleanup-ctl blacklist clear -y
+
+# Check status and statistics
+docker exec qbt-cleanup qbt-cleanup-ctl status
+
+# List all tracked torrents
+docker exec qbt-cleanup qbt-cleanup-ctl list --limit 10
+```
+
+**Finding Torrent Hashes:**
+You can find torrent hashes in qBittorrent's WebUI by right-clicking a torrent and selecting "Copy > Hash".
 
 ## Performance
 
@@ -229,6 +263,7 @@ The tool uses SQLite for state management, which provides excellent performance 
 - **Location:** `/config/qbt_cleanup_state.db`
 - **Migration:** Automatic from JSON/MessagePack formats
 - **Cleanup:** Automatically removes torrents that no longer exist
+- **Blacklist:** Permanently stored in database, persists across restarts
 
 ## How It Works
 
@@ -244,6 +279,7 @@ The tool uses a modular Python package structure:
   - **cleanup.py** - Main orchestration
   - **config.py** - Environment variable parsing
   - **main.py** - Entry point and scheduler
+  - **ctl.py** - Control utility for runtime management
 
 ### Process Flow
 
@@ -251,10 +287,11 @@ The tool uses a modular Python package structure:
 2. Fetch all torrents and their metadata
 3. Update SQLite database with current torrent states
 4. Remove database entries for non-existent torrents
-5. Classify torrents based on configured rules
-6. Check FileFlows protection status
-7. Delete torrents that meet criteria
-8. Commit database changes
+5. Check if torrents are blacklisted
+6. Classify torrents based on configured rules
+7. Check FileFlows protection status
+8. Delete torrents that meet criteria
+9. Commit database changes
 
 ### Deletion Logic
 
@@ -268,6 +305,7 @@ Torrents are protected from deletion when:
 - Files are being processed by FileFlows
 - They don't meet any deletion criteria
 - They're actively downloading (except stalled)
+- They are on the blacklist (manually protected)
 
 ## Frequently Asked Questions
 

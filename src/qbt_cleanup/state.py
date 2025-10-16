@@ -104,7 +104,17 @@ class StateManager:
                     value TEXT
                 )
             """)
-            
+
+            # Create blacklist table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS blacklist (
+                    hash TEXT PRIMARY KEY,
+                    name TEXT,
+                    added_at TEXT NOT NULL,
+                    reason TEXT
+                )
+            """)
+
             conn.commit()
             logger.debug("SQLite database initialized")
         except Exception as e:
@@ -387,6 +397,133 @@ class StateManager:
             logger.error(f"Failed to get torrent info: {e}")
             return None
     
+    def is_blacklisted(self, torrent_hash: str) -> bool:
+        """
+        Check if a torrent is blacklisted.
+
+        Args:
+            torrent_hash: Torrent hash
+
+        Returns:
+            True if blacklisted
+        """
+        if not self.state_enabled:
+            return False
+
+        try:
+            conn = self._get_connection()
+            cursor = conn.execute(
+                "SELECT 1 FROM blacklist WHERE hash = ?",
+                (torrent_hash,)
+            )
+            return cursor.fetchone() is not None
+        except Exception as e:
+            logger.error(f"Failed to check blacklist: {e}")
+            return False
+
+    def add_to_blacklist(self, torrent_hash: str, name: str = "", reason: str = "") -> bool:
+        """
+        Add a torrent to the blacklist.
+
+        Args:
+            torrent_hash: Torrent hash
+            name: Torrent name (optional)
+            reason: Reason for blacklisting (optional)
+
+        Returns:
+            True if successful
+        """
+        if not self.state_enabled:
+            logger.warning("State persistence disabled - cannot add to blacklist")
+            return False
+
+        try:
+            conn = self._get_connection()
+            now = datetime.now(timezone.utc).isoformat()
+            conn.execute("""
+                INSERT OR REPLACE INTO blacklist (hash, name, added_at, reason)
+                VALUES (?, ?, ?, ?)
+            """, (torrent_hash, name, now, reason))
+            conn.commit()
+            logger.info(f"Added {torrent_hash[:8]} to blacklist")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to add to blacklist: {e}")
+            return False
+
+    def remove_from_blacklist(self, torrent_hash: str) -> bool:
+        """
+        Remove a torrent from the blacklist.
+
+        Args:
+            torrent_hash: Torrent hash
+
+        Returns:
+            True if successful
+        """
+        if not self.state_enabled:
+            logger.warning("State persistence disabled - cannot remove from blacklist")
+            return False
+
+        try:
+            conn = self._get_connection()
+            cursor = conn.execute("DELETE FROM blacklist WHERE hash = ?", (torrent_hash,))
+            conn.commit()
+
+            if cursor.rowcount > 0:
+                logger.info(f"Removed {torrent_hash[:8]} from blacklist")
+                return True
+            else:
+                logger.warning(f"Torrent {torrent_hash[:8]} not found in blacklist")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to remove from blacklist: {e}")
+            return False
+
+    def get_blacklist(self) -> List[Dict[str, Any]]:
+        """
+        Get all blacklisted torrents.
+
+        Returns:
+            List of blacklist entries
+        """
+        if not self.state_enabled:
+            return []
+
+        try:
+            conn = self._get_connection()
+            cursor = conn.execute("""
+                SELECT hash, name, added_at, reason
+                FROM blacklist
+                ORDER BY added_at DESC
+            """)
+            results = cursor.fetchall()
+            return [dict(row) for row in results]
+        except Exception as e:
+            logger.error(f"Failed to get blacklist: {e}")
+            return []
+
+    def clear_blacklist(self) -> bool:
+        """
+        Clear all entries from the blacklist.
+
+        Returns:
+            True if successful
+        """
+        if not self.state_enabled:
+            logger.warning("State persistence disabled - cannot clear blacklist")
+            return False
+
+        try:
+            conn = self._get_connection()
+            cursor = conn.execute("DELETE FROM blacklist")
+            conn.commit()
+            logger.info(f"Cleared {cursor.rowcount} entries from blacklist")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to clear blacklist: {e}")
+            return False
+
     def __del__(self):
         """Clean up database connection on deletion."""
         if self._connection:

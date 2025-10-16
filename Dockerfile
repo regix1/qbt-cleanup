@@ -21,4 +21,9 @@ fi\n\
 exec python -u -m src.qbt_cleanup.main "$@"' > /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
+# Create control script
+RUN echo '#!/bin/sh\n\
+exec python -u -m src.qbt_cleanup.ctl "$@"' > /usr/local/bin/qbt-cleanup-ctl && \
+    chmod +x /usr/local/bin/qbt-cleanup-ctl
+
 ENTRYPOINT ["/entrypoint.sh"]
