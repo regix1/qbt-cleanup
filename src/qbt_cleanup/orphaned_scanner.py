@@ -81,6 +81,12 @@ class OrphanedFilesScanner:
                     continue
 
             logger.info(f"Collected {len(active_paths)} active paths from torrents")
+
+            # Log all active paths for debugging
+            logger.info("Active paths from qBittorrent:")
+            for path in sorted(active_paths):
+                logger.info(f"  ACTIVE: {path}")
+
             return active_paths
 
         except Exception as e:
@@ -161,7 +167,11 @@ class OrphanedFilesScanner:
             orphaned: List to add orphaned items to
         """
         # Check if this item or any of its parents are in active paths
-        if not self._is_path_active(item_path, active_paths):
+        is_active = self._is_path_active(item_path, active_paths)
+
+        logger.info(f"SCANNED: {item_path} -> {'ACTIVE (keeping)' if is_active else 'NOT ACTIVE (checking age)'}")
+
+        if not is_active:
             # Check file modification time
             try:
                 mtime = item_path.stat().st_mtime
@@ -170,9 +180,9 @@ class OrphanedFilesScanner:
 
                 if age_seconds >= min_age_seconds:
                     orphaned.append(item_path)
-                    logger.debug(f"Found orphaned item (age: {age_hours:.1f}h): {item_path}")
+                    logger.info(f"  -> ORPHANED: Age {age_hours:.1f}h >= {min_age_hours}h - WILL DELETE")
                 else:
-                    logger.debug(f"Skipping recently modified item (age: {age_hours:.1f}h < {min_age_hours}h): {item_path}")
+                    logger.info(f"  -> TOO RECENT: Age {age_hours:.1f}h < {min_age_hours}h - KEEPING")
             except Exception as e:
                 logger.warning(f"Error checking modification time for {item_path}: {e}")
                 return
