@@ -267,13 +267,15 @@ environment:
 **Orphaned File Logs:**
 The orphaned file scanner creates one timestamped log file per scan in `/config/`:
 
-- **`orphaned_dryrun_YYYYMMDD_HHMMSS.log`** - Dry run results
+- **`orphaned_dryrun_YYYY-MM-DD_HH-MM-SS.log`** - Dry run results
   - Shows exactly what would be deleted
   - Includes file/directory sizes in GB
+  - Example: `orphaned_dryrun_2025-11-06_04-16-33.log`
 
-- **`orphaned_cleanup_YYYYMMDD_HHMMSS.log`** - Actual deletion results
+- **`orphaned_cleanup_YYYY-MM-DD_HH-MM-SS.log`** - Actual deletion results
   - Records what was deleted
   - Includes file/directory sizes in GB
+  - Example: `orphaned_cleanup_2025-11-06_14-30-45.log`
 
 Each scan creates a separate log file, making it easy to track history and review results.
 
@@ -284,7 +286,7 @@ docker-compose up -d  # with DRY_RUN=true
 
 # 2. Review the output (check the most recent file)
 ls -lt /home/torrent/qbt-cleanup/config/orphaned_dryrun_*.log | head -1
-cat /home/torrent/qbt-cleanup/config/orphaned_dryrun_20250106_040018.log
+cat /home/torrent/qbt-cleanup/config/orphaned_dryrun_2025-11-06_04-16-33.log
 
 # 3. If everything looks good, disable dry run
 # Edit docker-compose.yml: DRY_RUN=false

@@ -382,7 +382,7 @@ class OrphanedFilesScanner:
         """
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            timestamp_file = datetime.now().strftime('%Y%m%d_%H%M%S')
+            timestamp_file = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
             log_dir_path = Path(log_dir)
             log_dir_path.mkdir(parents=True, exist_ok=True)
 
