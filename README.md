@@ -88,13 +88,40 @@ docker run -d \
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CHECK_PRIVATE_PAUSED_ONLY` | Only check paused private torrents | `false` |
-| `CHECK_PUBLIC_PAUSED_ONLY` | Only check paused public torrents | `false` |
-| `FORCE_DELETE_PRIVATE_AFTER_HOURS` | Force delete stuck private torrents after X hours | `0` (disabled) |
-| `FORCE_DELETE_PUBLIC_AFTER_HOURS` | Force delete stuck public torrents after X hours | `0` (disabled) |
+| `CHECK_PRIVATE_PAUSED_ONLY` | Only check paused private torrents for deletion | `false` |
+| `CHECK_PUBLIC_PAUSED_ONLY` | Only check paused public torrents for deletion | `false` |
+| `FORCE_DELETE_PRIVATE_AFTER_HOURS` | Force delete private torrents that meet criteria but won't pause (hours) | `0` (disabled) |
+| `FORCE_DELETE_PUBLIC_AFTER_HOURS` | Force delete public torrents that meet criteria but won't pause (hours) | `0` (disabled) |
 | `CLEANUP_STALE_DOWNLOADS` | Enable stalled download cleanup | `false` |
 | `MAX_STALLED_PRIVATE_DAYS` | Maximum days private torrents can be stalled | `3` |
 | `MAX_STALLED_PUBLIC_DAYS` | Maximum days public torrents can be stalled | `3` |
+
+**Understanding Force Delete:**
+
+Force delete handles "stuck" torrents that meet your ratio/time criteria but qBittorrent refuses to auto-pause. This can happen when:
+- qBittorrent's share limits are disabled or set higher than yours
+- The torrent is configured to ignore share limits
+- There's a mismatch between qBittorrent settings and your cleanup rules
+
+**How it works:**
+1. Tool checks if torrent meets your cleanup criteria (ratio AND/OR seeding time)
+2. If `CHECK_*_PAUSED_ONLY=true`, it waits for qBittorrent to auto-pause the torrent first
+3. If the torrent is still active after X hours despite meeting criteria, force delete kicks in
+4. The torrent gets deleted even if not paused
+
+**Example scenario:**
+```yaml
+# Your settings
+- CHECK_PRIVATE_PAUSED_ONLY=true
+- FORCE_DELETE_PRIVATE_AFTER_HOURS=48
+
+# What happens:
+# Day 1: Torrent reaches 2.0 ratio → Meets criteria, tool waits for qBittorrent to pause it
+# Day 2: Still seeding (qBittorrent won't pause) → Still waiting
+# Day 3 (48h later): Still seeding → Force delete removes it
+```
+
+Set to `0` to disable force delete and only remove torrents that qBittorrent has already paused.
 
 ### qBittorrent Settings Override
 
@@ -214,16 +241,31 @@ environment:
 
 ### Media Server with FileFlows
 
-Protect files during post-processing:
+Protect files during post-processing, but force delete if qBittorrent won't pause them:
 
 ```yaml
 environment:
+  # FileFlows protection
   - FILEFLOWS_ENABLED=true
   - FILEFLOWS_HOST=192.168.1.200
   - FILEFLOWS_PORT=19200
+
+  # Cleanup settings
+  - CHECK_PRIVATE_PAUSED_ONLY=true  # Wait for qBittorrent to pause
+  - PRIVATE_RATIO=2.0
+  - PRIVATE_DAYS=14
+
+  # Force delete after 48 hours if qBittorrent won't pause
+  # Useful when qBittorrent share limits don't match your cleanup rules
   - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
   - FORCE_DELETE_PUBLIC_AFTER_HOURS=24
 ```
+
+**Why force delete is useful here:**
+- qBittorrent may have share limits disabled or set differently
+- Some torrents might be configured to ignore share limits
+- Force delete ensures cleanup happens even if qBittorrent won't cooperate
+- FileFlows protection still prevents deletion during active processing
 
 ### Aggressive Space Management
 
@@ -512,14 +554,37 @@ The tool uses a modular Python package structure:
 
 A torrent is deleted when it meets ANY of these conditions:
 
-1. **Standard Deletion:** Ratio OR seeding time exceeded
-2. **Force Delete:** Exceeded limits but won't pause (after timeout)
-3. **Stalled Cleanup:** Download stalled for too long
+1. **Standard Deletion:** Ratio OR seeding time exceeded AND either:
+   - `CHECK_*_PAUSED_ONLY=false` (delete immediately when criteria met)
+   - `CHECK_*_PAUSED_ONLY=true` AND torrent is paused (wait for qBittorrent to pause it first)
 
-Torrents are protected from deletion when:
+2. **Force Delete:** When `CHECK_*_PAUSED_ONLY=true` but qBittorrent won't pause the torrent:
+   - Torrent meets ratio/time criteria
+   - Has been meeting criteria for longer than `FORCE_DELETE_*_AFTER_HOURS`
+   - Gets deleted even if still actively seeding
+   - Use this to handle torrents that are "stuck" seeding
+
+3. **Stalled Cleanup:** Download stalled for too long (if enabled)
+   - Torrent is incomplete (downloading state)
+   - No download progress for X days
+   - Cleans up stuck/dead downloads
+
+**Deletion Flow Example:**
+
+```
+Torrent reaches 2.0 ratio at 10:00 AM
+├─ CHECK_PRIVATE_PAUSED_ONLY=false → Delete immediately
+├─ CHECK_PRIVATE_PAUSED_ONLY=true
+│  ├─ qBittorrent pauses it → Delete immediately
+│  └─ qBittorrent doesn't pause it
+│     ├─ FORCE_DELETE_PRIVATE_AFTER_HOURS=0 → Never delete (wait forever)
+│     └─ FORCE_DELETE_PRIVATE_AFTER_HOURS=48 → Delete after 48 hours (at 10:00 AM in 2 days)
+```
+
+**Protection from deletion:**
 - Files are being processed by FileFlows
 - They don't meet any deletion criteria
-- They're actively downloading (except stalled)
+- They're actively downloading (except stalled torrents)
 - They are on the blacklist (manually protected)
 
 ## Frequently Asked Questions
