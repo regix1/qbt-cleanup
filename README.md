@@ -42,11 +42,14 @@ docker run -d \
   ghcr.io/regix1/qbittorrent-cleanup:latest
 ```
 
-**Note:** For orphaned file cleanup, also mount your download directories:
+**Note:** For orphaned file cleanup, also mount your download directories **at the same path as qBittorrent**:
 ```bash
--v /path/to/downloads:/data/downloads \
+# Mount at the SAME path that qBittorrent uses!
+# If qBittorrent has: -v /path/to/downloads:/downloads
+# Then use: -v /path/to/downloads:/downloads (NOT /data/downloads)
+-v /path/to/downloads:/downloads \
 -e CLEANUP_ORPHANED_FILES=true \
--e ORPHANED_SCAN_DIRS=/data/downloads
+-e ORPHANED_SCAN_DIRS=/downloads
 ```
 
 ## Configuration
@@ -133,6 +136,38 @@ This dual-check safety mechanism is useful for cleaning up leftover data from to
 
 **Volume Mounting Required:**
 You must mount your download directories into the container for this feature to work. The paths in `ORPHANED_SCAN_DIRS` should match the paths INSIDE the Docker container, not your host paths.
+
+**⚠️ CRITICAL: Path Matching Requirement**
+
+The download directories MUST be mounted at the **SAME PATH** in both qBittorrent and qbt-cleanup containers. If the paths don't match, the scanner will incorrectly mark all files as orphaned!
+
+**Incorrect (will delete everything!):**
+```yaml
+qbittorrent:
+  volumes:
+    - /host/downloads:/downloads          # Path in qBittorrent: /downloads
+
+qbt-cleanup:
+  volumes:
+    - /host/downloads:/data/downloads     # Path in qbt-cleanup: /data/downloads ❌ DIFFERENT!
+  environment:
+    - ORPHANED_SCAN_DIRS=/data/downloads
+```
+
+**Correct:**
+```yaml
+qbittorrent:
+  volumes:
+    - /host/downloads:/downloads          # Path in qBittorrent: /downloads
+
+qbt-cleanup:
+  volumes:
+    - /host/downloads:/downloads          # Path in qbt-cleanup: /downloads ✅ SAME!
+  environment:
+    - ORPHANED_SCAN_DIRS=/downloads
+```
+
+The tool will warn you at startup if it detects a path mismatch.
 
 **Example:**
 ```yaml
@@ -230,26 +265,26 @@ environment:
 **Important:** Always test with `DRY_RUN=true` first to verify what will be deleted!
 
 **Orphaned File Logs:**
-The orphaned file scanner creates dedicated log files in `/config/` for easy review:
+The orphaned file scanner creates one timestamped log file per scan in `/config/`:
 
-1. **`orphaned_cleanup.log`** - Persistent log of all cleanup operations (appended each run)
-   - Timestamped entries for each scan
-   - Lists all orphaned files and directories found
-   - Tracks both dry runs and actual deletions
+- **`orphaned_dryrun_YYYYMMDD_HHMMSS.log`** - Dry run results
+  - Shows exactly what would be deleted
+  - Includes file/directory sizes in GB
 
-2. **`orphaned_review_YYYYMMDD_HHMMSS.txt`** - Dry run review files
-   - Created only during dry runs
-   - Shows exactly what would be deleted
-   - Includes file/directory sizes in GB
-   - Review these files before running with `DRY_RUN=false`
+- **`orphaned_cleanup_YYYYMMDD_HHMMSS.log`** - Actual deletion results
+  - Records what was deleted
+  - Includes file/directory sizes in GB
+
+Each scan creates a separate log file, making it easy to track history and review results.
 
 Example workflow:
 ```bash
 # 1. Run dry run to see what would be deleted
 docker-compose up -d  # with DRY_RUN=true
 
-# 2. Review the output
-cat ./qbt-cleanup/config/orphaned_review_20250105_032049.txt
+# 2. Review the output (check the most recent file)
+ls -lt /home/torrent/qbt-cleanup/config/orphaned_dryrun_*.log | head -1
+cat /home/torrent/qbt-cleanup/config/orphaned_dryrun_20250106_040018.log
 
 # 3. If everything looks good, disable dry run
 # Edit docker-compose.yml: DRY_RUN=false
@@ -271,7 +306,7 @@ services:
       - TZ=America/New_York
     volumes:
       - ./config:/config
-      - ./downloads:/downloads
+      - ./downloads:/downloads  # ← Note this path
     ports:
       - 8080:8080
 
@@ -283,9 +318,9 @@ services:
       - qbittorrent
     volumes:
       - ./qbt-cleanup/config:/config
-      # Mount download directories for orphaned file cleanup
-      # Must match qBittorrent's download paths
-      - ./downloads:/data/downloads
+      # ⚠️ CRITICAL: Must use SAME path as qBittorrent container!
+      # qBittorrent uses /downloads, so we use /downloads (NOT /data/downloads)
+      - ./downloads:/downloads
     environment:
       # Connection
       - QB_HOST=qbittorrent
@@ -313,7 +348,7 @@ services:
 
       # Orphaned file cleanup (optional)
       # - CLEANUP_ORPHANED_FILES=true
-      # - ORPHANED_SCAN_DIRS=/data/downloads
+      # - ORPHANED_SCAN_DIRS=/downloads  # Must match the volume mount path!
 ```
 
 ## Manual Control
@@ -339,20 +374,20 @@ docker logs -f qbt-cleanup
 Review orphaned file cleanup operations:
 
 ```bash
-# View the persistent cleanup log (all operations)
-cat ./qbt-cleanup/config/orphaned_cleanup.log
+# List all orphaned scan logs
+ls -lth ./qbt-cleanup/config/orphaned_*.log
 
-# List all dry run review files
-ls -lh ./qbt-cleanup/config/orphaned_review_*.txt
+# View the most recent dry run log
+cat $(ls -t ./qbt-cleanup/config/orphaned_dryrun_*.log | head -n1)
 
-# View a specific dry run review file
-cat ./qbt-cleanup/config/orphaned_review_20250105_032049.txt
+# View the most recent cleanup log
+cat $(ls -t ./qbt-cleanup/config/orphaned_cleanup_*.log | head -n1)
 
-# View the most recent dry run review file
-cat $(ls -t ./qbt-cleanup/config/orphaned_review_*.txt | head -n1)
+# Search for specific files in logs
+grep "Black.Phone" ./qbt-cleanup/config/orphaned_*.log
 ```
 
-These logs are stored in your mounted `/config` directory and persist across container restarts.
+These logs are stored in your mounted `/config` directory and persist across container restarts. Each scan creates a new timestamped log file.
 
 ### Blacklist Management
 

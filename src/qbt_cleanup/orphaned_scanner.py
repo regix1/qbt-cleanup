@@ -81,12 +81,6 @@ class OrphanedFilesScanner:
                     continue
 
             logger.info(f"Collected {len(active_paths)} active paths from torrents")
-
-            # Log all active paths for debugging
-            logger.info("Active paths from qBittorrent:")
-            for path in sorted(active_paths):
-                logger.info(f"  ACTIVE: {path}")
-
             return active_paths
 
         except Exception as e:
@@ -167,22 +161,14 @@ class OrphanedFilesScanner:
             orphaned: List to add orphaned items to
         """
         # Check if this item or any of its parents are in active paths
-        is_active = self._is_path_active(item_path, active_paths)
-
-        logger.info(f"SCANNED: {item_path} -> {'ACTIVE (keeping)' if is_active else 'NOT ACTIVE (checking age)'}")
-
-        if not is_active:
+        if not self._is_path_active(item_path, active_paths):
             # Check file modification time
             try:
                 mtime = item_path.stat().st_mtime
                 age_seconds = current_time - mtime
-                age_hours = age_seconds / 3600
 
                 if age_seconds >= min_age_seconds:
                     orphaned.append(item_path)
-                    logger.info(f"  -> ORPHANED: Age {age_hours:.1f}h >= {min_age_hours}h - WILL DELETE")
-                else:
-                    logger.info(f"  -> TOO RECENT: Age {age_hours:.1f}h < {min_age_hours}h - KEEPING")
             except Exception as e:
                 logger.warning(f"Error checking modification time for {item_path}: {e}")
                 return
@@ -314,6 +300,9 @@ class OrphanedFilesScanner:
             logger.warning("No active torrent paths found, skipping orphaned file scan")
             return 0, 0
 
+        # Validate path configuration
+        self._validate_path_configuration(scan_dirs, active_paths)
+
         # Scan for orphaned files (always recursive)
         orphaned_paths = self.scan_for_orphaned_files(scan_dirs, active_paths, min_age_hours)
 
@@ -329,9 +318,62 @@ class OrphanedFilesScanner:
         # Remove orphaned files
         return self.remove_orphaned_files(orphaned_paths, dry_run)
 
+    def _validate_path_configuration(self, scan_dirs: List[str], active_paths: Set[Path]) -> None:
+        """
+        Validate that scan directories and qBittorrent paths align.
+
+        Warns if there's a potential path mismatch that could cause false positives.
+
+        Args:
+            scan_dirs: Configured scan directories
+            active_paths: Active paths from qBittorrent
+        """
+        # Check if any active paths start with any of our scan directories
+        scan_dir_paths = [Path(d).resolve() for d in scan_dirs]
+
+        paths_match = False
+        for active_path in active_paths:
+            for scan_dir in scan_dir_paths:
+                try:
+                    active_path.relative_to(scan_dir)
+                    paths_match = True
+                    break
+                except ValueError:
+                    continue
+            if paths_match:
+                break
+
+        if not paths_match:
+            logger.warning("=" * 80)
+            logger.warning("⚠️  PATH MISMATCH DETECTED ⚠️")
+            logger.warning("=" * 80)
+            logger.warning("qBittorrent is reporting paths that don't match your scan directories!")
+            logger.warning("")
+            logger.warning(f"Your scan directories: {scan_dirs}")
+            logger.warning("")
+            logger.warning("Sample qBittorrent paths:")
+            for path in list(active_paths)[:5]:
+                logger.warning(f"  - {path}")
+            logger.warning("")
+            logger.warning("This will cause ALL files to be marked as orphaned!")
+            logger.warning("")
+            logger.warning("SOLUTION: Mount your download directories at the SAME path in both")
+            logger.warning("qBittorrent and qbt-cleanup containers.")
+            logger.warning("")
+            logger.warning("Example:")
+            logger.warning("  qbittorrent:")
+            logger.warning("    volumes:")
+            logger.warning("      - /host/downloads:/downloads")
+            logger.warning("  qbt-cleanup:")
+            logger.warning("    volumes:")
+            logger.warning("      - /host/downloads:/downloads  # Same path!")
+            logger.warning("    environment:")
+            logger.warning("      - ORPHANED_SCAN_DIRS=/downloads")
+            logger.warning("=" * 80)
+
     def _write_orphaned_log(self, orphaned_paths: List[Path], dry_run: bool, log_dir: str) -> None:
         """
-        Write orphaned files to a dedicated log file.
+        Write orphaned files to a dated log file.
 
         Args:
             orphaned_paths: List of orphaned paths
@@ -340,79 +382,58 @@ class OrphanedFilesScanner:
         """
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            timestamp_file = datetime.now().strftime('%Y%m%d_%H%M%S')
             log_dir_path = Path(log_dir)
             log_dir_path.mkdir(parents=True, exist_ok=True)
 
-            # Main orphaned cleanup log (append mode)
-            main_log = log_dir_path / "orphaned_cleanup.log"
-
-            # Dry run review file (overwrite mode)
-            if dry_run:
-                review_file = log_dir_path / f"orphaned_review_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            # Create one log file per scan with timestamp
+            mode_prefix = "orphaned_dryrun" if dry_run else "orphaned_cleanup"
+            log_file = log_dir_path / f"{mode_prefix}_{timestamp_file}.log"
 
             # Categorize files and directories
             files = [p for p in orphaned_paths if p.is_file()]
             dirs = [p for p in orphaned_paths if p.is_dir()]
 
-            # Write to main log
-            with open(main_log, "a", encoding="utf-8") as f:
-                f.write(f"\n{'='*80}\n")
-                f.write(f"Orphaned File Cleanup - {timestamp}\n")
-                f.write(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}\n")
+            # Write to log file
+            with open(log_file, "w", encoding="utf-8") as f:
+                f.write(f"{'='*80}\n")
+                f.write(f"Orphaned File Scan - {timestamp}\n")
+                f.write(f"Mode: {'DRY RUN' if dry_run else 'LIVE DELETION'}\n")
                 f.write(f"Total orphaned items: {len(orphaned_paths)} ({len(files)} files, {len(dirs)} directories)\n")
                 f.write(f"{'='*80}\n\n")
 
                 if files:
-                    f.write(f"Orphaned Files ({len(files)}):\n")
+                    f.write(f"FILES ({len(files)}):\n")
+                    f.write("-" * 80 + "\n")
                     for file_path in sorted(files):
-                        f.write(f"  - {file_path}\n")
-                    f.write("\n")
+                        try:
+                            size = file_path.stat().st_size / (1024**3)  # GB
+                            f.write(f"{file_path}\n  Size: {size:.2f} GB\n\n")
+                        except Exception:
+                            f.write(f"{file_path}\n  Size: Unknown\n\n")
 
                 if dirs:
-                    f.write(f"Orphaned Directories ({len(dirs)}):\n")
+                    f.write(f"\nDIRECTORIES ({len(dirs)}):\n")
+                    f.write("-" * 80 + "\n")
                     for dir_path in sorted(dirs):
-                        f.write(f"  - {dir_path}\n")
-                    f.write("\n")
+                        try:
+                            # Calculate directory size
+                            total_size = sum(
+                                f.stat().st_size
+                                for f in dir_path.rglob('*')
+                                if f.is_file()
+                            ) / (1024**3)  # GB
+                            f.write(f"{dir_path}\n  Size: {total_size:.2f} GB\n\n")
+                        except Exception:
+                            f.write(f"{dir_path}\n  Size: Unknown\n\n")
 
-            logger.info(f"Orphaned file list written to: {main_log}")
-
-            # Write dry run review file
-            if dry_run:
-                with open(review_file, "w", encoding="utf-8") as f:
-                    f.write(f"DRY RUN REVIEW - {timestamp}\n")
-                    f.write(f"{'='*80}\n\n")
-                    f.write(f"The following {len(orphaned_paths)} items would be deleted:\n\n")
-
-                    if files:
-                        f.write(f"FILES ({len(files)}):\n")
-                        f.write("-" * 80 + "\n")
-                        for file_path in sorted(files):
-                            try:
-                                size = file_path.stat().st_size / (1024**3)  # GB
-                                f.write(f"{file_path}\n  Size: {size:.2f} GB\n\n")
-                            except Exception:
-                                f.write(f"{file_path}\n  Size: Unknown\n\n")
-
-                    if dirs:
-                        f.write(f"\nDIRECTORIES ({len(dirs)}):\n")
-                        f.write("-" * 80 + "\n")
-                        for dir_path in sorted(dirs):
-                            try:
-                                # Calculate directory size
-                                total_size = sum(
-                                    f.stat().st_size
-                                    for f in dir_path.rglob('*')
-                                    if f.is_file()
-                                ) / (1024**3)  # GB
-                                f.write(f"{dir_path}\n  Size: {total_size:.2f} GB\n\n")
-                            except Exception:
-                                f.write(f"{dir_path}\n  Size: Unknown\n\n")
-
+                if dry_run:
                     f.write(f"\n{'='*80}\n")
+                    f.write(f"This was a DRY RUN - no files were deleted.\n")
                     f.write(f"To proceed with deletion, set DRY_RUN=false\n")
+                    f.write(f"{'='*80}\n")
 
-                logger.info(f"Dry run review file created: {review_file}")
-                logger.info(f"Review this file before running with DRY_RUN=false")
+            logger.info(f"Orphaned file scan results written to: {log_file}")
 
         except Exception as e:
             logger.error(f"Error writing orphaned log: {e}")
