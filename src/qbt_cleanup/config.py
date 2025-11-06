@@ -104,6 +104,15 @@ class FileFlowsConfig:
 
 
 @dataclass
+class OrphanedFilesConfig:
+    """Orphaned files cleanup configuration."""
+    enabled: bool = field(default_factory=lambda: parse_bool("CLEANUP_ORPHANED_FILES", False))
+    scan_dirs: list[str] = field(default_factory=lambda: [
+        d.strip() for d in os.environ.get("ORPHANED_SCAN_DIRS", "").split(",") if d.strip()
+    ])
+
+
+@dataclass
 class Config:
     """Main configuration container."""
     connection: ConnectionConfig = field(default_factory=ConnectionConfig)
@@ -111,6 +120,7 @@ class Config:
     behavior: BehaviorConfig = field(default_factory=BehaviorConfig)
     schedule: ScheduleConfig = field(default_factory=ScheduleConfig)
     fileflows: FileFlowsConfig = field(default_factory=FileFlowsConfig)
+    orphaned: OrphanedFilesConfig = field(default_factory=OrphanedFilesConfig)
     
     @classmethod
     def from_environment(cls) -> "Config":

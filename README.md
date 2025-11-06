@@ -17,6 +17,7 @@ The main benefit is that you can maintain good ratios on private trackers while 
 - **Smart Cleanup** - Removes torrents when they hit ratio or time limits without interfering with Sonarr/Radarr imports
 - **Private/Public Differentiation** - Different rules for private vs public trackers to maintain good standing
 - **High Performance** - Uses SQLite with indexed queries for instant operations even with thousands of torrents
+- **Orphaned File Cleanup** - Identifies and removes files on disk that aren't tracked by any active torrent
 - **FileFlows Protection** - Won't delete torrents while files are being post-processed
 - **Force Delete** - Can remove stuck torrents that meet criteria but won't auto-pause
 - **Stalled Detection** - Cleans up downloads that are stuck without progress
@@ -103,6 +104,22 @@ docker run -d \
 | `FILEFLOWS_PORT` | FileFlows server port | `19200` |
 | `FILEFLOWS_TIMEOUT` | API timeout in seconds | `10` |
 
+### Orphaned File Cleanup
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `CLEANUP_ORPHANED_FILES` | Enable orphaned file detection and cleanup | `false` |
+| `ORPHANED_SCAN_DIRS` | Comma-separated list of directories to scan for orphaned files | ` ` (empty) |
+
+**Example:**
+```yaml
+environment:
+  - CLEANUP_ORPHANED_FILES=true
+  - ORPHANED_SCAN_DIRS=/downloads/complete,/downloads/movies,/downloads/tv
+```
+
+This feature scans specified directories for files/folders that exist on disk but aren't being tracked by any active torrent in qBittorrent (whether downloading, seeding, or paused). This is useful for cleaning up leftover data from torrents that were removed incorrectly or files that were manually modified.
+
 ## Common Use Cases
 
 ### Private Tracker Optimization
@@ -145,6 +162,19 @@ environment:
   - CLEANUP_STALE_DOWNLOADS=true
   - MAX_STALLED_PUBLIC_DAYS=2
 ```
+
+### Orphaned File Cleanup
+
+Clean up leftover files that aren't tracked by any active torrent:
+
+```yaml
+environment:
+  - CLEANUP_ORPHANED_FILES=true
+  - ORPHANED_SCAN_DIRS=/downloads/complete,/downloads/movies
+  - DRY_RUN=true  # Test first to see what would be removed
+```
+
+This will scan the specified directories and remove any files or folders that don't belong to active torrents. Always test with `DRY_RUN=true` first!
 
 ## Docker Compose Example
 
@@ -305,6 +335,7 @@ The tool uses a modular Python package structure:
   - **client.py** - qBittorrent API wrapper with retry logic
   - **classifier.py** - Torrent categorization logic
   - **fileflows.py** - FileFlows API integration
+  - **orphaned_scanner.py** - Orphaned file detection and cleanup
   - **cleanup.py** - Main orchestration
   - **config.py** - Environment variable parsing
   - **main.py** - Entry point and scheduler
@@ -320,7 +351,12 @@ The tool uses a modular Python package structure:
 6. Classify torrents based on configured rules
 7. Check FileFlows protection status
 8. Delete torrents that meet criteria
-9. Commit database changes
+9. Run orphaned file cleanup (if enabled):
+   - Collect all active torrent file paths
+   - Scan configured directories
+   - Identify files not tracked by any torrent
+   - Remove orphaned files/folders
+10. Commit database changes
 
 ### Deletion Logic
 

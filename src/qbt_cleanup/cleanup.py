@@ -9,6 +9,7 @@ from .client import QBittorrentClient
 from .state import StateManager
 from .fileflows import FileFlowsClient
 from .classifier import TorrentClassifier
+from .orphaned_scanner import OrphanedFilesScanner
 from .models import ClassificationResult
 from .utils import truncate_name
 
@@ -21,7 +22,7 @@ class QbtCleanup:
     def __init__(self, config: Config):
         """
         Initialize cleanup orchestrator.
-        
+
         Args:
             config: Application configuration
         """
@@ -30,7 +31,8 @@ class QbtCleanup:
         self.state = StateManager()
         self.fileflows: Optional[FileFlowsClient] = None
         self.classifier: Optional[TorrentClassifier] = None
-        
+        self.orphaned_scanner: Optional[OrphanedFilesScanner] = None
+
         # Initialize FileFlows if enabled
         if config.fileflows.enabled:
             self.fileflows = FileFlowsClient(config.fileflows)
@@ -57,34 +59,43 @@ class QbtCleanup:
             
             # Initialize classifier
             self.classifier = TorrentClassifier(self.config, self.state, self.fileflows)
-            
+
+            # Initialize orphaned scanner if enabled
+            if self.config.orphaned.enabled:
+                self.orphaned_scanner = OrphanedFilesScanner(self.client)
+
             # Get torrents
             raw_torrents = self.client.get_torrents()
             if not raw_torrents:
                 logger.info("No torrents found")
                 return True
-            
+
             logger.info(f"Found {len(raw_torrents)} torrents")
-            
+
             # Process torrents
             torrents = [self.client.process_torrent(t) for t in raw_torrents]
-            
+
             # Log torrent breakdown
             private_count = sum(1 for t in torrents if t.is_private)
             public_count = len(torrents) - private_count
             logger.info(f"Private: {private_count} | Public: {public_count}")
-            
+
             # Get limits
             limits = self.client.get_qbt_limits(self.config.limits)
-            
+
             # Log active features
             self._log_active_features()
-            
+
             # Classify torrents
             result = self.classifier.classify(torrents, limits)
-            
+
             # Delete torrents
-            return self._delete_torrents(result)
+            deletion_success = self._delete_torrents(result)
+
+            # Run orphaned file cleanup if enabled
+            orphaned_success = self._cleanup_orphaned_files()
+
+            return deletion_success and orphaned_success
             
         except Exception as e:
             logger.error(f"Cleanup failed: {e}", exc_info=True)
@@ -95,17 +106,17 @@ class QbtCleanup:
     def _log_active_features(self) -> None:
         """Log active configuration features."""
         behavior = self.config.behavior
-        
+
         features = []
-        
+
         # Force delete
         if behavior.force_delete_private_hours > 0 or behavior.force_delete_public_hours > 0:
             features.append(f"Force delete: {behavior.force_delete_private_hours:.0f}h/{behavior.force_delete_public_hours:.0f}h")
-        
+
         # Stalled cleanup
         if behavior.cleanup_stale_downloads:
             features.append(f"Stalled cleanup: {behavior.max_stalled_private_days:.0f}d/{behavior.max_stalled_public_days:.0f}d")
-        
+
         # Paused only
         if behavior.check_private_paused_only or behavior.check_public_paused_only:
             paused_status = []
@@ -114,7 +125,11 @@ class QbtCleanup:
             if behavior.check_public_paused_only:
                 paused_status.append("Public")
             features.append(f"Paused-only: {', '.join(paused_status)}")
-        
+
+        # Orphaned file cleanup
+        if self.config.orphaned.enabled:
+            features.append(f"Orphaned files: {len(self.config.orphaned.scan_dirs)} dirs")
+
         if features:
             logger.info(f"[Config] {' | '.join(features)}")
     
@@ -167,12 +182,48 @@ class QbtCleanup:
     def _log_deletion_stats(self, stats: dict) -> None:
         """Log deletion statistics."""
         parts = []
-        
+
         if stats["completed"] > 0:
             parts.append(f"Completed: {stats['completed']}")
-        
+
         if stats["stalled"] > 0:
             parts.append(f"Stalled: {stats['stalled']}")
-        
+
         if parts:
             logger.info(f"  -> {' | '.join(parts)}")
+
+    def _cleanup_orphaned_files(self) -> bool:
+        """
+        Run orphaned file cleanup if enabled.
+
+        Returns:
+            True if successful or disabled
+        """
+        if not self.config.orphaned.enabled:
+            return True
+
+        if not self.orphaned_scanner:
+            logger.warning("Orphaned file scanner not initialized")
+            return True
+
+        try:
+            logger.info("[Orphaned Files] Starting cleanup")
+
+            files_removed, dirs_removed = self.orphaned_scanner.cleanup_orphaned_files(
+                self.config.orphaned.scan_dirs,
+                self.config.behavior.dry_run
+            )
+
+            if files_removed > 0 or dirs_removed > 0:
+                logger.info(
+                    f"[Orphaned Files] Removed {files_removed} files "
+                    f"and {dirs_removed} directories"
+                )
+            else:
+                logger.info("[Orphaned Files] No orphaned files found")
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Orphaned file cleanup failed: {e}", exc_info=True)
+            return False
