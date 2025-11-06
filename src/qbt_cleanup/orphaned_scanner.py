@@ -179,11 +179,16 @@ class OrphanedFilesScanner:
 
     def _is_path_active(self, path: Path, active_paths: Set[Path]) -> bool:
         """
-        Check if a path or any of its children are in the active paths set.
+        Check if a path is tracked by qBittorrent.
+
+        A path is considered active if:
+        1. It's directly in the active paths set, OR
+        2. Any active path is a child of this path (this path is a parent), OR
+        3. This path is a child of any active path (this path is inside an active torrent)
 
         Args:
             path: Path to check
-            active_paths: Set of active paths
+            active_paths: Set of active paths from qBittorrent
 
         Returns:
             True if path is active, False if orphaned
@@ -194,6 +199,7 @@ class OrphanedFilesScanner:
 
         # Check if any active path is a child of this path
         # This handles the case where we're checking a parent directory
+        # Example: checking /data/incomplete when /data/incomplete/movies/Torrent is active
         try:
             for active_path in active_paths:
                 try:
@@ -204,7 +210,22 @@ class OrphanedFilesScanner:
                     # active_path is not relative to path
                     continue
         except Exception as e:
-            logger.debug(f"Error checking path ancestry for {path}: {e}")
+            logger.debug(f"Error checking if active path is child of {path}: {e}")
+
+        # Check if this path is a child of any active path
+        # This handles files/folders inside an active torrent folder
+        # Example: checking /data/incomplete/movies/Torrent/file.mkv when /data/incomplete/movies/Torrent is active
+        try:
+            for active_path in active_paths:
+                try:
+                    # Check if path is relative to active_path (i.e., path is a child)
+                    path.relative_to(active_path)
+                    return True
+                except ValueError:
+                    # path is not relative to active_path
+                    continue
+        except Exception as e:
+            logger.debug(f"Error checking if {path} is child of active path: {e}")
 
         return False
 
