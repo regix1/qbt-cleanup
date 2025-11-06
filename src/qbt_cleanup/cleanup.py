@@ -194,7 +194,7 @@ class QbtCleanup:
 
     def _cleanup_orphaned_files(self) -> bool:
         """
-        Run orphaned file cleanup if enabled.
+        Run orphaned file cleanup if enabled and scheduled.
 
         Returns:
             True if successful or disabled
@@ -206,8 +206,30 @@ class QbtCleanup:
             logger.warning("Orphaned file scanner not initialized")
             return True
 
+        # Check if enough time has passed since last run
+        from datetime import datetime, timezone, timedelta
+
+        last_run_str = self.state.get_metadata("last_orphaned_cleanup")
+        if last_run_str:
+            try:
+                last_run = datetime.fromisoformat(last_run_str)
+                now = datetime.now(timezone.utc)
+                days_since_last_run = (now - last_run).total_seconds() / 86400
+
+                if days_since_last_run < self.config.orphaned.schedule_days:
+                    logger.info(
+                        f"[Orphaned Files] Skipping - last run was {days_since_last_run:.1f} days ago "
+                        f"(schedule: every {self.config.orphaned.schedule_days} days)"
+                    )
+                    return True
+            except Exception as e:
+                logger.warning(f"Could not parse last orphaned cleanup time: {e}")
+
         try:
-            logger.info("[Orphaned Files] Starting cleanup")
+            logger.info(
+                f"[Orphaned Files] Starting cleanup "
+                f"(runs every {self.config.orphaned.schedule_days} days)"
+            )
 
             files_removed, dirs_removed = self.orphaned_scanner.cleanup_orphaned_files(
                 self.config.orphaned.scan_dirs,
@@ -223,6 +245,10 @@ class QbtCleanup:
                 )
             else:
                 logger.info("[Orphaned Files] No orphaned files found")
+
+            # Update last run time
+            now = datetime.now(timezone.utc).isoformat()
+            self.state.set_metadata("last_orphaned_cleanup", now)
 
             return True
 

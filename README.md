@@ -121,12 +121,15 @@ docker run -d \
 | `CLEANUP_ORPHANED_FILES` | Enable orphaned file detection and cleanup | `false` |
 | `ORPHANED_SCAN_DIRS` | Comma-separated list of directories to scan (container paths) | ` ` (empty) |
 | `ORPHANED_MIN_AGE_HOURS` | Minimum age in hours before a file is considered orphaned | `1.0` |
+| `ORPHANED_SCHEDULE_DAYS` | Run orphaned cleanup every X days (independent of main cleanup schedule) | `7` |
 
 **Important:** This feature **recursively scans** specified directories for files/folders that exist on disk but aren't being tracked by any active torrent in qBittorrent (whether downloading, seeding, or paused). Files are only removed if they meet BOTH criteria:
 1. Not tracked by any active torrent in qBittorrent
 2. Not modified/accessed for the configured minimum age (default 1 hour)
 
 This dual-check safety mechanism is useful for cleaning up leftover data from torrents that were removed incorrectly or files that were manually modified, while protecting recently active files.
+
+**Separate Schedule:** Orphaned file cleanup runs on its own schedule (default: every 7 days), independent of the main torrent cleanup schedule. This prevents the potentially time-consuming filesystem scan from running too frequently. The schedule is tracked in the database, so it persists across container restarts.
 
 **Recursive Scanning:** The scanner will walk through ALL subdirectories under the specified path. For example, if you specify `/data/incomplete`, it will scan:
 - `/data/incomplete/anime/torrent1/`
@@ -238,19 +241,20 @@ environment:
 
 ### Orphaned File Cleanup
 
-Clean up leftover files that aren't tracked by any active torrent:
+Clean up leftover files that aren't tracked by any active torrent (runs weekly by default):
 
 ```yaml
 volumes:
   # Mount your download directories so the container can access them
-  - /path/to/downloads:/data/downloads
-  - /path/to/completed:/data/completed
+  - /path/to/downloads:/downloads
+  - /path/to/completed:/downloads/completed
 
 environment:
   - CLEANUP_ORPHANED_FILES=true
   # Use container paths (the paths after the : in volumes above)
-  - ORPHANED_SCAN_DIRS=/data/downloads,/data/completed
+  - ORPHANED_SCAN_DIRS=/downloads
   - ORPHANED_MIN_AGE_HOURS=1.0  # Only remove files untouched for 1+ hours
+  - ORPHANED_SCHEDULE_DAYS=7  # Run every 7 days (weekly)
   - DRY_RUN=true  # IMPORTANT: Test first to see what would be removed!
 ```
 
@@ -351,6 +355,7 @@ services:
       # Orphaned file cleanup (optional)
       # - CLEANUP_ORPHANED_FILES=true
       # - ORPHANED_SCAN_DIRS=/downloads  # Must match the volume mount path!
+      # - ORPHANED_SCHEDULE_DAYS=7  # Run every 7 days (weekly)
 ```
 
 ## Manual Control

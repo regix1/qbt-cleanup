@@ -524,6 +524,58 @@ class StateManager:
             logger.error(f"Failed to clear blacklist: {e}")
             return False
 
+    def set_metadata(self, key: str, value: str) -> bool:
+        """
+        Set a metadata value.
+
+        Args:
+            key: Metadata key
+            value: Metadata value
+
+        Returns:
+            True if successful
+        """
+        if not self.state_enabled:
+            return False
+
+        try:
+            conn = self._get_connection()
+            conn.execute("""
+                INSERT OR REPLACE INTO metadata (key, value)
+                VALUES (?, ?)
+            """, (key, value))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Failed to set metadata {key}: {e}")
+            return False
+
+    def get_metadata(self, key: str, default: Optional[str] = None) -> Optional[str]:
+        """
+        Get a metadata value.
+
+        Args:
+            key: Metadata key
+            default: Default value if key not found
+
+        Returns:
+            Metadata value or default
+        """
+        if not self.state_enabled:
+            return default
+
+        try:
+            conn = self._get_connection()
+            cursor = conn.execute(
+                "SELECT value FROM metadata WHERE key = ?",
+                (key,)
+            )
+            result = cursor.fetchone()
+            return result['value'] if result else default
+        except Exception as e:
+            logger.error(f"Failed to get metadata {key}: {e}")
+            return default
+
     def __del__(self):
         """Clean up database connection on deletion."""
         if self._connection:

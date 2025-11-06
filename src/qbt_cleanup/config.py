@@ -111,6 +111,7 @@ class OrphanedFilesConfig:
         d.strip() for d in os.environ.get("ORPHANED_SCAN_DIRS", "").split(",") if d.strip()
     ])
     min_age_hours: float = field(default_factory=lambda: parse_float("ORPHANED_MIN_AGE_HOURS", 1.0, 0))
+    schedule_days: int = field(default_factory=lambda: parse_int("ORPHANED_SCHEDULE_DAYS", 7, 1))
 
 
 @dataclass
