@@ -42,6 +42,13 @@ docker run -d \
   ghcr.io/regix1/qbittorrent-cleanup:latest
 ```
 
+**Note:** For orphaned file cleanup, also mount your download directories:
+```bash
+-v /path/to/downloads:/data/downloads \
+-e CLEANUP_ORPHANED_FILES=true \
+-e ORPHANED_SCAN_DIRS=/data/downloads
+```
+
 ## Configuration
 
 ### Connection Settings
@@ -109,16 +116,36 @@ docker run -d \
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `CLEANUP_ORPHANED_FILES` | Enable orphaned file detection and cleanup | `false` |
-| `ORPHANED_SCAN_DIRS` | Comma-separated list of directories to scan for orphaned files | ` ` (empty) |
+| `ORPHANED_SCAN_DIRS` | Comma-separated list of directories to scan (container paths) | ` ` (empty) |
+
+**Important:** This feature scans specified directories for files/folders that exist on disk but aren't being tracked by any active torrent in qBittorrent (whether downloading, seeding, or paused). This is useful for cleaning up leftover data from torrents that were removed incorrectly or files that were manually modified.
+
+**Volume Mounting Required:**
+You must mount your download directories into the container for this feature to work. The paths in `ORPHANED_SCAN_DIRS` should match the paths INSIDE the Docker container, not your host paths.
 
 **Example:**
 ```yaml
+volumes:
+  # Mount your actual download directories
+  - /path/on/host/downloads:/data/downloads
+
 environment:
   - CLEANUP_ORPHANED_FILES=true
-  - ORPHANED_SCAN_DIRS=/downloads/complete,/downloads/movies,/downloads/tv
+  # Use the container paths (after the colon in volumes)
+  - ORPHANED_SCAN_DIRS=/data/downloads
 ```
 
-This feature scans specified directories for files/folders that exist on disk but aren't being tracked by any active torrent in qBittorrent (whether downloading, seeding, or paused). This is useful for cleaning up leftover data from torrents that were removed incorrectly or files that were manually modified.
+**Multiple Directories:**
+```yaml
+volumes:
+  - /host/downloads/complete:/data/complete
+  - /host/downloads/movies:/data/movies
+  - /host/downloads/tv:/data/tv
+
+environment:
+  - CLEANUP_ORPHANED_FILES=true
+  - ORPHANED_SCAN_DIRS=/data/complete,/data/movies,/data/tv
+```
 
 ## Common Use Cases
 
@@ -168,13 +195,25 @@ environment:
 Clean up leftover files that aren't tracked by any active torrent:
 
 ```yaml
+volumes:
+  # Mount your download directories so the container can access them
+  - /path/to/downloads:/data/downloads
+  - /path/to/completed:/data/completed
+
 environment:
   - CLEANUP_ORPHANED_FILES=true
-  - ORPHANED_SCAN_DIRS=/downloads/complete,/downloads/movies
-  - DRY_RUN=true  # Test first to see what would be removed
+  # Use container paths (the paths after the : in volumes above)
+  - ORPHANED_SCAN_DIRS=/data/downloads,/data/completed
+  - DRY_RUN=true  # IMPORTANT: Test first to see what would be removed!
 ```
 
-This will scan the specified directories and remove any files or folders that don't belong to active torrents. Always test with `DRY_RUN=true` first!
+**How it works:**
+1. Mounts your actual download directories into the container
+2. Scans the container paths for files/folders
+3. Compares against active torrents in qBittorrent
+4. Removes anything not tracked by an active torrent
+
+**Important:** Always test with `DRY_RUN=true` first to verify what will be deleted!
 
 ## Docker Compose Example
 
@@ -203,6 +242,9 @@ services:
       - qbittorrent
     volumes:
       - ./qbt-cleanup/config:/config
+      # Mount download directories for orphaned file cleanup
+      # Must match qBittorrent's download paths
+      - ./downloads:/data/downloads
     environment:
       # Connection
       - QB_HOST=qbittorrent
@@ -227,6 +269,10 @@ services:
       - FORCE_DELETE_PUBLIC_AFTER_HOURS=12
       - CLEANUP_STALE_DOWNLOADS=true
       - MAX_STALLED_DAYS=3
+
+      # Orphaned file cleanup (optional)
+      # - CLEANUP_ORPHANED_FILES=true
+      # - ORPHANED_SCAN_DIRS=/data/downloads
 ```
 
 ## Manual Control
