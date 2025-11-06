@@ -212,7 +212,8 @@ class QbtCleanup:
             files_removed, dirs_removed = self.orphaned_scanner.cleanup_orphaned_files(
                 self.config.orphaned.scan_dirs,
                 self.config.orphaned.min_age_hours,
-                self.config.behavior.dry_run
+                self.config.behavior.dry_run,
+                log_dir="/config"
             )
 
             if files_removed > 0 or dirs_removed > 0:

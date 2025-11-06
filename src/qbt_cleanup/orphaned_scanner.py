@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Set, List, Tuple
 
@@ -252,7 +253,8 @@ class OrphanedFilesScanner:
 
     def cleanup_orphaned_files(self, scan_dirs: List[str],
                                min_age_hours: float = 1.0,
-                               dry_run: bool = False) -> Tuple[int, int]:
+                               dry_run: bool = False,
+                               log_dir: str = "/config") -> Tuple[int, int]:
         """
         Main orchestration method for orphaned file cleanup.
 
@@ -260,6 +262,7 @@ class OrphanedFilesScanner:
             scan_dirs: List of directories to scan (recursively)
             min_age_hours: Minimum age in hours for a file to be considered orphaned
             dry_run: If True, don't actually delete anything
+            log_dir: Directory to write orphaned cleanup logs
 
         Returns:
             Tuple of (files_removed, dirs_removed)
@@ -285,8 +288,100 @@ class OrphanedFilesScanner:
 
         logger.info(f"Found {len(orphaned_paths)} orphaned items")
 
+        # Write orphaned files to log
+        if orphaned_paths:
+            self._write_orphaned_log(orphaned_paths, dry_run, log_dir)
+
         if not orphaned_paths:
             return 0, 0
 
         # Remove orphaned files
         return self.remove_orphaned_files(orphaned_paths, dry_run)
+
+    def _write_orphaned_log(self, orphaned_paths: List[Path], dry_run: bool, log_dir: str) -> None:
+        """
+        Write orphaned files to a dedicated log file.
+
+        Args:
+            orphaned_paths: List of orphaned paths
+            dry_run: Whether this is a dry run
+            log_dir: Directory to write logs to
+        """
+        try:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            log_dir_path = Path(log_dir)
+            log_dir_path.mkdir(parents=True, exist_ok=True)
+
+            # Main orphaned cleanup log (append mode)
+            main_log = log_dir_path / "orphaned_cleanup.log"
+
+            # Dry run review file (overwrite mode)
+            if dry_run:
+                review_file = log_dir_path / f"orphaned_review_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+
+            # Categorize files and directories
+            files = [p for p in orphaned_paths if p.is_file()]
+            dirs = [p for p in orphaned_paths if p.is_dir()]
+
+            # Write to main log
+            with open(main_log, "a", encoding="utf-8") as f:
+                f.write(f"\n{'='*80}\n")
+                f.write(f"Orphaned File Cleanup - {timestamp}\n")
+                f.write(f"Mode: {'DRY RUN' if dry_run else 'LIVE'}\n")
+                f.write(f"Total orphaned items: {len(orphaned_paths)} ({len(files)} files, {len(dirs)} directories)\n")
+                f.write(f"{'='*80}\n\n")
+
+                if files:
+                    f.write(f"Orphaned Files ({len(files)}):\n")
+                    for file_path in sorted(files):
+                        f.write(f"  - {file_path}\n")
+                    f.write("\n")
+
+                if dirs:
+                    f.write(f"Orphaned Directories ({len(dirs)}):\n")
+                    for dir_path in sorted(dirs):
+                        f.write(f"  - {dir_path}\n")
+                    f.write("\n")
+
+            logger.info(f"Orphaned file list written to: {main_log}")
+
+            # Write dry run review file
+            if dry_run:
+                with open(review_file, "w", encoding="utf-8") as f:
+                    f.write(f"DRY RUN REVIEW - {timestamp}\n")
+                    f.write(f"{'='*80}\n\n")
+                    f.write(f"The following {len(orphaned_paths)} items would be deleted:\n\n")
+
+                    if files:
+                        f.write(f"FILES ({len(files)}):\n")
+                        f.write("-" * 80 + "\n")
+                        for file_path in sorted(files):
+                            try:
+                                size = file_path.stat().st_size / (1024**3)  # GB
+                                f.write(f"{file_path}\n  Size: {size:.2f} GB\n\n")
+                            except Exception:
+                                f.write(f"{file_path}\n  Size: Unknown\n\n")
+
+                    if dirs:
+                        f.write(f"\nDIRECTORIES ({len(dirs)}):\n")
+                        f.write("-" * 80 + "\n")
+                        for dir_path in sorted(dirs):
+                            try:
+                                # Calculate directory size
+                                total_size = sum(
+                                    f.stat().st_size
+                                    for f in dir_path.rglob('*')
+                                    if f.is_file()
+                                ) / (1024**3)  # GB
+                                f.write(f"{dir_path}\n  Size: {total_size:.2f} GB\n\n")
+                            except Exception:
+                                f.write(f"{dir_path}\n  Size: Unknown\n\n")
+
+                    f.write(f"\n{'='*80}\n")
+                    f.write(f"To proceed with deletion, set DRY_RUN=false\n")
+
+                logger.info(f"Dry run review file created: {review_file}")
+                logger.info(f"Review this file before running with DRY_RUN=false")
+
+        except Exception as e:
+            logger.error(f"Error writing orphaned log: {e}")

@@ -229,6 +229,33 @@ environment:
 
 **Important:** Always test with `DRY_RUN=true` first to verify what will be deleted!
 
+**Orphaned File Logs:**
+The orphaned file scanner creates dedicated log files in `/config/` for easy review:
+
+1. **`orphaned_cleanup.log`** - Persistent log of all cleanup operations (appended each run)
+   - Timestamped entries for each scan
+   - Lists all orphaned files and directories found
+   - Tracks both dry runs and actual deletions
+
+2. **`orphaned_review_YYYYMMDD_HHMMSS.txt`** - Dry run review files
+   - Created only during dry runs
+   - Shows exactly what would be deleted
+   - Includes file/directory sizes in GB
+   - Review these files before running with `DRY_RUN=false`
+
+Example workflow:
+```bash
+# 1. Run dry run to see what would be deleted
+docker-compose up -d  # with DRY_RUN=true
+
+# 2. Review the output
+cat ./qbt-cleanup/config/orphaned_review_20250105_032049.txt
+
+# 3. If everything looks good, disable dry run
+# Edit docker-compose.yml: DRY_RUN=false
+docker-compose up -d
+```
+
 ## Docker Compose Example
 
 ```yaml
@@ -306,6 +333,26 @@ View real-time logs:
 ```bash
 docker logs -f qbt-cleanup
 ```
+
+### View Orphaned File Cleanup Logs
+
+Review orphaned file cleanup operations:
+
+```bash
+# View the persistent cleanup log (all operations)
+cat ./qbt-cleanup/config/orphaned_cleanup.log
+
+# List all dry run review files
+ls -lh ./qbt-cleanup/config/orphaned_review_*.txt
+
+# View a specific dry run review file
+cat ./qbt-cleanup/config/orphaned_review_20250105_032049.txt
+
+# View the most recent dry run review file
+cat $(ls -t ./qbt-cleanup/config/orphaned_review_*.txt | head -n1)
+```
+
+These logs are stored in your mounted `/config` directory and persist across container restarts.
 
 ### Blacklist Management
 
