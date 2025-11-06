@@ -4,6 +4,7 @@
 import logging
 import os
 import shutil
+import time
 from pathlib import Path
 from typing import Set, List, Tuple
 
@@ -86,18 +87,22 @@ class OrphanedFilesScanner:
             return set()
 
     def scan_for_orphaned_files(self, scan_dirs: List[str],
-                                active_paths: Set[Path]) -> List[Path]:
+                                active_paths: Set[Path],
+                                min_age_hours: float = 1.0) -> List[Path]:
         """
-        Scan directories for orphaned files and folders.
+        Scan directories recursively for orphaned files and folders.
 
         Args:
             scan_dirs: List of directory paths to scan
             active_paths: Set of paths that are actively tracked
+            min_age_hours: Minimum age in hours for a file to be considered orphaned
 
         Returns:
             List of orphaned paths (files or directories)
         """
         orphaned = []
+        current_time = time.time()
+        min_age_seconds = min_age_hours * 3600  # Convert hours to seconds
 
         for scan_dir_str in scan_dirs:
             scan_dir = Path(scan_dir_str).resolve()
@@ -110,23 +115,66 @@ class OrphanedFilesScanner:
                 logger.warning(f"Scan path is not a directory: {scan_dir}")
                 continue
 
-            logger.info(f"Scanning directory for orphaned files: {scan_dir}")
+            logger.info(f"Scanning directory recursively for orphaned files: {scan_dir}")
+            logger.info(f"Minimum file age: {min_age_hours} hours")
 
             try:
-                # Get all immediate children (files and directories)
-                for item in scan_dir.iterdir():
-                    item_resolved = item.resolve()
+                # Recursively walk through all subdirectories
+                for root, dirs, files in os.walk(scan_dir):
+                    root_path = Path(root).resolve()
 
-                    # Check if this item or any of its parents are in active paths
-                    if not self._is_path_active(item_resolved, active_paths):
-                        orphaned.append(item_resolved)
-                        logger.debug(f"Found orphaned item: {item_resolved}")
+                    # Check each directory in this level
+                    for dir_name in dirs:
+                        dir_path = (root_path / dir_name).resolve()
+                        self._check_and_add_orphaned(
+                            dir_path, active_paths, current_time,
+                            min_age_seconds, min_age_hours, orphaned
+                        )
+
+                    # Check each file in this level
+                    for file_name in files:
+                        file_path = (root_path / file_name).resolve()
+                        self._check_and_add_orphaned(
+                            file_path, active_paths, current_time,
+                            min_age_seconds, min_age_hours, orphaned
+                        )
 
             except Exception as e:
                 logger.error(f"Error scanning directory {scan_dir}: {e}")
                 continue
 
         return orphaned
+
+    def _check_and_add_orphaned(self, item_path: Path, active_paths: Set[Path],
+                                current_time: float, min_age_seconds: float,
+                                min_age_hours: float, orphaned: List[Path]) -> None:
+        """
+        Check if an item is orphaned and add to list if it is.
+
+        Args:
+            item_path: Path to check
+            active_paths: Set of active paths
+            current_time: Current timestamp
+            min_age_seconds: Minimum age in seconds
+            min_age_hours: Minimum age in hours (for logging)
+            orphaned: List to add orphaned items to
+        """
+        # Check if this item or any of its parents are in active paths
+        if not self._is_path_active(item_path, active_paths):
+            # Check file modification time
+            try:
+                mtime = item_path.stat().st_mtime
+                age_seconds = current_time - mtime
+                age_hours = age_seconds / 3600
+
+                if age_seconds >= min_age_seconds:
+                    orphaned.append(item_path)
+                    logger.debug(f"Found orphaned item (age: {age_hours:.1f}h): {item_path}")
+                else:
+                    logger.debug(f"Skipping recently modified item (age: {age_hours:.1f}h < {min_age_hours}h): {item_path}")
+            except Exception as e:
+                logger.warning(f"Error checking modification time for {item_path}: {e}")
+                return
 
     def _is_path_active(self, path: Path, active_paths: Set[Path]) -> bool:
         """
@@ -203,12 +251,14 @@ class OrphanedFilesScanner:
         return files_removed, dirs_removed
 
     def cleanup_orphaned_files(self, scan_dirs: List[str],
+                               min_age_hours: float = 1.0,
                                dry_run: bool = False) -> Tuple[int, int]:
         """
         Main orchestration method for orphaned file cleanup.
 
         Args:
-            scan_dirs: List of directories to scan
+            scan_dirs: List of directories to scan (recursively)
+            min_age_hours: Minimum age in hours for a file to be considered orphaned
             dry_run: If True, don't actually delete anything
 
         Returns:
@@ -220,6 +270,7 @@ class OrphanedFilesScanner:
 
         logger.info("Starting orphaned file cleanup")
         logger.info(f"Scan directories: {scan_dirs}")
+        logger.info(f"Minimum file age: {min_age_hours} hours")
         logger.info(f"Dry run: {dry_run}")
 
         # Get all active torrent paths
@@ -229,8 +280,8 @@ class OrphanedFilesScanner:
             logger.warning("No active torrent paths found, skipping orphaned file scan")
             return 0, 0
 
-        # Scan for orphaned files
-        orphaned_paths = self.scan_for_orphaned_files(scan_dirs, active_paths)
+        # Scan for orphaned files (always recursive)
+        orphaned_paths = self.scan_for_orphaned_files(scan_dirs, active_paths, min_age_hours)
 
         logger.info(f"Found {len(orphaned_paths)} orphaned items")
 

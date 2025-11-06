@@ -110,6 +110,7 @@ class OrphanedFilesConfig:
     scan_dirs: list[str] = field(default_factory=lambda: [
         d.strip() for d in os.environ.get("ORPHANED_SCAN_DIRS", "").split(",") if d.strip()
     ])
+    min_age_hours: float = field(default_factory=lambda: parse_float("ORPHANED_MIN_AGE_HOURS", 1.0, 0))
 
 
 @dataclass

@@ -117,8 +117,19 @@ docker run -d \
 |----------|-------------|---------|
 | `CLEANUP_ORPHANED_FILES` | Enable orphaned file detection and cleanup | `false` |
 | `ORPHANED_SCAN_DIRS` | Comma-separated list of directories to scan (container paths) | ` ` (empty) |
+| `ORPHANED_MIN_AGE_HOURS` | Minimum age in hours before a file is considered orphaned | `1.0` |
 
-**Important:** This feature scans specified directories for files/folders that exist on disk but aren't being tracked by any active torrent in qBittorrent (whether downloading, seeding, or paused). This is useful for cleaning up leftover data from torrents that were removed incorrectly or files that were manually modified.
+**Important:** This feature **recursively scans** specified directories for files/folders that exist on disk but aren't being tracked by any active torrent in qBittorrent (whether downloading, seeding, or paused). Files are only removed if they meet BOTH criteria:
+1. Not tracked by any active torrent in qBittorrent
+2. Not modified/accessed for the configured minimum age (default 1 hour)
+
+This dual-check safety mechanism is useful for cleaning up leftover data from torrents that were removed incorrectly or files that were manually modified, while protecting recently active files.
+
+**Recursive Scanning:** The scanner will walk through ALL subdirectories under the specified path. For example, if you specify `/data/incomplete`, it will scan:
+- `/data/incomplete/anime/torrent1/`
+- `/data/incomplete/movies/torrent2/`
+- `/data/incomplete/tvshows/season1/episode.mkv`
+- And all other files and folders at any depth
 
 **Volume Mounting Required:**
 You must mount your download directories into the container for this feature to work. The paths in `ORPHANED_SCAN_DIRS` should match the paths INSIDE the Docker container, not your host paths.
@@ -204,14 +215,17 @@ environment:
   - CLEANUP_ORPHANED_FILES=true
   # Use container paths (the paths after the : in volumes above)
   - ORPHANED_SCAN_DIRS=/data/downloads,/data/completed
+  - ORPHANED_MIN_AGE_HOURS=1.0  # Only remove files untouched for 1+ hours
   - DRY_RUN=true  # IMPORTANT: Test first to see what would be removed!
 ```
 
 **How it works:**
 1. Mounts your actual download directories into the container
 2. Scans the container paths for files/folders
-3. Compares against active torrents in qBittorrent
-4. Removes anything not tracked by an active torrent
+3. Checks each file against TWO criteria:
+   - Not tracked by any active torrent in qBittorrent
+   - Not modified/accessed for the minimum age (default 1 hour)
+4. Removes only files that meet BOTH criteria
 
 **Important:** Always test with `DRY_RUN=true` first to verify what will be deleted!
 
@@ -398,10 +412,11 @@ The tool uses a modular Python package structure:
 7. Check FileFlows protection status
 8. Delete torrents that meet criteria
 9. Run orphaned file cleanup (if enabled):
-   - Collect all active torrent file paths
-   - Scan configured directories
-   - Identify files not tracked by any torrent
-   - Remove orphaned files/folders
+   - Collect all active torrent file paths from qBittorrent
+   - Recursively scan configured directories and all subdirectories
+   - For each file/folder found, check if it's tracked by any active torrent
+   - Check file modification time (must be older than minimum age)
+   - Remove orphaned files/folders that meet both criteria
 10. Commit database changes
 
 ### Deletion Logic
