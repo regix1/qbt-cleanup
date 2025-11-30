@@ -16,11 +16,11 @@ logger = logging.getLogger(__name__)
 
 class StateManager:
     """Manages persistent state for tracking torrent status over time using SQLite."""
-    
+
     def __init__(self, state_file: str = STATE_FILE):
         """
         Initialize state manager with SQLite backend.
-        
+
         Args:
             state_file: Path to state file (will use .db extension)
         """
@@ -29,9 +29,37 @@ class StateManager:
         self.state_file = f"{base_path}.db"
         self.state_enabled = True
         self._connection = None
+        self._in_batch = False  # Track if we're in a batch operation
         self._ensure_state_dir()
         self._init_database()
         self._migrate_from_json()
+
+    @contextmanager
+    def batch(self):
+        """
+        Context manager for batching multiple operations into a single transaction.
+
+        Usage:
+            with state.batch():
+                for torrent in torrents:
+                    state.update_torrent_state(torrent.hash, torrent.state)
+            # Commits on exit
+        """
+        if not self.state_enabled:
+            yield
+            return
+
+        self._in_batch = True
+        try:
+            yield
+            if self._connection:
+                self._connection.commit()
+        except Exception:
+            if self._connection:
+                self._connection.rollback()
+            raise
+        finally:
+            self._in_batch = False
     
     def _ensure_state_dir(self) -> None:
         """Ensure state file directory exists and is writable."""
@@ -274,8 +302,14 @@ class StateManager:
                         "UPDATE torrents SET last_updated = ? WHERE hash = ?",
                         (now, torrent_hash)
                     )
-            
-            conn.commit()
+
+            # Only commit if not in batch mode
+            if not self._in_batch:
+                conn.commit()
+        except sqlite3.IntegrityError as e:
+            logger.error(f"Database integrity error updating torrent state: {e}")
+        except sqlite3.OperationalError as e:
+            logger.error(f"Database operational error updating torrent state: {e}")
         except Exception as e:
             logger.error(f"Failed to update torrent state: {e}")
     

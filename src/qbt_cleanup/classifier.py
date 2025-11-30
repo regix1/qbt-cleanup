@@ -34,24 +34,24 @@ class TorrentClassifier:
         self.state = state_manager
         self.fileflows = fileflows
     
-    def classify(self, torrents: List[TorrentInfo], 
+    def classify(self, torrents: List[TorrentInfo],
                  limits: Tuple[float, float, float, float]) -> ClassificationResult:
         """
         Classify torrents for deletion.
-        
+
         Args:
             torrents: List of torrent information
             limits: Tuple of (private_ratio, private_days, public_ratio, public_days)
-            
+
         Returns:
             Classification result
         """
         private_ratio, private_days, public_ratio, public_days = limits
-        
+
         # Build FileFlows cache if enabled
         if self.fileflows and self.fileflows.is_enabled:
             self.fileflows.build_processing_cache()
-        
+
         # Update state for all torrents
         current_hashes = [t.hash for t in torrents]
         self.state.cleanup_old_torrents(current_hashes)
@@ -63,70 +63,90 @@ class TorrentClassifier:
 
         result = ClassificationResult()
 
-        for torrent in torrents:
-            # Update state tracking
-            self.state.update_torrent_state(torrent.hash, torrent.state)
+        # Use batch mode for efficient state updates
+        with self.state.batch():
+            for torrent in torrents:
+                # Update state tracking
+                self.state.update_torrent_state(torrent.hash, torrent.state)
 
-            # Check if blacklisted
-            if self.state.is_blacklisted(torrent.hash):
-                logger.debug(f"Skipping blacklisted torrent: {truncate_name(torrent.name)}")
-                continue
+                # Check if blacklisted
+                if self.state.is_blacklisted(torrent.hash):
+                    logger.debug(f"Skipping blacklisted torrent: {truncate_name(torrent.name)}")
+                    continue
 
-            # Check for stalled downloads first
-            if self._check_stalled_download(torrent, result):
-                continue
-            
-            # Skip active downloads (except stalled)
-            if torrent.is_downloading and not torrent.is_stalled:
-                continue
-            
-            # Get limits for this torrent type
-            limits = self._get_torrent_limits(torrent, private_ratio, private_days, 
-                                             public_ratio, public_days)
-            
-            # Check if meets deletion criteria
-            self._check_deletion_criteria(torrent, limits, result)
-        
-        # Save state after processing (for SQLite this is mostly a no-op)
-        self.state.save()
-        
+                # Check for stalled downloads first
+                if self._check_stalled_download(torrent, result):
+                    continue
+
+                # Skip active downloads (except stalled)
+                if torrent.is_downloading and not torrent.is_stalled:
+                    continue
+
+                # Get limits for this torrent type
+                torrent_limits = self._get_torrent_limits(torrent, private_ratio, private_days,
+                                                 public_ratio, public_days)
+
+                # Check if meets deletion criteria
+                self._check_deletion_criteria(torrent, torrent_limits, result)
+
         # Log summary
         self._log_classification_summary(result)
-        
+
         return result
     
-    def _get_torrent_limits(self, torrent: TorrentInfo, private_ratio: float, 
-                           private_days: float, public_ratio: float, 
+    def _get_torrent_limits(self, torrent: TorrentInfo, private_ratio: float,
+                           private_days: float, public_ratio: float,
                            public_days: float) -> TorrentLimits:
         """Get applicable limits for a torrent."""
         if torrent.is_private:
             return TorrentLimits(ratio=private_ratio, days=private_days)
         else:
             return TorrentLimits(ratio=public_ratio, days=public_days)
+
+    def _get_behavior_config(self, torrent: TorrentInfo) -> Tuple[bool, float, float]:
+        """
+        Get behavior configuration based on torrent type.
+
+        Args:
+            torrent: Torrent to get config for
+
+        Returns:
+            Tuple of (paused_only, force_hours, max_stalled_days)
+        """
+        behavior = self.config.behavior
+        if torrent.is_private:
+            return (
+                behavior.check_private_paused_only,
+                behavior.force_delete_private_hours,
+                behavior.max_stalled_private_days
+            )
+        else:
+            return (
+                behavior.check_public_paused_only,
+                behavior.force_delete_public_hours,
+                behavior.max_stalled_public_days
+            )
     
-    def _check_stalled_download(self, torrent: TorrentInfo, 
+    def _check_stalled_download(self, torrent: TorrentInfo,
                                result: ClassificationResult) -> bool:
         """
         Check if torrent is a stalled download that should be deleted.
-        
+
         Returns:
             True if handled as stalled download
         """
         if not self.config.behavior.cleanup_stale_downloads:
             return False
-        
+
         if not torrent.is_stalled:
             return False
-        
+
         # Get stalled duration
         stalled_days = self.state.get_stalled_duration_days(torrent.hash)
-        
-        # Get limit for this torrent type
-        if torrent.is_private:
-            max_days = self.config.behavior.max_stalled_private_days
-        else:
-            max_days = self.config.behavior.max_stalled_public_days
-        
+
+        # Get limit for this torrent type using helper
+        _, _, max_days = self._get_behavior_config(torrent)
+
         if max_days <= 0 or stalled_days <= max_days:
             return False
         
@@ -161,15 +181,10 @@ class TorrentClassifier:
         meets_ratio = torrent.ratio >= limits.ratio
         meets_time = torrent.seeding_time >= limits.seconds
         meets_criteria = meets_ratio or meets_time
-        
-        # Determine if we should check this torrent
-        if torrent.is_private:
-            paused_only = self.config.behavior.check_private_paused_only
-            force_hours = self.config.behavior.force_delete_private_hours
-        else:
-            paused_only = self.config.behavior.check_public_paused_only
-            force_hours = self.config.behavior.force_delete_public_hours
-        
+
+        # Get behavior config for this torrent type
+        paused_only, force_hours, _ = self._get_behavior_config(torrent)
+
         # Skip if requires paused and not paused (unless force delete applies)
         if paused_only and not torrent.is_paused:
             if meets_criteria and force_hours > 0:
@@ -244,19 +259,33 @@ class TorrentClassifier:
         )
     
     def _calculate_excess_time(self, torrent: TorrentInfo, limits: TorrentLimits) -> float:
-        """Calculate how long torrent has exceeded limits (in hours)."""
-        time_excess = 0.0
-        ratio_excess = 0.0
-        
+        """
+        Calculate how long torrent has exceeded limits (in hours).
+
+        Returns the time past the seeding time limit. If ratio was exceeded first,
+        we use the time since ratio was exceeded (approximated as seeding time
+        minus the time it would have taken to reach the ratio limit).
+
+        Args:
+            torrent: Torrent info
+            limits: Applicable limits
+
+        Returns:
+            Hours past limit threshold
+        """
+        # If time limit exceeded, that's straightforward
         if torrent.seeding_time >= limits.seconds:
-            time_excess = (torrent.seeding_time - limits.seconds) / SECONDS_PER_HOUR
-        
+            return (torrent.seeding_time - limits.seconds) / SECONDS_PER_HOUR
+
+        # If only ratio exceeded (not time), estimate when ratio was hit
+        # This is an approximation - we assume linear upload rate
         if torrent.ratio >= limits.ratio and limits.ratio > 0:
-            # Estimate based on ratio overage
-            ratio_overage = (torrent.ratio - limits.ratio) / limits.ratio
-            ratio_excess = ratio_overage * limits.seconds / SECONDS_PER_HOUR
-        
-        return max(time_excess, ratio_excess)
+            # Calculate what fraction of seeding time it took to hit ratio
+            ratio_fraction = limits.ratio / torrent.ratio if torrent.ratio > 0 else 1.0
+            time_at_ratio = torrent.seeding_time * ratio_fraction
+            return (torrent.seeding_time - time_at_ratio) / SECONDS_PER_HOUR
+
+        return 0.0
     
     def _is_protected_by_fileflows(self, torrent: TorrentInfo) -> bool:
         """Check if torrent is protected by FileFlows processing."""

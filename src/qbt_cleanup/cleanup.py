@@ -132,6 +132,11 @@ class QbtCleanup:
 
         if features:
             logger.info(f"[Config] {' | '.join(features)}")
+
+        # Log orphaned scan directories
+        if self.config.orphaned.enabled and self.config.orphaned.scan_dirs:
+            for scan_dir in self.config.orphaned.scan_dirs:
+                logger.info(f"  -> Orphaned scan dir: {scan_dir}")
     
     def _delete_torrents(self, result: ClassificationResult) -> bool:
         """

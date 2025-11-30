@@ -4,7 +4,7 @@ Automated torrent management for qBittorrent with Sonarr/Radarr compatibility.
 
 [![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fregix1%2Fqbittorrent--cleanup-blue)](https://github.com/regix1/qbt-cleanup/pkgs/container/qbittorrent-cleanup)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-2.1-green)
+![Version](https://img.shields.io/badge/version-2.2-green)
 
 ## Overview
 
@@ -140,6 +140,7 @@ Set to `0` to disable force delete and only remove torrents that qBittorrent has
 | `FILEFLOWS_HOST` | FileFlows server host | `localhost` |
 | `FILEFLOWS_PORT` | FileFlows server port | `19200` |
 | `FILEFLOWS_TIMEOUT` | API timeout in seconds | `10` |
+| `FILEFLOWS_RECENT_MINUTES` | Minutes to protect recently processed files | `10` |
 
 ### Orphaned File Cleanup
 
@@ -197,7 +198,7 @@ qbt-cleanup:
     - ORPHANED_SCAN_DIRS=/downloads
 ```
 
-The tool will warn you at startup if it detects a path mismatch.
+The tool will **abort the orphaned scan** if it detects a path mismatch, preventing accidental deletion of all files.
 
 **Example:**
 ```yaml
@@ -499,7 +500,7 @@ docker exec qbt-cleanup qbt-cleanup-ctl list --limit 10
 
 ## Performance
 
-The tool uses SQLite for state management, which provides excellent performance even with large numbers of torrents:
+The tool uses SQLite for state management with optimized algorithms for fast operation even with large libraries:
 
 | Torrents | Load Time | Save Time | Memory Usage |
 |----------|-----------|-----------|--------------|
@@ -507,9 +508,16 @@ The tool uses SQLite for state management, which provides excellent performance 
 | 5,000 | ~10ms | ~2ms per update | Minimal |
 | 50,000 | ~50ms | ~2ms per update | Minimal |
 
+### Optimizations
+
+- **Transaction Batching:** State updates are batched into single transactions for efficiency
+- **O(1) Path Matching:** Orphaned file scanner uses optimized index for near-constant time lookups
+- **FileFlows Cache Safety:** Falls back to cached data on API failure to maintain protection
+- **Indexed Queries:** SQLite database uses indexes for instant lookups
+
 ### State Storage
 
-- **Database:** SQLite with indexed queries
+- **Database:** SQLite with indexed queries and WAL mode
 - **Location:** `/config/qbt_cleanup_state.db`
 - **Migration:** Automatic from JSON/MessagePack formats
 - **Cleanup:** Automatically removes torrents that no longer exist

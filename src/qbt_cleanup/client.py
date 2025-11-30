@@ -116,8 +116,14 @@ class QBittorrentClient:
         """
         try:
             return self.client.torrents.info()
+        except qbittorrentapi.APIConnectionError as e:
+            logger.error(f"API connection error fetching torrents: {e}")
+            return []
+        except qbittorrentapi.Forbidden403Error as e:
+            logger.error(f"Authentication error fetching torrents: {e}")
+            return []
         except Exception as e:
-            logger.error(f"Failed to fetch torrents: {e}")
+            logger.error(f"Unexpected error fetching torrents: {e}")
             return []
 
     def is_torrent_private(self, torrent: Any) -> bool:
@@ -299,8 +305,17 @@ class QBittorrentClient:
                 torrent_hashes=torrent_hashes
             )
             return True
+        except qbittorrentapi.APIConnectionError as e:
+            logger.error(f"API connection error deleting torrents: {e}")
+            return False
+        except qbittorrentapi.Forbidden403Error as e:
+            logger.error(f"Permission denied deleting torrents: {e}")
+            return False
+        except qbittorrentapi.Conflict409Error as e:
+            logger.error(f"Conflict error deleting torrents: {e}")
+            return False
         except Exception as e:
-            logger.error(f"Failed to delete torrents: {e}")
+            logger.error(f"Unexpected error deleting torrents: {e}")
             return False
 
     def process_torrent(self, torrent: Any) -> TorrentInfo:

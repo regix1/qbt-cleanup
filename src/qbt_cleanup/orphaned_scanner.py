@@ -7,11 +7,77 @@ import shutil
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Set, List, Tuple
+from typing import Set, List, Tuple, FrozenSet
 
 from .client import QBittorrentClient
 
 logger = logging.getLogger(__name__)
+
+
+class ActivePathIndex:
+    """
+    Optimized index for O(1) path lookups.
+
+    Supports three types of checks:
+    1. Direct match: O(1)
+    2. Is path a parent of an active path: O(1) using prefix set
+    3. Is path a child of an active path: O(depth) walking up parents
+    """
+
+    def __init__(self, active_paths: Set[Path]):
+        """Build the index from active paths."""
+        # Exact paths for direct O(1) lookup
+        self._exact_paths: FrozenSet[str] = frozenset(
+            str(p) for p in active_paths
+        )
+
+        # All path prefixes for parent checking
+        # If /a/b/c is active, we store /a, /a/b, /a/b/c
+        self._path_prefixes: FrozenSet[str] = self._build_prefix_set(active_paths)
+
+    def _build_prefix_set(self, paths: Set[Path]) -> FrozenSet[str]:
+        """Build set of all path prefixes from active paths."""
+        prefixes = set()
+        for path in paths:
+            path_str = str(path)
+            prefixes.add(path_str)
+            # Add all parent prefixes
+            current = path.parent
+            while current != current.parent:  # Stop at root
+                prefixes.add(str(current))
+                current = current.parent
+        return frozenset(prefixes)
+
+    def is_active(self, path: Path) -> bool:
+        """
+        Check if a path is active (O(1) for direct match, O(depth) for child check).
+
+        Args:
+            path: Path to check
+
+        Returns:
+            True if path is tracked by an active torrent
+        """
+        path_str = str(path)
+
+        # Direct match - O(1)
+        if path_str in self._exact_paths:
+            return True
+
+        # Check if this path is a parent of any active path - O(1)
+        # If path=/a/b and active=/a/b/c/d, then /a/b is in prefixes
+        if path_str in self._path_prefixes:
+            return True
+
+        # Check if this path is a child of any active path - O(depth)
+        # Walk up the parent chain and check each against exact paths
+        current = path.parent
+        while current != current.parent:
+            if str(current) in self._exact_paths:
+                return True
+            current = current.parent
+
+        return False
 
 
 class OrphanedFilesScanner:
@@ -25,6 +91,7 @@ class OrphanedFilesScanner:
             client: qBittorrent client instance
         """
         self.client = client
+        self._path_index: ActivePathIndex | None = None
 
     def _add_parent_paths(self, path: Path, stop_at: Path, paths_set: Set[Path]) -> None:
         """
@@ -105,6 +172,10 @@ class OrphanedFilesScanner:
         current_time = time.time()
         min_age_seconds = min_age_hours * 3600  # Convert hours to seconds
 
+        # Build optimized index for O(1) lookups
+        self._path_index = ActivePathIndex(active_paths)
+        logger.debug(f"Built path index with {len(active_paths)} active paths")
+
         for scan_dir_str in scan_dirs:
             scan_dir = Path(scan_dir_str).resolve()
 
@@ -128,102 +199,54 @@ class OrphanedFilesScanner:
                     for dir_name in dirs:
                         dir_path = (root_path / dir_name).resolve()
                         self._check_and_add_orphaned(
-                            dir_path, active_paths, current_time,
-                            min_age_seconds, min_age_hours, orphaned
+                            dir_path, current_time, min_age_seconds, orphaned
                         )
 
                     # Check each file in this level
                     for file_name in files:
                         file_path = (root_path / file_name).resolve()
                         self._check_and_add_orphaned(
-                            file_path, active_paths, current_time,
-                            min_age_seconds, min_age_hours, orphaned
+                            file_path, current_time, min_age_seconds, orphaned
                         )
 
-            except Exception as e:
-                logger.error(f"Error scanning directory {scan_dir}: {e}")
+            except PermissionError as e:
+                logger.error(f"Permission denied scanning directory {scan_dir}: {e}")
+                continue
+            except OSError as e:
+                logger.error(f"OS error scanning directory {scan_dir}: {e}")
                 continue
 
         return orphaned
 
-    def _check_and_add_orphaned(self, item_path: Path, active_paths: Set[Path],
-                                current_time: float, min_age_seconds: float,
-                                min_age_hours: float, orphaned: List[Path]) -> None:
+    def _check_and_add_orphaned(self, item_path: Path, current_time: float,
+                                min_age_seconds: float, orphaned: List[Path]) -> None:
         """
         Check if an item is orphaned and add to list if it is.
 
         Args:
             item_path: Path to check
-            active_paths: Set of active paths
             current_time: Current timestamp
             min_age_seconds: Minimum age in seconds
-            min_age_hours: Minimum age in hours (for logging)
             orphaned: List to add orphaned items to
         """
-        # Check if this item or any of its parents are in active paths
-        if not self._is_path_active(item_path, active_paths):
-            # Check file modification time
-            try:
-                mtime = item_path.stat().st_mtime
-                age_seconds = current_time - mtime
+        # Use optimized index for O(1) lookup
+        if self._path_index and self._path_index.is_active(item_path):
+            return
 
-                if age_seconds >= min_age_seconds:
-                    orphaned.append(item_path)
-            except Exception as e:
-                logger.warning(f"Error checking modification time for {item_path}: {e}")
-                return
-
-    def _is_path_active(self, path: Path, active_paths: Set[Path]) -> bool:
-        """
-        Check if a path is tracked by qBittorrent.
-
-        A path is considered active if:
-        1. It's directly in the active paths set, OR
-        2. Any active path is a child of this path (this path is a parent), OR
-        3. This path is a child of any active path (this path is inside an active torrent)
-
-        Args:
-            path: Path to check
-            active_paths: Set of active paths from qBittorrent
-
-        Returns:
-            True if path is active, False if orphaned
-        """
-        # Direct match
-        if path in active_paths:
-            return True
-
-        # Check if any active path is a child of this path
-        # This handles the case where we're checking a parent directory
-        # Example: checking /data/incomplete when /data/incomplete/movies/Torrent is active
+        # Check file modification time
         try:
-            for active_path in active_paths:
-                try:
-                    # Check if active_path is relative to path (i.e., path is a parent)
-                    active_path.relative_to(path)
-                    return True
-                except ValueError:
-                    # active_path is not relative to path
-                    continue
-        except Exception as e:
-            logger.debug(f"Error checking if active path is child of {path}: {e}")
+            mtime = item_path.stat().st_mtime
+            age_seconds = current_time - mtime
 
-        # Check if this path is a child of any active path
-        # This handles files/folders inside an active torrent folder
-        # Example: checking /data/incomplete/movies/Torrent/file.mkv when /data/incomplete/movies/Torrent is active
-        try:
-            for active_path in active_paths:
-                try:
-                    # Check if path is relative to active_path (i.e., path is a child)
-                    path.relative_to(active_path)
-                    return True
-                except ValueError:
-                    # path is not relative to active_path
-                    continue
-        except Exception as e:
-            logger.debug(f"Error checking if {path} is child of active path: {e}")
-
-        return False
+            if age_seconds >= min_age_seconds:
+                orphaned.append(item_path)
+        except FileNotFoundError:
+            # File was deleted between scan and check
+            pass
+        except PermissionError as e:
+            logger.warning(f"Permission denied checking {item_path}: {e}")
+        except OSError as e:
+            logger.warning(f"Error checking modification time for {item_path}: {e}")
 
     def remove_orphaned_files(self, orphaned_paths: List[Path],
                              dry_run: bool = False) -> Tuple[int, int]:
@@ -300,8 +323,11 @@ class OrphanedFilesScanner:
             logger.warning("No active torrent paths found, skipping orphaned file scan")
             return 0, 0
 
-        # Validate path configuration
-        self._validate_path_configuration(scan_dirs, active_paths)
+        # Validate path configuration - abort if mismatch detected
+        if not self._validate_path_configuration(scan_dirs, active_paths):
+            logger.error("Aborting orphaned file scan due to path mismatch")
+            logger.error("Set ORPHANED_FORCE_SCAN=true to override (dangerous!)")
+            return 0, 0
 
         # Scan for orphaned files (always recursive)
         orphaned_paths = self.scan_for_orphaned_files(scan_dirs, active_paths, min_age_hours)
@@ -318,15 +344,16 @@ class OrphanedFilesScanner:
         # Remove orphaned files
         return self.remove_orphaned_files(orphaned_paths, dry_run)
 
-    def _validate_path_configuration(self, scan_dirs: List[str], active_paths: Set[Path]) -> None:
+    def _validate_path_configuration(self, scan_dirs: List[str], active_paths: Set[Path]) -> bool:
         """
         Validate that scan directories and qBittorrent paths align.
-
-        Warns if there's a potential path mismatch that could cause false positives.
 
         Args:
             scan_dirs: Configured scan directories
             active_paths: Active paths from qBittorrent
+
+        Returns:
+            True if paths are valid, False if mismatch detected
         """
         # Check if any active paths start with any of our scan directories
         scan_dir_paths = [Path(d).resolve() for d in scan_dirs]
@@ -343,33 +370,38 @@ class OrphanedFilesScanner:
             if paths_match:
                 break
 
-        if not paths_match:
-            logger.warning("=" * 80)
-            logger.warning("⚠️  PATH MISMATCH DETECTED ⚠️")
-            logger.warning("=" * 80)
-            logger.warning("qBittorrent is reporting paths that don't match your scan directories!")
-            logger.warning("")
-            logger.warning(f"Your scan directories: {scan_dirs}")
-            logger.warning("")
-            logger.warning("Sample qBittorrent paths:")
-            for path in list(active_paths)[:5]:
-                logger.warning(f"  - {path}")
-            logger.warning("")
-            logger.warning("This will cause ALL files to be marked as orphaned!")
-            logger.warning("")
-            logger.warning("SOLUTION: Mount your download directories at the SAME path in both")
-            logger.warning("qBittorrent and qbt-cleanup containers.")
-            logger.warning("")
-            logger.warning("Example:")
-            logger.warning("  qbittorrent:")
-            logger.warning("    volumes:")
-            logger.warning("      - /host/downloads:/downloads")
-            logger.warning("  qbt-cleanup:")
-            logger.warning("    volumes:")
-            logger.warning("      - /host/downloads:/downloads  # Same path!")
-            logger.warning("    environment:")
-            logger.warning("      - ORPHANED_SCAN_DIRS=/downloads")
-            logger.warning("=" * 80)
+        if paths_match:
+            return True
+
+        # Path mismatch detected - log detailed warning
+        logger.warning("=" * 80)
+        logger.warning("PATH MISMATCH DETECTED")
+        logger.warning("=" * 80)
+        logger.warning("qBittorrent is reporting paths that don't match your scan directories!")
+        logger.warning("")
+        logger.warning(f"Your scan directories: {scan_dirs}")
+        logger.warning("")
+        logger.warning("Sample qBittorrent paths:")
+        for path in list(active_paths)[:5]:
+            logger.warning(f"  - {path}")
+        logger.warning("")
+        logger.warning("This will cause ALL files to be marked as orphaned!")
+        logger.warning("")
+        logger.warning("SOLUTION: Mount your download directories at the SAME path in both")
+        logger.warning("qBittorrent and qbt-cleanup containers.")
+        logger.warning("")
+        logger.warning("Example:")
+        logger.warning("  qbittorrent:")
+        logger.warning("    volumes:")
+        logger.warning("      - /host/downloads:/downloads")
+        logger.warning("  qbt-cleanup:")
+        logger.warning("    volumes:")
+        logger.warning("      - /host/downloads:/downloads  # Same path!")
+        logger.warning("    environment:")
+        logger.warning("      - ORPHANED_SCAN_DIRS=/downloads")
+        logger.warning("=" * 80)
+
+        return False
 
     def _write_orphaned_log(self, orphaned_paths: List[Path], dry_run: bool, log_dir: str) -> None:
         """
