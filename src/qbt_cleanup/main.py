@@ -105,7 +105,7 @@ def print_banner():
     """Print a startup banner."""
     banner = """
 ================================================================
-          qBittorrent Cleanup Tool v2.1
+          qBittorrent Cleanup Tool v2.2
 ================================================================"""
     print(banner)
 
