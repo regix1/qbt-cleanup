@@ -5,6 +5,7 @@
 
 .add-form-card {
   margin-bottom: 24px;
+  overflow: visible;
 
   .card-header-content {
     display: flex;
@@ -56,13 +57,6 @@
   height: 42px;
   white-space: nowrap;
   align-self: end;
-}
-
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 80px 0;
 }
 
 .table-container {
@@ -187,13 +181,3 @@
   font-size: 13px;
 }
 
-@keyframes dropdown-open {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}

@@ -44,14 +44,10 @@ def _deep_merge(base: Dict[str, Any], overlay: Dict[str, Any]) -> Dict[str, Any]
 
 @router.get("/config", response_model=ConfigResponse)
 def get_config(request: Request) -> ConfigResponse:
-    """Return the current effective configuration.
-
-    Passwords are redacted in the response.
-    """
+    """Return the current effective configuration."""
     config = ConfigOverrideManager.get_effective_config()
 
     connection_dict = dataclasses.asdict(config.connection)
-    connection_dict["password"] = "********"
 
     return ConfigResponse(
         connection=connection_dict,

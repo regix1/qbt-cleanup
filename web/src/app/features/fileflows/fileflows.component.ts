@@ -2,11 +2,13 @@ import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
+import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 import { FileFlowsStatus, FileFlowsProcessingFile } from '../../shared/models';
 
 @Component({
   selector: 'app-fileflows',
   standalone: true,
+  imports: [LoadingContainerComponent],
   templateUrl: './fileflows.component.html',
   styleUrl: './fileflows.component.scss',
 })

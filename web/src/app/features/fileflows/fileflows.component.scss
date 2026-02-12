@@ -13,13 +13,6 @@
   }
 }
 
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 80px 0;
-}
-
 .section-card {
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
@@ -41,7 +34,7 @@
 
     .error-icon {
       font-size: 48px;
-      color: var(--accent-red);
+      color: var(--accent-copper);
       margin-bottom: 16px;
     }
 
@@ -133,7 +126,7 @@
 
   i {
     font-size: 48px;
-    color: var(--accent-green);
+    color: var(--accent-yellow);
     margin-bottom: 12px;
   }
 

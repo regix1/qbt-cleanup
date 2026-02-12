@@ -5,12 +5,14 @@ import { ApiService } from '../../core/services/api.service';
 import { ActionResponse, BlacklistEntry, Torrent } from '../../shared/models';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
+import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 
 @Component({
   selector: 'app-blacklist',
   standalone: true,
   imports: [
     FormsModule,
+    LoadingContainerComponent,
   ],
   templateUrl: './blacklist.component.html',
   styleUrl: './blacklist.component.scss',

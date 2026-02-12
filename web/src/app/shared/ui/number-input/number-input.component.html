@@ -1,0 +1,14 @@
+<div class="number-input-wrapper">
+  <button class="number-btn" type="button" (click)="decrement()">
+    <i class="fa-solid fa-minus"></i>
+  </button>
+  <input class="form-input number-input" type="number"
+         [ngModel]="value()"
+         (ngModelChange)="value.set($event)"
+         [min]="min()"
+         [max]="max()"
+         [step]="step()">
+  <button class="number-btn" type="button" (click)="increment()">
+    <i class="fa-solid fa-plus"></i>
+  </button>
+</div>

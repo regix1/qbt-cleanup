@@ -10,9 +10,7 @@
   </div>
 
   @if (loading()) {
-    <div class="loading-container">
-      <div class="spinner"></div>
-    </div>
+    <app-loading-container />
   } @else if (error()) {
     <div class="section-card error-card">
       <div class="error-content">
@@ -28,13 +26,13 @@
   } @else if (status(); as s) {
     <div class="card-grid">
       <div class="stat-card">
-        <i class="fa-solid fa-power-off stat-icon" [style.color]="s.enabled ? 'var(--accent-green)' : 'var(--accent-red)'"></i>
+        <i class="fa-solid fa-power-off stat-icon" [style.color]="s.enabled ? 'var(--accent-yellow)' : 'var(--status-inactive)'"></i>
         <span class="stat-value">{{ s.enabled ? 'Enabled' : 'Disabled' }}</span>
         <span class="stat-label">Integration</span>
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-cloud stat-icon" [style.color]="s.connected ? 'var(--accent-green)' : 'var(--accent-red)'"></i>
+        <i class="fa-solid fa-cloud stat-icon" [style.color]="s.connected ? 'var(--accent-yellow)' : 'var(--status-inactive)'"></i>
         <span class="stat-value">{{ s.connected ? 'Connected' : 'Disconnected' }}</span>
         <span class="stat-label">Connection</span>
       </div>
@@ -46,7 +44,7 @@
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-list stat-icon" style="color: var(--accent-orange)"></i>
+        <i class="fa-solid fa-list stat-icon" style="color: var(--accent-amber)"></i>
         <span class="stat-value">{{ s.queue }}</span>
         <span class="stat-label">Queue</span>
       </div>

@@ -30,13 +30,6 @@
   }
 }
 
-.loading-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 80px 0;
-}
-
 .table-container {
   overflow-x: auto;
   background: var(--bg-surface);
@@ -87,28 +80,28 @@
 }
 
 .state-seeding {
-  background: rgba(124, 179, 66, 0.15);
-  color: var(--accent-green);
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--accent-gold);
 }
 
 .state-paused {
-  background: rgba(255, 143, 0, 0.15);
-  color: var(--accent-orange);
+  background: rgba(122, 117, 111, 0.15);
+  color: var(--status-inactive);
 }
 
 .state-stalled {
-  background: rgba(230, 81, 0, 0.15);
-  color: var(--accent-red);
+  background: rgba(224, 144, 16, 0.15);
+  color: var(--accent-amber);
 }
 
 .state-error {
-  background: rgba(230, 81, 0, 0.25);
-  color: var(--accent-red);
+  background: rgba(200, 90, 40, 0.2);
+  color: var(--accent-copper);
 }
 
 .state-queued {
-  background: rgba(171, 71, 188, 0.15);
-  color: var(--accent-purple);
+  background: rgba(212, 160, 23, 0.1);
+  color: var(--accent-gold);
 }
 
 .state-checking {
@@ -129,23 +122,23 @@
   font-weight: 500;
 
   &.private {
-    background: rgba(171, 71, 188, 0.15);
-    color: var(--accent-purple);
+    background: rgba(212, 160, 23, 0.15);
+    color: var(--accent-gold);
   }
 
   &.public {
-    background: rgba(124, 179, 66, 0.15);
-    color: var(--accent-green);
+    background: rgba(245, 197, 24, 0.12);
+    color: var(--accent-yellow);
   }
 }
 
 .blacklisted-icon {
-  color: var(--accent-orange);
+  color: var(--accent-amber);
   font-size: 18px;
 }
 
 .blacklisted-row {
-  background: rgba(255, 167, 38, 0.03) !important;
+  background: rgba(224, 144, 16, 0.03) !important;
 }
 
 .no-data-cell {
@@ -247,13 +240,3 @@
   padding: 2px 8px;
 }
 
-@keyframes dropdown-open {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}

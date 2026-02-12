@@ -6,6 +6,7 @@ import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
 import { Torrent } from '../../shared/models';
+import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 
 @Component({
   selector: 'app-torrents',
@@ -14,6 +15,7 @@ import { Torrent } from '../../shared/models';
     DecimalPipe,
     NgClass,
     FormsModule,
+    LoadingContainerComponent,
   ],
   templateUrl: './torrents.component.html',
   styleUrl: './torrents.component.scss',

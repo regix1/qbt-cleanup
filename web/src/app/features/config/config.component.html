@@ -20,9 +20,7 @@
   </div>
 
   @if (loading()) {
-    <div class="loading-container">
-      <div class="spinner"></div>
-    </div>
+    <app-loading-container />
   } @else {
     <div class="accordion">
       @for (section of sections(); track section.key) {
@@ -44,7 +42,6 @@
                   <div class="field-row" [class.field-modified]="field.modified">
                     <div class="field-info">
                       <span class="field-name">{{ formatFieldName(field.key) }}</span>
-                      <span class="field-key">{{ field.key }}</span>
                       @if (getFieldDescription(section.key, field.key)) {
                         <span class="field-desc">{{ getFieldDescription(section.key, field.key) }}</span>
                       }
@@ -52,15 +49,8 @@
 
                     <div class="field-input">
                       @if (field.type === 'boolean') {
-                        <div class="toggle-row">
-                          <label class="toggle-switch">
-                            <input type="checkbox"
-                                   [(ngModel)]="field.editValue"
-                                   (ngModelChange)="onFieldChange(section, field)">
-                            <span class="toggle-slider"></span>
-                          </label>
-                          <span class="toggle-label">{{ field.editValue ? 'Enabled' : 'Disabled' }}</span>
-                        </div>
+                        <app-toggle-switch [(checked)]="$any(field).editValue"
+                                           (checkedChange)="onFieldChange(section, field)" />
                       } @else if (isScanDirsField(section.key, field.key)) {
                         <div class="scan-dirs-list">
                           @for (dir of getScanDirs(field); track $index) {
@@ -83,29 +73,11 @@
                           </button>
                         </div>
                       } @else if (field.type === 'number') {
-                        <div class="number-input-wrapper">
-                          <button class="number-btn" type="button"
-                                  (click)="field.editValue = +field.editValue - 1; onFieldChange(section, field)">
-                            <i class="fa-solid fa-minus"></i>
-                          </button>
-                          <input class="form-input number-input" type="number"
-                                 [(ngModel)]="field.editValue"
-                                 (ngModelChange)="onFieldChange(section, field)">
-                          <button class="number-btn" type="button"
-                                  (click)="field.editValue = +field.editValue + 1; onFieldChange(section, field)">
-                            <i class="fa-solid fa-plus"></i>
-                          </button>
-                        </div>
+                        <app-number-input [(value)]="$any(field).editValue"
+                                          (valueChange)="onFieldChange(section, field)" />
                       } @else if (isPasswordField(section.key, field.key)) {
-                        <div class="password-input-wrapper">
-                          <input class="form-input"
-                                 [type]="isPasswordVisible(field.key) ? 'text' : 'password'"
-                                 [(ngModel)]="field.editValue"
-                                 (ngModelChange)="onFieldChange(section, field)">
-                          <button class="password-toggle" type="button" (click)="togglePasswordVisibility(field.key)">
-                            <i [class]="isPasswordVisible(field.key) ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
-                          </button>
-                        </div>
+                        <app-password-input [(value)]="$any(field).editValue"
+                                            (valueChange)="onFieldChange(section, field)" />
                       } @else {
                         <input class="form-input" type="text"
                                [(ngModel)]="field.editValue"

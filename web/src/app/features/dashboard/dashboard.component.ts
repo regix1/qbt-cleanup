@@ -2,12 +2,14 @@ import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
+import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 import { NotificationService } from '../../core/services/notification.service';
 import { ActionResponse, StatusResponse } from '../../shared/models';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
+  imports: [LoadingContainerComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })

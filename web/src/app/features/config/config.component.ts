@@ -4,6 +4,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../core/services/api.service';
 import { ConfigResponse, ConfigSectionValues } from '../../shared/models';
 import { NotificationService } from '../../core/services/notification.service';
+import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
+import { ToggleSwitchComponent } from '../../shared/ui/toggle-switch/toggle-switch.component';
+import { NumberInputComponent } from '../../shared/ui/number-input/number-input.component';
+import { PasswordInputComponent } from '../../shared/ui/password-input/password-input.component';
 
 interface ConfigField {
   key: string;
@@ -31,6 +35,10 @@ interface SectionMeta {
   standalone: true,
   imports: [
     FormsModule,
+    LoadingContainerComponent,
+    ToggleSwitchComponent,
+    NumberInputComponent,
+    PasswordInputComponent,
   ],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss',
@@ -43,7 +51,6 @@ export class ConfigComponent implements OnInit {
   readonly sections = signal<ConfigSection[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
-  readonly passwordVisible = signal<Record<string, boolean>>({});
   readonly hasModifications = computed(() =>
     this.sections().some((section: ConfigSection) =>
       section.fields.some((field: ConfigField) => field.modified)
@@ -172,16 +179,8 @@ export class ConfigComponent implements OnInit {
     field.modified = false;
   }
 
-  togglePasswordVisibility(fieldKey: string): void {
-    this.passwordVisible.update((v: Record<string, boolean>) => ({...v, [fieldKey]: !v[fieldKey]}));
-  }
-
   isPasswordField(sectionKey: string, fieldKey: string): boolean {
     return sectionKey === 'connection' && fieldKey === 'password';
-  }
-
-  isPasswordVisible(fieldKey: string): boolean {
-    return this.passwordVisible()[fieldKey] ?? false;
   }
 
   getFieldDescription(sectionKey: string, fieldKey: string): string {
@@ -194,7 +193,8 @@ export class ConfigComponent implements OnInit {
 
   getScanDirs(field: ConfigField): string[] {
     const value = String(field.editValue || '');
-    return value.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+    if (!value) return [];
+    return value.split(',').map((s: string) => s.trim());
   }
 
   addScanDir(section: ConfigSection, field: ConfigField): void {
@@ -268,7 +268,11 @@ export class ConfigComponent implements OnInit {
           if (!overrides[section.key]) {
             overrides[section.key] = {};
           }
-          overrides[section.key][field.key] = field.editValue;
+          let value = field.editValue;
+          if (this.isScanDirsField(section.key, field.key)) {
+            value = String(value).split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0).join(',');
+          }
+          overrides[section.key][field.key] = value;
         }
       }
     }

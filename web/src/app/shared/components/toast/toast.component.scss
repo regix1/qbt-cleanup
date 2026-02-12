@@ -24,22 +24,6 @@
   pointer-events: auto;
 
   &.toast-success {
-    border-left: 4px solid var(--accent-green);
-
-    .toast-icon {
-      color: var(--accent-green);
-    }
-  }
-
-  &.toast-error {
-    border-left: 4px solid var(--accent-red);
-
-    .toast-icon {
-      color: var(--accent-red);
-    }
-  }
-
-  &.toast-info {
     border-left: 4px solid var(--accent-yellow);
 
     .toast-icon {
@@ -47,11 +31,27 @@
     }
   }
 
-  &.toast-warn {
-    border-left: 4px solid var(--accent-orange);
+  &.toast-error {
+    border-left: 4px solid var(--accent-copper);
 
     .toast-icon {
-      color: var(--accent-orange);
+      color: var(--accent-copper);
+    }
+  }
+
+  &.toast-info {
+    border-left: 4px solid var(--accent-gold);
+
+    .toast-icon {
+      color: var(--accent-gold);
+    }
+  }
+
+  &.toast-warn {
+    border-left: 4px solid var(--accent-amber);
+
+    .toast-icon {
+      color: var(--accent-amber);
     }
   }
 }

@@ -1,0 +1,10 @@
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .toggle-label {
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+}

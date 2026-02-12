@@ -22,9 +22,7 @@
   </div>
 
   @if (loading()) {
-    <div class="loading-container">
-      <div class="spinner"></div>
-    </div>
+    <app-loading-container />
   } @else if (status(); as s) {
     <div class="card-grid">
       <div class="stat-card">
@@ -34,25 +32,25 @@
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-lock stat-icon" style="color: var(--accent-purple)"></i>
+        <i class="fa-solid fa-lock stat-icon" style="color: var(--accent-gold)"></i>
         <span class="stat-value">{{ s.private_count }}</span>
         <span class="stat-label">Private</span>
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-globe stat-icon" style="color: var(--accent-green)"></i>
+        <i class="fa-solid fa-globe stat-icon" style="color: var(--accent-yellow)"></i>
         <span class="stat-value">{{ s.public_count }}</span>
         <span class="stat-label">Public</span>
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-triangle-exclamation stat-icon" style="color: var(--accent-orange)"></i>
+        <i class="fa-solid fa-triangle-exclamation stat-icon" style="color: var(--accent-amber)"></i>
         <span class="stat-value">{{ s.stalled_count }}</span>
         <span class="stat-label">Stalled</span>
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-ban stat-icon" style="color: var(--accent-red)"></i>
+        <i class="fa-solid fa-ban stat-icon" style="color: var(--accent-copper)"></i>
         <span class="stat-value">{{ s.blacklist_count }}</span>
         <span class="stat-label">Blacklisted</span>
       </div>
@@ -122,7 +120,7 @@
             @if (s.scheduler_running) {
               <span class="status-chip success">Running</span>
             } @else {
-              <span class="status-chip warning">Stopped</span>
+              <span class="status-chip inactive">Stopped</span>
             }
           </div>
           <div class="info-row">
@@ -141,17 +139,17 @@
           <div class="info-row">
             <span class="info-label">Dry Run</span>
             @if (s.dry_run) {
-              <span class="status-chip warning">Enabled</span>
+              <span class="status-chip success">Enabled</span>
             } @else {
-              <span class="status-chip success">Disabled</span>
+              <span class="status-chip inactive">Disabled</span>
             }
           </div>
           <div class="info-row">
             <span class="info-label">Delete Files</span>
             @if (s.delete_files) {
-              <span class="status-chip error">Enabled</span>
+              <span class="status-chip warning">Enabled</span>
             } @else {
-              <span class="status-chip info">Disabled</span>
+              <span class="status-chip inactive">Disabled</span>
             }
           </div>
         </div>
