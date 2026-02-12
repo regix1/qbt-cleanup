@@ -24,8 +24,34 @@
       <div class="add-form">
         <div class="form-group">
           <label for="hash">Torrent Hash</label>
-          <input class="form-input" id="hash"
-                 [ngModel]="newHash()" (ngModelChange)="newHash.set($event)" />
+          <div class="hash-input-wrapper">
+            <input class="form-input" id="hash"
+                   [ngModel]="newHash()" (ngModelChange)="newHash.set($event)"
+                   placeholder="Enter hash or select from list" />
+            <button class="btn btn-secondary btn-sm hash-picker-btn" type="button"
+                    (click)="toggleHashDropdown()" title="Pick from torrents">
+              <i class="fa-solid fa-list"></i>
+            </button>
+          </div>
+          @if (showHashDropdown()) {
+            <div class="hash-dropdown">
+              <div class="hash-dropdown-search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input class="form-input" type="text" placeholder="Search torrents..."
+                       (input)="onHashSearchChange($event)">
+              </div>
+              <div class="hash-dropdown-list">
+                @for (torrent of filteredTorrents(); track torrent.hash) {
+                  <button class="hash-dropdown-item" type="button" (click)="selectTorrent(torrent)">
+                    <span class="torrent-name">{{ torrent.name }}</span>
+                    <span class="torrent-hash">{{ torrent.hash }}</span>
+                  </button>
+                } @empty {
+                  <div class="hash-dropdown-empty">No torrents available</div>
+                }
+              </div>
+            </div>
+          }
         </div>
 
         <div class="form-group">
@@ -71,7 +97,7 @@
             <tr>
               <td class="name-cell" [title]="entry.name">{{ entry.name || '--' }}</td>
               <td>
-                <span class="hash-cell" [title]="entry.hash">{{ truncateHash(entry.hash) }}</span>
+                <span class="hash-cell">{{ entry.hash }}</span>
               </td>
               <td>{{ entry.reason || '--' }}</td>
               <td>{{ formatDate(entry.added_at) }}</td>

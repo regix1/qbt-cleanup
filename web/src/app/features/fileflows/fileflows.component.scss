@@ -1,3 +1,18 @@
+:host .card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 960px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
 .loading-container {
   display: flex;
   justify-content: center;
@@ -127,4 +142,11 @@
     margin: 0;
     font-size: 16px;
   }
+}
+
+
+.header-title-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }

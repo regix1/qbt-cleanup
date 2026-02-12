@@ -21,6 +21,26 @@
                  [value]="filterText()"
                  (input)="onFilterChange($event)" />
         </div>
+        <div class="actions-dropdown">
+          <button class="btn btn-secondary btn-sm" (click)="toggleActionsMenu()">
+            <i class="fa-solid fa-filter"></i>
+            <span>Actions</span>
+            <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
+          </button>
+          @if (showActionsMenu()) {
+            <div class="dropdown-menu">
+              <button class="dropdown-item" (click)="clearFilter()">
+                <i class="fa-solid fa-xmark"></i> Clear Filter
+              </button>
+              <div class="dropdown-divider"></div>
+              @for (state of availableStates(); track state) {
+                <button class="dropdown-item" (click)="filterByState(state)">
+                  <span class="state-badge state-sm" [ngClass]="getStateColor(state)">{{ getStateLabel(state) }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
       </div>
 
       <table class="data-table">
@@ -90,8 +110,8 @@
             <tr [class.blacklisted-row]="torrent.is_blacklisted">
               <td class="name-cell" [title]="torrent.name">{{ torrent.name }}</td>
               <td>
-                <span class="state-badge" [ngClass]="getStateColor(torrent.state)">
-                  {{ getStateLabel(torrent.state) }}
+                <span class="state-badge" [ngClass]="getStateColor(torrent.state, torrent.progress)">
+                  {{ getStateLabel(torrent.state, torrent.progress) }}
                 </span>
               </td>
               <td>{{ torrent.ratio | number:'1.2-2' }}</td>
@@ -128,9 +148,9 @@
 
       @if (totalPages() > 1) {
         <div class="pagination">
-          <button class="btn btn-text btn-sm" [disabled]="currentPage() === 0" (click)="prevPage()">Previous</button>
+          <button [disabled]="currentPage() === 0" (click)="prevPage()">Previous</button>
           <span class="page-info">Page {{ currentPage() + 1 }} of {{ totalPages() }}</span>
-          <button class="btn btn-text btn-sm" [disabled]="currentPage() >= totalPages() - 1" (click)="nextPage()">Next</button>
+          <button [disabled]="currentPage() >= totalPages() - 1" (click)="nextPage()">Next</button>
         </div>
       }
     </div>

@@ -43,11 +43,62 @@ export class ConfigComponent implements OnInit {
   readonly sections = signal<ConfigSection[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly passwordVisible = signal<Record<string, boolean>>({});
   readonly hasModifications = computed(() =>
     this.sections().some((section: ConfigSection) =>
       section.fields.some((field: ConfigField) => field.modified)
     )
   );
+
+  private readonly fieldDescriptions: Readonly<Record<string, Record<string, string>>> = {
+    connection: {
+      host: 'qBittorrent WebUI hostname or IP address',
+      port: 'qBittorrent WebUI port number',
+      username: 'qBittorrent login username',
+      password: 'qBittorrent login password',
+      verify_ssl: 'Verify SSL certificate when connecting',
+    },
+    limits: {
+      fallback_ratio: 'Default ratio limit if not set per tracker type',
+      fallback_days: 'Default seeding days if not set per tracker type',
+      private_ratio: 'Ratio limit for private tracker torrents',
+      private_days: 'Max seeding days for private tracker torrents',
+      public_ratio: 'Ratio limit for public tracker torrents',
+      public_days: 'Max seeding days for public tracker torrents',
+      ignore_qbt_ratio_private: 'Ignore qBittorrent ratio limits for private torrents',
+      ignore_qbt_ratio_public: 'Ignore qBittorrent ratio limits for public torrents',
+      ignore_qbt_time_private: 'Ignore qBittorrent time limits for private torrents',
+      ignore_qbt_time_public: 'Ignore qBittorrent time limits for public torrents',
+    },
+    behavior: {
+      delete_files: 'Delete files from disk when removing torrents',
+      dry_run: 'Log actions without actually deleting anything',
+      schedule_hours: 'Hours between automatic cleanup runs',
+      run_once: 'Run a single cleanup cycle and exit',
+      check_paused_only: 'Only delete torrents that qBittorrent has paused',
+      check_private_paused_only: 'Only delete paused private torrents',
+      check_public_paused_only: 'Only delete paused public torrents',
+      force_delete_after_hours: 'Force delete after criteria met for this many hours',
+      force_delete_private_after_hours: 'Force delete threshold for private torrents',
+      force_delete_public_after_hours: 'Force delete threshold for public torrents',
+      cleanup_stale_downloads: 'Enable cleanup of stalled downloads',
+      max_stalled_days: 'Max days a download can be stalled before removal',
+      max_stalled_private_days: 'Max stalled days for private torrents',
+      max_stalled_public_days: 'Max stalled days for public torrents',
+    },
+    orphaned: {
+      enabled: 'Enable orphaned file cleanup',
+      scan_dirs: 'Directories to scan for orphaned files (comma-separated)',
+      min_age_hours: 'Minimum file age in hours before removal',
+      schedule_days: 'Days between orphaned cleanup runs',
+    },
+    fileflows: {
+      enabled: 'Enable FileFlows processing protection',
+      host: 'FileFlows server hostname or IP address',
+      port: 'FileFlows server port number',
+      timeout: 'API timeout in seconds',
+    },
+  };
 
   private readonly sectionMeta: Readonly<Record<string, SectionMeta>> = {
     connection: { name: 'Connection', icon: 'fa-solid fa-link' },
@@ -119,6 +170,52 @@ export class ConfigComponent implements OnInit {
   resetField(field: ConfigField): void {
     field.editValue = field.value;
     field.modified = false;
+  }
+
+  togglePasswordVisibility(fieldKey: string): void {
+    this.passwordVisible.update((v: Record<string, boolean>) => ({...v, [fieldKey]: !v[fieldKey]}));
+  }
+
+  isPasswordField(sectionKey: string, fieldKey: string): boolean {
+    return sectionKey === 'connection' && fieldKey === 'password';
+  }
+
+  isPasswordVisible(fieldKey: string): boolean {
+    return this.passwordVisible()[fieldKey] ?? false;
+  }
+
+  getFieldDescription(sectionKey: string, fieldKey: string): string {
+    return this.fieldDescriptions[sectionKey]?.[fieldKey] ?? '';
+  }
+
+  isScanDirsField(sectionKey: string, fieldKey: string): boolean {
+    return sectionKey === 'orphaned' && fieldKey === 'scan_dirs';
+  }
+
+  getScanDirs(field: ConfigField): string[] {
+    const value = String(field.editValue || '');
+    return value.split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+  }
+
+  addScanDir(section: ConfigSection, field: ConfigField): void {
+    const dirs = this.getScanDirs(field);
+    dirs.push('');
+    field.editValue = dirs.join(',');
+    this.onFieldChange(section, field);
+  }
+
+  removeScanDir(section: ConfigSection, field: ConfigField, index: number): void {
+    const dirs = this.getScanDirs(field);
+    dirs.splice(index, 1);
+    field.editValue = dirs.join(',');
+    this.onFieldChange(section, field);
+  }
+
+  updateScanDir(section: ConfigSection, field: ConfigField, index: number, value: string): void {
+    const dirs = this.getScanDirs(field);
+    dirs[index] = value;
+    field.editValue = dirs.join(',');
+    this.onFieldChange(section, field);
   }
 
   formatFieldName(key: string): string {

@@ -38,10 +38,11 @@ def trigger_scan(request: Request) -> ActionResponse:
 def trigger_orphaned_scan(request: Request) -> ActionResponse:
     """Trigger an orphaned file scan.
 
-    Currently the orphaned scan runs as part of the regular cleanup cycle,
-    so this simply triggers the same scan event.
+    Sets both the orphaned scan event (to force bypass schedule) and
+    the regular scan event (to wake the scheduler loop).
     """
     app_state = get_app_state(request)
+    app_state.orphaned_scan_event.set()
     app_state.scan_event.set()
     logger.info("Orphaned file scan triggered via API")
 

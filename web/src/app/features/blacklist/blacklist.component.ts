@@ -2,7 +2,7 @@ import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
-import { ActionResponse, BlacklistEntry } from '../../shared/models';
+import { ActionResponse, BlacklistEntry, Torrent } from '../../shared/models';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
 
@@ -29,10 +29,25 @@ export class BlacklistComponent implements OnInit {
   readonly newName = signal<string>('');
   readonly newReason = signal<string>('');
 
+  readonly torrents = signal<Torrent[]>([]);
+  readonly showHashDropdown = signal(false);
+  readonly hashSearch = signal('');
+
   readonly canAdd = computed(() => this.newHash().trim().length > 0);
+
+  readonly filteredTorrents = computed(() => {
+    const search = this.hashSearch().toLowerCase().trim();
+    const blacklisted = new Set(this.entries().map((e: BlacklistEntry) => e.hash));
+    const available = this.torrents().filter((t: Torrent) => !blacklisted.has(t.hash));
+    if (!search) return available;
+    return available.filter((t: Torrent) =>
+      t.name.toLowerCase().includes(search) || t.hash.toLowerCase().includes(search)
+    );
+  });
 
   ngOnInit(): void {
     this.loadBlacklist();
+    this.loadTorrents();
   }
 
   loadBlacklist(): void {
@@ -49,6 +64,29 @@ export class BlacklistComponent implements OnInit {
           this.notify.error('Failed to load blacklist');
         },
       });
+  }
+
+  loadTorrents(): void {
+    this.api.getTorrents()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (torrents: Torrent[]) => this.torrents.set(torrents),
+      });
+  }
+
+  toggleHashDropdown(): void {
+    this.showHashDropdown.update((v: boolean) => !v);
+    this.hashSearch.set('');
+  }
+
+  selectTorrent(torrent: Torrent): void {
+    this.newHash.set(torrent.hash);
+    this.newName.set(torrent.name);
+    this.showHashDropdown.set(false);
+  }
+
+  onHashSearchChange(event: Event): void {
+    this.hashSearch.set((event.target as HTMLInputElement).value);
   }
 
   addEntry(): void {

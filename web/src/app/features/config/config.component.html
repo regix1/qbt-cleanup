@@ -45,6 +45,9 @@
                     <div class="field-info">
                       <span class="field-name">{{ formatFieldName(field.key) }}</span>
                       <span class="field-key">{{ field.key }}</span>
+                      @if (getFieldDescription(section.key, field.key)) {
+                        <span class="field-desc">{{ getFieldDescription(section.key, field.key) }}</span>
+                      }
                     </div>
 
                     <div class="field-input">
@@ -58,10 +61,51 @@
                           </label>
                           <span class="toggle-label">{{ field.editValue ? 'Enabled' : 'Disabled' }}</span>
                         </div>
+                      } @else if (isScanDirsField(section.key, field.key)) {
+                        <div class="scan-dirs-list">
+                          @for (dir of getScanDirs(field); track $index) {
+                            <div class="scan-dir-item">
+                              <input class="form-input" type="text"
+                                     [value]="dir"
+                                     (input)="updateScanDir(section, field, $index, $any($event.target).value)"
+                                     placeholder="/path/to/directory">
+                              <button class="btn-icon remove-dir-btn" type="button"
+                                      (click)="removeScanDir(section, field, $index)"
+                                      title="Remove directory">
+                                <i class="fa-solid fa-xmark"></i>
+                              </button>
+                            </div>
+                          }
+                          <button class="btn btn-secondary btn-sm add-dir-btn" type="button"
+                                  (click)="addScanDir(section, field)">
+                            <i class="fa-solid fa-plus"></i>
+                            <span>Add Directory</span>
+                          </button>
+                        </div>
                       } @else if (field.type === 'number') {
-                        <input class="form-input" type="number"
-                               [(ngModel)]="field.editValue"
-                               (ngModelChange)="onFieldChange(section, field)">
+                        <div class="number-input-wrapper">
+                          <button class="number-btn" type="button"
+                                  (click)="field.editValue = +field.editValue - 1; onFieldChange(section, field)">
+                            <i class="fa-solid fa-minus"></i>
+                          </button>
+                          <input class="form-input number-input" type="number"
+                                 [(ngModel)]="field.editValue"
+                                 (ngModelChange)="onFieldChange(section, field)">
+                          <button class="number-btn" type="button"
+                                  (click)="field.editValue = +field.editValue + 1; onFieldChange(section, field)">
+                            <i class="fa-solid fa-plus"></i>
+                          </button>
+                        </div>
+                      } @else if (isPasswordField(section.key, field.key)) {
+                        <div class="password-input-wrapper">
+                          <input class="form-input"
+                                 [type]="isPasswordVisible(field.key) ? 'text' : 'password'"
+                                 [(ngModel)]="field.editValue"
+                                 (ngModelChange)="onFieldChange(section, field)">
+                          <button class="password-toggle" type="button" (click)="togglePasswordVisibility(field.key)">
+                            <i [class]="isPasswordVisible(field.key) ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+                          </button>
+                        </div>
                       } @else {
                         <input class="form-input" type="text"
                                [(ngModel)]="field.editValue"

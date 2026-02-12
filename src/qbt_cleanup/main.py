@@ -126,8 +126,9 @@ def setup_logging(debug=False):
     root_logger.addHandler(console_handler)
 
 
-# Global event for manual scan triggering
+# Global events for manual scan triggering
 manual_scan_event = Event()
+orphaned_scan_event = Event()
 
 
 def signal_handler(signum, frame):
@@ -146,12 +147,13 @@ def print_banner():
     print(banner)
 
 
-def run_cleanup_cycle(config: Config) -> bool:
+def run_cleanup_cycle(config: Config, force_orphaned: bool = False) -> bool:
     """
     Run a single cleanup cycle.
 
     Args:
         config: Application configuration
+        force_orphaned: If True, bypass the orphaned scan schedule check.
 
     Returns:
         True if successful
@@ -159,7 +161,7 @@ def run_cleanup_cycle(config: Config) -> bool:
     try:
         logger.info("Starting cleanup cycle...")
         cleanup = QbtCleanup(config)
-        result = cleanup.run()
+        result = cleanup.run(force_orphaned=force_orphaned)
         if result:
             logger.info("Cleanup cycle completed successfully")
         else:
@@ -186,7 +188,7 @@ def main():
     config = Config.from_environment()
 
     # Create shared application state
-    app_state = AppState(config, manual_scan_event)
+    app_state = AppState(config, manual_scan_event, orphaned_scan_event)
 
     # Set up signal handler for manual scan (SIGUSR1 is Unix-only)
     if hasattr(signal, 'SIGUSR1'):
@@ -234,9 +236,13 @@ def main():
             config = ConfigOverrideManager.get_effective_config()
             app_state.update_config(config)
 
+            # Check if an orphaned scan was manually requested
+            force_orphaned = app_state.orphaned_scan_event.is_set()
+            app_state.orphaned_scan_event.clear()
+
             # Run cleanup
             app_state.set_running()
-            success = run_cleanup_cycle(config)
+            success = run_cleanup_cycle(config, force_orphaned=force_orphaned)
             app_state.update_after_run(success)
 
             # Calculate next run time

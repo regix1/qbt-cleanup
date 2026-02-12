@@ -16,9 +16,15 @@ class AppState:
     without race conditions.
     """
 
-    def __init__(self, config: Config, scan_event: threading.Event) -> None:
+    def __init__(
+        self,
+        config: Config,
+        scan_event: threading.Event,
+        orphaned_scan_event: threading.Event,
+    ) -> None:
         self.config = config
         self.scan_event = scan_event
+        self.orphaned_scan_event = orphaned_scan_event
         self.last_run_time: Optional[datetime] = None
         self.last_run_success: Optional[bool] = None
         self.last_run_stats: Optional[dict] = None

@@ -299,6 +299,17 @@ a {
   }
 }
 
+.btn-text.btn-sm {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent-yellow);
+    background: rgba(245, 197, 24, 0.1);
+    color: var(--accent-yellow);
+  }
+}
+
 .btn-icon {
   background: transparent;
   color: var(--text-primary);
@@ -358,6 +369,18 @@ a {
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+}
+
+// ─── Number Input Spinners ────────────────────────────────────────────────────
+
+input[type="number"].form-input {
+  -moz-appearance: textfield;
+
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
   }
 }
 
@@ -501,6 +524,50 @@ select.form-input {
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+// ─── Dropdown Animations ──────────────────────────────────────────────────────
+
+@keyframes dropdown-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes accordion-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 

@@ -32,6 +32,12 @@ export class TorrentsComponent implements OnInit {
   readonly sortDirection = signal<'asc' | 'desc'>('asc');
   readonly currentPage = signal<number>(0);
   readonly pageSize = signal<number>(25);
+  readonly showActionsMenu = signal(false);
+
+  readonly availableStates = computed(() => {
+    const states = new Set(this.torrents().map((t: Torrent) => t.state));
+    return Array.from(states).sort();
+  });
 
   readonly filteredTorrents = computed<Torrent[]>(() => {
     const filter = this.filterText().toLowerCase().trim();
@@ -85,13 +91,20 @@ export class TorrentsComponent implements OnInit {
     seeding: 'state-seeding',
     pausedUP: 'state-paused',
     pausedDL: 'state-paused',
-    stalledUP: 'state-stalled',
+    stalledUP: 'state-seeding',
     stalledDL: 'state-stalled',
     error: 'state-error',
     queuedUP: 'state-queued',
     queuedDL: 'state-queued',
     checkingUP: 'state-checking',
     checkingDL: 'state-checking',
+    forcedUP: 'state-seeding',
+    forcedDL: 'state-downloading',
+    missingFiles: 'state-error',
+    moving: 'state-checking',
+    allocating: 'state-checking',
+    checkingResumeData: 'state-checking',
+    unknown: 'state-default',
   };
 
   private readonly stateLabels: Record<string, string> = {
@@ -100,13 +113,20 @@ export class TorrentsComponent implements OnInit {
     seeding: 'Seeding',
     pausedUP: 'Paused',
     pausedDL: 'Paused',
-    stalledUP: 'Stalled',
+    stalledUP: 'Seeding',
     stalledDL: 'Stalled',
     error: 'Error',
     queuedUP: 'Queued',
     queuedDL: 'Queued',
     checkingUP: 'Checking',
     checkingDL: 'Checking',
+    forcedUP: 'Seeding',
+    forcedDL: 'Downloading',
+    missingFiles: 'Missing Files',
+    moving: 'Moving',
+    allocating: 'Allocating',
+    checkingResumeData: 'Checking',
+    unknown: 'Unknown',
   };
 
   ngOnInit(): void {
@@ -143,6 +163,22 @@ export class TorrentsComponent implements OnInit {
     const value = (event.target as HTMLInputElement).value;
     this.filterText.set(value);
     this.currentPage.set(0);
+  }
+
+  toggleActionsMenu(): void {
+    this.showActionsMenu.update((v: boolean) => !v);
+  }
+
+  filterByState(state: string): void {
+    this.filterText.set(this.getStateLabel(state));
+    this.currentPage.set(0);
+    this.showActionsMenu.set(false);
+  }
+
+  clearFilter(): void {
+    this.filterText.set('');
+    this.currentPage.set(0);
+    this.showActionsMenu.set(false);
   }
 
   goToPage(page: number): void {
@@ -186,12 +222,19 @@ export class TorrentsComponent implements OnInit {
     return `${(progress * 100).toFixed(1)}%`;
   }
 
-  getStateColor(state: string): string {
-    return this.stateColors[state] ?? 'state-default';
+  getStateColor(state: string, progress?: number): string {
+    const color = this.stateColors[state];
+    if (color) return color;
+    if (progress !== undefined && progress >= 1) return 'state-seeding';
+    return 'state-default';
   }
 
-  getStateLabel(state: string): string {
-    return this.stateLabels[state] ?? state;
+  getStateLabel(state: string, progress?: number): string {
+    const label = this.stateLabels[state];
+    if (label) return label;
+    // Fallback: if progress is 100%, it's seeding regardless of unknown state
+    if (progress !== undefined && progress >= 1) return 'Seeding';
+    return state;
   }
 
   toggleBlacklist(torrent: Torrent): void {

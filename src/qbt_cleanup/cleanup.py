@@ -37,10 +37,13 @@ class QbtCleanup:
         if config.fileflows.enabled:
             self.fileflows = FileFlowsClient(config.fileflows)
     
-    def run(self) -> bool:
+    def run(self, force_orphaned: bool = False) -> bool:
         """
         Run cleanup process.
-        
+
+        Args:
+            force_orphaned: If True, bypass the orphaned scan schedule check.
+
         Returns:
             True if successful
         """
@@ -95,7 +98,7 @@ class QbtCleanup:
             deletion_success = self._delete_torrents(result)
 
             # Run orphaned file cleanup if enabled
-            orphaned_success = self._cleanup_orphaned_files()
+            orphaned_success = self._cleanup_orphaned_files(force=force_orphaned)
 
             return deletion_success and orphaned_success
             
@@ -200,9 +203,12 @@ class QbtCleanup:
         if parts:
             logger.info(f"  -> {' | '.join(parts)}")
 
-    def _cleanup_orphaned_files(self) -> bool:
+    def _cleanup_orphaned_files(self, force: bool = False) -> bool:
         """
         Run orphaned file cleanup if enabled and scheduled.
+
+        Args:
+            force: If True, bypass the schedule check (for manual triggers).
 
         Returns:
             True if successful or disabled
@@ -214,24 +220,27 @@ class QbtCleanup:
             logger.warning("Orphaned file scanner not initialized")
             return True
 
-        # Check if enough time has passed since last run
-        from datetime import datetime, timezone, timedelta
+        # Check if enough time has passed since last run (skip check when forced)
+        if not force:
+            from datetime import datetime, timezone, timedelta
 
-        last_run_str = self.state.get_metadata("last_orphaned_cleanup")
-        if last_run_str:
-            try:
-                last_run = datetime.fromisoformat(last_run_str)
-                now = datetime.now(timezone.utc)
-                days_since_last_run = (now - last_run).total_seconds() / 86400
+            last_run_str = self.state.get_metadata("last_orphaned_cleanup")
+            if last_run_str:
+                try:
+                    last_run = datetime.fromisoformat(last_run_str)
+                    now = datetime.now(timezone.utc)
+                    days_since_last_run = (now - last_run).total_seconds() / 86400
 
-                if days_since_last_run < self.config.orphaned.schedule_days:
-                    logger.info(
-                        f"[Orphaned Files] Skipping - last run was {days_since_last_run:.1f} days ago "
-                        f"(schedule: every {self.config.orphaned.schedule_days} days)"
-                    )
-                    return True
-            except Exception as e:
-                logger.warning(f"Could not parse last orphaned cleanup time: {e}")
+                    if days_since_last_run < self.config.orphaned.schedule_days:
+                        logger.info(
+                            f"[Orphaned Files] Skipping - last run was {days_since_last_run:.1f} days ago "
+                            f"(schedule: every {self.config.orphaned.schedule_days} days)"
+                        )
+                        return True
+                except Exception as e:
+                    logger.warning(f"Could not parse last orphaned cleanup time: {e}")
+        else:
+            logger.info("[Orphaned Files] Manual scan requested - bypassing schedule check")
 
         try:
             logger.info(

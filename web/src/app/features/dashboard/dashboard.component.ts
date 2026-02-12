@@ -49,6 +49,7 @@ export class DashboardComponent implements OnInit {
   }
 
   runScan(): void {
+    if (this.scanning()) return;
     this.scanning.set(true);
     this.api.runScan()
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -70,6 +71,7 @@ export class DashboardComponent implements OnInit {
   }
 
   runOrphanedScan(): void {
+    if (this.orphanScanning()) return;
     this.orphanScanning.set(true);
     this.api.runOrphanedScan()
       .pipe(takeUntilDestroyed(this.destroyRef))

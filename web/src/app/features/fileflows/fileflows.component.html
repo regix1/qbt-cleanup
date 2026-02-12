@@ -1,10 +1,12 @@
 <div class="page-container">
   <div class="page-header">
-    <h2>FileFlows Integration</h2>
-    <button class="btn btn-secondary" (click)="loadStatus()">
-      <i class="fa-solid fa-arrows-rotate"></i>
-      <span>Refresh</span>
-    </button>
+    <div class="header-title-group">
+      <h2>FileFlows Integration</h2>
+      <button class="btn btn-secondary btn-sm" (click)="loadStatus()">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        <span>Refresh</span>
+      </button>
+    </div>
   </div>
 
   @if (loading()) {
