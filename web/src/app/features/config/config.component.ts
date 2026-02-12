@@ -168,6 +168,7 @@ export class ConfigComponent implements OnInit {
 
   onFieldChange(_section: ConfigSection, field: ConfigField): void {
     field.modified = field.editValue !== field.value;
+    this.sections.update((sections: ConfigSection[]) => [...sections]);
   }
 
   sectionHasModifications(section: ConfigSection): boolean {
