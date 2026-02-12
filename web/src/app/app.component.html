@@ -3,6 +3,7 @@
 
 <div class="app-container">
   @if (sidenavOpen()) {
+    <div class="sidenav-overlay" (click)="toggleSidenav()"></div>
     <aside class="app-sidenav">
       <div class="sidenav-header">
         <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
@@ -13,7 +14,8 @@
           <a class="nav-item"
              [routerLink]="item.path"
              routerLinkActive="active-link"
-             [routerLinkActiveOptions]="{ exact: item.path === '/' }">
+             [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+             (click)="closeSidenavOnMobile()">
             <i [class]="item.icon"></i>
             <span>{{ item.label }}</span>
           </a>

@@ -48,4 +48,10 @@ export class AppComponent {
   toggleSidenav(): void {
     this.sidenavOpen.update((open: boolean) => !open);
   }
+
+  closeSidenavOnMobile(): void {
+    if (window.innerWidth <= 768) {
+      this.sidenavOpen.set(false);
+    }
+  }
 }

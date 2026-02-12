@@ -3,6 +3,7 @@ import { NotificationService, ToastMessage } from '../../../core/services/notifi
 
 @Component({
   selector: 'app-toast',
+  standalone: true,
   templateUrl: './toast.component.html',
   styleUrl: './toast.component.scss',
 })

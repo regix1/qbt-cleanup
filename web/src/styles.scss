@@ -43,6 +43,18 @@ a {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+
+  @media (max-width: 768px) {
+    padding: 16px;
+  }
+}
+
+.sidenav-overlay {
+  display: none;
+
+  @media (max-width: 768px) {
+    display: block;
+  }
 }
 
 .page-header {
