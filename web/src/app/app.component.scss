@@ -22,7 +22,7 @@
 
   .logo-icon {
     color: var(--accent-blue);
-    font-size: 28px;
+    font-size: 24px;
   }
 
   .logo-text {
@@ -50,7 +50,7 @@
   transition: background 0.2s ease, border-color 0.2s ease;
 
   i {
-    font-size: 20px;
+    font-size: 18px;
     width: 24px;
     text-align: center;
   }
@@ -84,15 +84,30 @@
   }
 }
 
-:host ::ng-deep .app-toolbar {
-  background: var(--bg-secondary) !important;
+.app-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
   padding: 0 16px;
+  height: 56px;
+  min-height: 56px;
+}
+
+.toolbar-start {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-end {
+  display: flex;
+  align-items: center;
 }
 
 .toolbar-title {
-  margin-left: 8px;
   font-size: 18px;
   font-weight: 400;
   color: var(--text-primary);
@@ -108,8 +123,11 @@
   flex: 1;
   background: var(--bg-primary);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .content-area {
-  min-height: calc(100vh - 64px);
+  flex: 1;
+  min-height: calc(100vh - 56px);
 }

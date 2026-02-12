@@ -1,20 +1,12 @@
 import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
-import { Card } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
-import { ProgressSpinner } from 'primeng/progressspinner';
 import { ApiService } from '../../core/services/api.service';
 import { FileFlowsStatus } from '../../shared/models';
 
 @Component({
   selector: 'app-fileflows',
   standalone: true,
-  imports: [
-    Card,
-    ButtonModule,
-    ProgressSpinner,
-  ],
   templateUrl: './fileflows.component.html',
   styleUrl: './fileflows.component.scss',
 })

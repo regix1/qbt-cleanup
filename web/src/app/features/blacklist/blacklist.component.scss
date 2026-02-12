@@ -1,12 +1,6 @@
 .header-actions {
   display: flex;
   gap: 12px;
-
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
 }
 
 .add-form-card {
@@ -16,7 +10,8 @@
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 16px 16px 0;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
 
     i {
       color: var(--accent-blue);
@@ -35,17 +30,31 @@
   display: grid;
   grid-template-columns: 1fr 1fr 1fr auto;
   gap: 16px;
-  align-items: start;
-  margin-top: 16px;
+  align-items: end;
 
   @media (max-width: 960px) {
     grid-template-columns: 1fr;
   }
+}
 
-  button {
-    height: 56px;
-    white-space: nowrap;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
   }
+}
+
+.add-btn {
+  height: 42px;
+  white-space: nowrap;
+  align-self: end;
 }
 
 .loading-container {
@@ -60,10 +69,6 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-}
-
-.blacklist-table {
-  width: 100%;
 }
 
 .name-cell {

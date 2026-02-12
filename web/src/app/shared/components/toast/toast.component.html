@@ -1,0 +1,14 @@
+<div class="toast-container">
+  @for (toast of toasts(); track trackById($index, toast)) {
+    <div class="toast-item" [class]="'toast-' + toast.severity">
+      <i [class]="getIcon(toast.severity)" class="toast-icon"></i>
+      <div class="toast-content">
+        <div class="toast-summary">{{ toast.summary }}</div>
+        <div class="toast-detail">{{ toast.detail }}</div>
+      </div>
+      <button class="toast-close" (click)="dismiss(toast.id)" type="button" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  }
+</div>

@@ -1,10 +1,6 @@
 import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
-import { Card } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
-import { ProgressSpinner } from 'primeng/progressspinner';
-import { Divider } from 'primeng/divider';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ActionResponse, StatusResponse } from '../../shared/models';
@@ -12,12 +8,6 @@ import { ActionResponse, StatusResponse } from '../../shared/models';
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    Card,
-    ButtonModule,
-    ProgressSpinner,
-    Divider,
-  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })

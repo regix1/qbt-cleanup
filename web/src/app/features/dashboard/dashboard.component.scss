@@ -10,6 +10,17 @@
   padding: 80px 0;
 }
 
+.section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+
+  .card-body {
+    padding: 16px;
+  }
+}
+
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
@@ -21,6 +32,7 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
+  border-bottom: 1px solid var(--border-color);
 
   i {
     color: var(--accent-blue);
@@ -54,6 +66,12 @@
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--border-color);
+  margin: 12px 0;
 }
 
 .stats-grid {
@@ -91,11 +109,17 @@
   margin-top: 2px;
 }
 
-:host ::ng-deep .p-divider {
-  margin: 12px 0 !important;
-}
-
 @media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
   .info-grid {
     grid-template-columns: 1fr;
   }

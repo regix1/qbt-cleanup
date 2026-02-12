@@ -1,0 +1,17 @@
+@if (state(); as dialog) {
+  <div class="confirm-overlay" (click)="reject()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <div class="confirm-header">
+        <i class="fa-solid fa-triangle-exclamation confirm-header-icon"></i>
+        <h3>{{ dialog.header }}</h3>
+      </div>
+      <div class="confirm-body">
+        <p>{{ dialog.message }}</p>
+      </div>
+      <div class="confirm-footer">
+        <button class="btn btn-secondary" (click)="reject()" type="button">Cancel</button>
+        <button class="btn btn-danger" (click)="accept()" type="button">Confirm</button>
+      </div>
+    </div>
+  </div>
+}

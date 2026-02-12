@@ -1,11 +1,11 @@
-<p-toast />
-<p-confirmDialog />
+<app-toast />
+<app-confirm-dialog />
 
 <div class="app-container">
   @if (sidenavOpen()) {
     <aside class="app-sidenav">
       <div class="sidenav-header">
-        <i class="pi pi-sparkles logo-icon"></i>
+        <i class="fa-solid fa-wand-magic-sparkles logo-icon"></i>
         <span class="logo-text">qbt-cleanup</span>
       </div>
       <nav class="nav-list">
@@ -28,17 +28,19 @@
   }
 
   <div class="app-content">
-    <p-toolbar styleClass="app-toolbar">
-      <ng-template #start>
-        <p-button [text]="true" [rounded]="true" icon="pi pi-bars" (onClick)="toggleSidenav()" />
+    <header class="app-toolbar">
+      <div class="toolbar-start">
+        <button class="btn btn-icon" (click)="toggleSidenav()" type="button" aria-label="Toggle navigation">
+          <i class="fa-solid fa-bars"></i>
+        </button>
         <span class="toolbar-title">qbt-cleanup</span>
-      </ng-template>
-      <ng-template #end>
+      </div>
+      <div class="toolbar-end">
         @if (version()) {
           <span class="toolbar-version">v{{ version() }}</span>
         }
-      </ng-template>
-    </p-toolbar>
+      </div>
+    </header>
     <div class="content-area">
       <router-outlet />
     </div>

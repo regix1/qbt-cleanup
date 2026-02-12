@@ -2,54 +2,62 @@
   <div class="page-header">
     <h2>Blacklist</h2>
     <div class="header-actions">
-      <p-button (click)="loadBlacklist()" icon="pi pi-refresh" label="Refresh" />
-      <p-button severity="danger"
-                (click)="clearAll()"
-                [disabled]="entries().length === 0"
-                icon="pi pi-trash"
-                label="Clear All" />
+      <button class="btn btn-primary" (click)="loadBlacklist()">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        <span>Refresh</span>
+      </button>
+      <button class="btn btn-danger"
+              (click)="clearAll()"
+              [disabled]="entries().length === 0">
+        <i class="fa-solid fa-trash"></i>
+        <span>Clear All</span>
+      </button>
     </div>
   </div>
 
-  <p-card class="section-card add-form-card">
-    <ng-template #header>
-      <div class="card-header-content">
-        <i class="pi pi-plus-circle" style="color: var(--accent-blue)"></i>
-        <span>Add to Blacklist</span>
-      </div>
-    </ng-template>
-    <div class="add-form">
-      <p-floatlabel>
-        <input pInputText id="hash" [ngModel]="newHash()" (ngModelChange)="newHash.set($event)" />
-        <label for="hash">Torrent Hash</label>
-      </p-floatlabel>
-
-      <p-floatlabel>
-        <input pInputText id="name" [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
-        <label for="name">Name (optional)</label>
-      </p-floatlabel>
-
-      <p-floatlabel>
-        <input pInputText id="reason" [ngModel]="newReason()" (ngModelChange)="newReason.set($event)" />
-        <label for="reason">Reason (optional)</label>
-      </p-floatlabel>
-
-      <p-button severity="primary"
-                (click)="addEntry()"
-                [disabled]="!canAdd()"
-                icon="pi pi-plus"
-                label="Add Entry" />
+  <div class="section-card add-form-card">
+    <div class="card-header-content">
+      <i class="fa-solid fa-circle-plus" style="color: var(--accent-blue)"></i>
+      <span>Add to Blacklist</span>
     </div>
-  </p-card>
+    <div class="section-card-content">
+      <div class="add-form">
+        <div class="form-group">
+          <label for="hash">Torrent Hash</label>
+          <input class="form-input" id="hash"
+                 [ngModel]="newHash()" (ngModelChange)="newHash.set($event)" />
+        </div>
+
+        <div class="form-group">
+          <label for="name">Name (optional)</label>
+          <input class="form-input" id="name"
+                 [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
+        </div>
+
+        <div class="form-group">
+          <label for="reason">Reason (optional)</label>
+          <input class="form-input" id="reason"
+                 [ngModel]="newReason()" (ngModelChange)="newReason.set($event)" />
+        </div>
+
+        <button class="btn btn-primary add-btn"
+                (click)="addEntry()"
+                [disabled]="!canAdd()">
+          <i class="fa-solid fa-plus"></i>
+          <span>Add Entry</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   @if (loading()) {
     <div class="loading-container">
-      <p-progressSpinner [style]="{width: '48px', height: '48px'}" />
+      <div class="spinner spinner-lg"></div>
     </div>
   } @else {
     <div class="table-container">
-      <p-table [value]="entries()" styleClass="blacklist-table">
-        <ng-template #header>
+      <table class="data-table">
+        <thead>
           <tr>
             <th>Name</th>
             <th>Hash</th>
@@ -57,33 +65,31 @@
             <th>Added</th>
             <th>Actions</th>
           </tr>
-        </ng-template>
-        <ng-template #body let-entry>
-          <tr>
-            <td class="name-cell">
-              <span [pTooltip]="entry.name">{{ entry.name || '--' }}</span>
-            </td>
-            <td>
-              <span class="hash-cell" [pTooltip]="entry.hash">{{ truncateHash(entry.hash) }}</span>
-            </td>
-            <td>{{ entry.reason || '--' }}</td>
-            <td>{{ formatDate(entry.added_at) }}</td>
-            <td>
-              <p-button icon="pi pi-trash"
-                        severity="danger"
-                        [rounded]="true"
-                        [text]="true"
-                        pTooltip="Remove from blacklist"
-                        (click)="removeEntry(entry)" />
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="5" class="no-data-cell">Blacklist is empty</td>
-          </tr>
-        </ng-template>
-      </p-table>
+        </thead>
+        <tbody>
+          @for (entry of entries(); track entry.hash) {
+            <tr>
+              <td class="name-cell" [title]="entry.name">{{ entry.name || '--' }}</td>
+              <td>
+                <span class="hash-cell" [title]="entry.hash">{{ truncateHash(entry.hash) }}</span>
+              </td>
+              <td>{{ entry.reason || '--' }}</td>
+              <td>{{ formatDate(entry.added_at) }}</td>
+              <td>
+                <button class="btn btn-icon"
+                        title="Remove from blacklist"
+                        (click)="removeEntry(entry)">
+                  <i class="fa-solid fa-trash" style="color: var(--accent-red)"></i>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="no-data-cell">Blacklist is empty</td>
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
   }
 </div>

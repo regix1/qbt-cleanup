@@ -1,12 +1,3 @@
-body {
-  margin: 0;
-  font-family: Roboto, 'Helvetica Neue', sans-serif;
-  background: #1a1a2e;
-  color: #e0e0e0;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 :root {
   --bg-primary: #1a1a2e;
   --bg-secondary: #16213e;
@@ -26,23 +17,27 @@ html, body {
   height: 100%;
 }
 
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 a {
   color: var(--accent-blue);
   text-decoration: none;
 }
 
-// PrimeNG Toast overrides
-.p-toast-message-success {
-  background: #2e7d32 !important;
-}
-
-.p-toast-message-error {
-  background: #c62828 !important;
-}
+// ─── Utility ───────────────────────────────────────────────────────────────────
 
 .spacer {
   flex: 1 1 auto;
 }
+
+// ─── Page Layout ───────────────────────────────────────────────────────────────
 
 .page-container {
   padding: 24px;
@@ -55,6 +50,8 @@ a {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 12px;
 
   h2 {
     margin: 0;
@@ -64,6 +61,8 @@ a {
   }
 }
 
+// ─── Card Grid ─────────────────────────────────────────────────────────────────
+
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -72,23 +71,18 @@ a {
 }
 
 .stat-card {
-  background: var(--bg-surface) !important;
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 12px !important;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   transition: border-color 0.2s ease, transform 0.2s ease;
 
   &:hover {
     border-color: var(--accent-blue);
     transform: translateY(-2px);
-  }
-
-  .p-card-body {
-    .p-card-content {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px !important;
-    }
   }
 
   .stat-icon {
@@ -97,6 +91,9 @@ a {
     height: 36px;
     margin-bottom: 8px;
     opacity: 0.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .stat-value {
@@ -113,6 +110,8 @@ a {
     letter-spacing: 0.5px;
   }
 }
+
+// ─── Status Chip ───────────────────────────────────────────────────────────────
 
 .status-chip {
   display: inline-flex;
@@ -145,60 +144,29 @@ a {
   }
 }
 
-// PrimeNG DataTable overrides
-.p-datatable {
-  .p-datatable-table {
-    background: transparent !important;
-  }
-
-  .p-datatable-thead > tr > th {
-    background: var(--bg-surface) !important;
-    color: var(--text-primary);
-    border-bottom-color: var(--border-color) !important;
-  }
-
-  .p-datatable-tbody > tr {
-    background: transparent;
-
-    &:hover {
-      background: rgba(79, 195, 247, 0.05) !important;
-    }
-
-    > td {
-      color: var(--text-primary);
-      border-bottom-color: var(--border-color) !important;
-    }
-  }
-}
-
-.p-paginator {
-  background: transparent !important;
-  color: var(--text-secondary) !important;
-}
-
-// PrimeNG form overrides
-.p-inputtext, .p-select, .p-inputnumber-input {
-  width: 100%;
-}
+// ─── Section Card ──────────────────────────────────────────────────────────────
 
 .section-card {
-  background: var(--bg-surface) !important;
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
-  border-radius: 12px !important;
+  border-radius: 12px;
   margin-bottom: 16px;
+  overflow: hidden;
 
-  .p-card-header {
-    padding: 16px 16px 0 16px;
+  .section-card-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
   }
 
-  .p-card-body .p-card-content {
+  .section-card-content {
     padding: 16px;
-
-    &:last-child {
-      padding-bottom: 16px;
-    }
   }
 }
+
+// ─── Empty State ───────────────────────────────────────────────────────────────
 
 .empty-state-global {
   display: flex;
@@ -208,7 +176,7 @@ a {
   padding: 60px 20px;
   text-align: center;
 
-  i.pi {
+  i {
     font-size: 64px;
     color: var(--text-secondary);
     opacity: 0.5;
@@ -228,41 +196,316 @@ a {
   }
 }
 
-// PrimeNG Accordion overrides
-.p-accordion {
-  .p-accordionpanel {
-    background: var(--bg-surface) !important;
-    border: 1px solid var(--border-color);
-    border-radius: 12px !important;
-    margin-bottom: 8px;
+// ─── Buttons ───────────────────────────────────────────────────────────────────
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+  line-height: 1.4;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
-  .p-accordionheader {
-    background: transparent !important;
-    color: var(--text-primary) !important;
-  }
-
-  .p-accordioncontent-content {
-    background: transparent !important;
+  i {
+    font-size: 14px;
   }
 }
 
-// PrimeNG ConfirmDialog overrides
-.p-confirmdialog {
-  background: var(--bg-surface) !important;
+.btn-primary {
+  background: var(--accent-blue);
+  color: #111;
+  border-color: var(--accent-blue);
+
+  &:hover:not(:disabled) {
+    background: #29b6f6;
+    border-color: #29b6f6;
+  }
+
+  &:active:not(:disabled) {
+    background: #0288d1;
+    border-color: #0288d1;
+  }
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--border-color);
+
+  &:hover:not(:disabled) {
+    background: rgba(79, 195, 247, 0.1);
+    border-color: var(--accent-blue);
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(79, 195, 247, 0.15);
+  }
+}
+
+.btn-danger {
+  background: var(--accent-red);
+  color: #fff;
+  border-color: var(--accent-red);
+
+  &:hover:not(:disabled) {
+    background: #e53935;
+    border-color: #e53935;
+  }
+
+  &:active:not(:disabled) {
+    background: #c62828;
+    border-color: #c62828;
+  }
+}
+
+.btn-text {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: transparent;
+  padding: 8px 12px;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.btn-icon {
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  i {
+    font-size: 18px;
+  }
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+
+  i {
+    font-size: 12px;
+  }
+}
+
+// ─── Form Inputs ───────────────────────────────────────────────────────────────
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+
+  &::placeholder {
+    color: var(--text-secondary);
+    opacity: 0.7;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.2);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }
 
-// PrimeNG Drawer overrides
-.p-drawer {
-  background: var(--bg-secondary) !important;
-  border-right-color: var(--border-color) !important;
+textarea.form-input {
+  resize: vertical;
+  min-height: 80px;
 }
 
-// PrimeNG ToggleSwitch overrides
-.p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider {
-  background: var(--accent-blue) !important;
+select.form-input {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a0a0b0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
 }
+
+// ─── Toggle Switch ─────────────────────────────────────────────────────────────
+
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+
+  input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+
+    &:checked + .toggle-slider {
+      background: var(--accent-blue);
+    }
+
+    &:checked + .toggle-slider::before {
+      transform: translateX(20px);
+    }
+
+    &:focus + .toggle-slider {
+      box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.3);
+    }
+
+    &:disabled + .toggle-slider {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  }
+
+  .toggle-slider {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--border-color);
+    border-radius: 24px;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+
+    &::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s ease;
+    }
+  }
+}
+
+// ─── Data Table ────────────────────────────────────────────────────────────────
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  thead {
+    th {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      font-weight: 500;
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  tbody {
+    tr {
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: rgba(79, 195, 247, 0.05);
+      }
+
+      td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+        vertical-align: middle;
+      }
+    }
+  }
+
+  &.striped tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+  }
+}
+
+// ─── Loading Spinner ───────────────────────────────────────────────────────────
+
+.spinner {
+  display: inline-block;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+
+  &.spinner-sm {
+    width: 16px;
+    height: 16px;
+    border-width: 2px;
+  }
+
+  &.spinner-lg {
+    width: 48px;
+    height: 48px;
+    border-width: 4px;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  gap: 16px;
+
+  .loading-text {
+    color: var(--text-secondary);
+    font-size: 14px;
+  }
+}
+
+// ─── Scrollbar ─────────────────────────────────────────────────────────────────
 
 ::-webkit-scrollbar {
   width: 8px;

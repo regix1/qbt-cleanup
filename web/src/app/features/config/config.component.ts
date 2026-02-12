@@ -1,12 +1,6 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { AccordionModule } from 'primeng/accordion';
-import { InputTextModule } from 'primeng/inputtext';
-import { ButtonModule } from 'primeng/button';
-import { ToggleSwitch } from 'primeng/toggleswitch';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { TooltipModule } from 'primeng/tooltip';
 import { ApiService } from '../../core/services/api.service';
 import { ConfigResponse, ConfigSectionValues } from '../../shared/models';
 import { NotificationService } from '../../core/services/notification.service';
@@ -24,6 +18,7 @@ interface ConfigSection {
   icon: string;
   key: string;
   fields: ConfigField[];
+  expanded: boolean;
 }
 
 interface SectionMeta {
@@ -36,12 +31,6 @@ interface SectionMeta {
   standalone: true,
   imports: [
     FormsModule,
-    AccordionModule,
-    InputTextModule,
-    ButtonModule,
-    ToggleSwitch,
-    ProgressSpinnerModule,
-    TooltipModule,
   ],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss',
@@ -61,13 +50,13 @@ export class ConfigComponent implements OnInit {
   );
 
   private readonly sectionMeta: Readonly<Record<string, SectionMeta>> = {
-    connection: { name: 'Connection', icon: 'pi pi-link' },
-    limits: { name: 'Limits', icon: 'pi pi-sliders-h' },
-    behavior: { name: 'Behavior', icon: 'pi pi-cog' },
-    schedule: { name: 'Schedule', icon: 'pi pi-clock' },
-    fileflows: { name: 'FileFlows', icon: 'pi pi-sync' },
-    orphaned: { name: 'Orphaned', icon: 'pi pi-folder' },
-    web: { name: 'Web', icon: 'pi pi-globe' },
+    connection: { name: 'Connection', icon: 'fa-solid fa-link' },
+    limits: { name: 'Limits', icon: 'fa-solid fa-sliders' },
+    behavior: { name: 'Behavior', icon: 'fa-solid fa-gear' },
+    schedule: { name: 'Schedule', icon: 'fa-solid fa-clock' },
+    fileflows: { name: 'FileFlows', icon: 'fa-solid fa-arrows-rotate' },
+    orphaned: { name: 'Orphaned', icon: 'fa-solid fa-folder' },
+    web: { name: 'Web', icon: 'fa-solid fa-globe' },
   };
 
   ngOnInit(): void {
@@ -115,6 +104,10 @@ export class ConfigComponent implements OnInit {
       });
   }
 
+  toggleSection(section: ConfigSection): void {
+    section.expanded = !section.expanded;
+  }
+
   onFieldChange(_section: ConfigSection, field: ConfigField): void {
     field.modified = field.editValue !== field.value;
   }
@@ -138,7 +131,7 @@ export class ConfigComponent implements OnInit {
     const sections: ConfigSection[] = [];
 
     for (const [sectionKey, sectionData] of Object.entries(config) as [string, ConfigSectionValues][]) {
-      const meta = this.sectionMeta[sectionKey] ?? { name: sectionKey, icon: 'pi pi-cog' };
+      const meta = this.sectionMeta[sectionKey] ?? { name: sectionKey, icon: 'fa-solid fa-gear' };
       const fields: ConfigField[] = [];
 
       for (const [fieldKey, fieldValue] of Object.entries(sectionData)) {
@@ -157,6 +150,7 @@ export class ConfigComponent implements OnInit {
         icon: meta.icon,
         key: sectionKey,
         fields,
+        expanded: false,
       });
     }
 

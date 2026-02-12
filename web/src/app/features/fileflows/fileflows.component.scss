@@ -5,6 +5,17 @@
   padding: 80px 0;
 }
 
+.section-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+
+  .card-body {
+    padding: 16px;
+  }
+}
+
 .error-card {
   .error-content {
     display: flex;
@@ -38,8 +49,9 @@
   align-items: center;
   gap: 12px;
   padding: 16px;
+  border-bottom: 1px solid var(--border-color);
 
-  i {
+  > i {
     color: var(--accent-blue);
     font-size: 20px;
   }

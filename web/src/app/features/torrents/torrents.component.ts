@@ -1,17 +1,10 @@
-import { Component, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, DestroyRef, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Table, TableModule } from 'primeng/table';
-import { InputText } from 'primeng/inputtext';
-import { IconField } from 'primeng/iconfield';
-import { InputIcon } from 'primeng/inputicon';
-import { ButtonModule } from 'primeng/button';
-import { ProgressSpinner } from 'primeng/progressspinner';
-import { Tooltip } from 'primeng/tooltip';
-import { ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmService } from '../../core/services/confirm.service';
 import { Torrent } from '../../shared/models';
 
 @Component({
@@ -21,13 +14,6 @@ import { Torrent } from '../../shared/models';
     DecimalPipe,
     NgClass,
     FormsModule,
-    TableModule,
-    InputText,
-    IconField,
-    InputIcon,
-    ButtonModule,
-    ProgressSpinner,
-    Tooltip,
   ],
   templateUrl: './torrents.component.html',
   styleUrl: './torrents.component.scss',
@@ -35,11 +21,63 @@ import { Torrent } from '../../shared/models';
 export class TorrentsComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly notifications = inject(NotificationService);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly torrents = signal<Torrent[]>([]);
   readonly loading = signal<boolean>(true);
+
+  readonly filterText = signal<string>('');
+  readonly sortField = signal<string>('name');
+  readonly sortDirection = signal<'asc' | 'desc'>('asc');
+  readonly currentPage = signal<number>(0);
+  readonly pageSize = signal<number>(25);
+
+  readonly filteredTorrents = computed<Torrent[]>(() => {
+    const filter = this.filterText().toLowerCase().trim();
+    const all = this.torrents();
+    if (!filter) return all;
+    return all.filter((torrent: Torrent) =>
+      torrent.name.toLowerCase().includes(filter) ||
+      torrent.state.toLowerCase().includes(filter) ||
+      torrent.category.toLowerCase().includes(filter),
+    );
+  });
+
+  readonly sortedTorrents = computed<Torrent[]>(() => {
+    const items = [...this.filteredTorrents()];
+    const field = this.sortField();
+    const direction = this.sortDirection();
+
+    items.sort((a: Torrent, b: Torrent) => {
+      const aValue = a[field as keyof Torrent];
+      const bValue = b[field as keyof Torrent];
+
+      let comparison = 0;
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        comparison = aValue.localeCompare(bValue);
+      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        comparison = aValue - bValue;
+      } else if (typeof aValue === 'boolean' && typeof bValue === 'boolean') {
+        comparison = (aValue === bValue) ? 0 : aValue ? 1 : -1;
+      }
+
+      return direction === 'asc' ? comparison : -comparison;
+    });
+
+    return items;
+  });
+
+  readonly totalPages = computed<number>(() => {
+    const total = this.sortedTorrents().length;
+    const size = this.pageSize();
+    return Math.max(1, Math.ceil(total / size));
+  });
+
+  readonly paginatedTorrents = computed<Torrent[]>(() => {
+    const start = this.currentPage() * this.pageSize();
+    return this.sortedTorrents().slice(start, start + this.pageSize());
+  });
 
   private readonly stateColors: Record<string, string> = {
     downloading: 'state-downloading',
@@ -91,6 +129,36 @@ export class TorrentsComponent implements OnInit {
       });
   }
 
+  sort(field: string): void {
+    if (this.sortField() === field) {
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortField.set(field);
+      this.sortDirection.set('asc');
+    }
+    this.currentPage.set(0);
+  }
+
+  onFilterChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.filterText.set(value);
+    this.currentPage.set(0);
+  }
+
+  goToPage(page: number): void {
+    if (page >= 0 && page < this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  nextPage(): void {
+    this.goToPage(this.currentPage() + 1);
+  }
+
+  prevPage(): void {
+    this.goToPage(this.currentPage() - 1);
+  }
+
   formatSeedingTime(seconds: number): string {
     if (!seconds || seconds <= 0) return '--';
     const days = Math.floor(seconds / 86400);
@@ -128,12 +196,9 @@ export class TorrentsComponent implements OnInit {
 
   toggleBlacklist(torrent: Torrent): void {
     if (torrent.is_blacklisted) {
-      this.confirmationService.confirm({
+      this.confirmService.confirm({
         header: 'Remove from Blacklist',
         message: `Remove "${torrent.name}" from the blacklist?`,
-        icon: 'pi pi-exclamation-triangle',
-        acceptButtonStyleClass: 'p-button-primary',
-        rejectButtonStyleClass: 'p-button-text p-button-secondary',
         accept: () => {
           this.api.removeFromBlacklist(torrent.hash)
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -147,12 +212,9 @@ export class TorrentsComponent implements OnInit {
         },
       });
     } else {
-      this.confirmationService.confirm({
+      this.confirmService.confirm({
         header: 'Add to Blacklist',
         message: `Add "${torrent.name}" to the blacklist? It will be protected from cleanup.`,
-        icon: 'pi pi-shield',
-        acceptButtonStyleClass: 'p-button-primary',
-        rejectButtonStyleClass: 'p-button-text p-button-secondary',
         accept: () => {
           this.api.addToBlacklist({ hash: torrent.hash, name: torrent.name, reason: 'Added from web UI' })
             .pipe(takeUntilDestroyed(this.destroyRef))
@@ -166,10 +228,5 @@ export class TorrentsComponent implements OnInit {
         },
       });
     }
-  }
-
-  onFilter(event: Event, table: Table): void {
-    const value = (event.target as HTMLInputElement).value;
-    table.filterGlobal(value, 'contains');
   }
 }

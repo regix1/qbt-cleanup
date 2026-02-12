@@ -1,94 +1,138 @@
 <div class="page-container">
   <div class="page-header">
     <h2>Torrents</h2>
-    <p-button label="Refresh" icon="pi pi-refresh" (onClick)="loadTorrents()" />
+    <button class="btn btn-primary" (click)="loadTorrents()">
+      <i class="fa-solid fa-arrows-rotate"></i>
+      <span>Refresh</span>
+    </button>
   </div>
 
   @if (loading()) {
     <div class="loading-container">
-      <p-progressSpinner strokeWidth="4" />
+      <div class="spinner spinner-lg"></div>
     </div>
   } @else {
     <div class="table-container">
-      <p-table #dt
-               [value]="torrents()"
-               [paginator]="true"
-               [rows]="25"
-               [rowsPerPageOptions]="[25, 50, 100]"
-               [globalFilterFields]="['name', 'state', 'category']"
-               [rowHover]="true"
-               styleClass="torrents-table">
+      <div class="table-toolbar">
+        <div class="search-field">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" class="form-input"
+                 placeholder="Filter by name, state, category..."
+                 [value]="filterText()"
+                 (input)="onFilterChange($event)" />
+        </div>
+      </div>
 
-        <ng-template #caption>
-          <div class="table-header">
-            <p-iconfield>
-              <p-inputicon styleClass="pi pi-search" />
-              <input pInputText type="text"
-                     (input)="onFilter($event, dt)"
-                     placeholder="Filter by name, state, category..." />
-            </p-iconfield>
-          </div>
-        </ng-template>
-
-        <ng-template #header>
+      <table class="data-table">
+        <thead>
           <tr>
-            <th pSortableColumn="name">Name <p-sortIcon field="name" /></th>
-            <th pSortableColumn="state">State <p-sortIcon field="state" /></th>
-            <th pSortableColumn="ratio">Ratio <p-sortIcon field="ratio" /></th>
-            <th pSortableColumn="seeding_time">Seeding Time <p-sortIcon field="seeding_time" /></th>
-            <th pSortableColumn="is_private">Type <p-sortIcon field="is_private" /></th>
-            <th pSortableColumn="size">Size <p-sortIcon field="size" /></th>
-            <th pSortableColumn="progress">Progress <p-sortIcon field="progress" /></th>
-            <th pSortableColumn="is_blacklisted">Blacklisted <p-sortIcon field="is_blacklisted" /></th>
+            <th (click)="sort('name')" class="sortable">
+              Name
+              <i class="fa-solid"
+                 [class.fa-sort-up]="sortField() === 'name' && sortDirection() === 'asc'"
+                 [class.fa-sort-down]="sortField() === 'name' && sortDirection() === 'desc'"
+                 [class.fa-sort]="sortField() !== 'name'"></i>
+            </th>
+            <th (click)="sort('state')" class="sortable">
+              State
+              <i class="fa-solid"
+                 [class.fa-sort-up]="sortField() === 'state' && sortDirection() === 'asc'"
+                 [class.fa-sort-down]="sortField() === 'state' && sortDirection() === 'desc'"
+                 [class.fa-sort]="sortField() !== 'state'"></i>
+            </th>
+            <th (click)="sort('ratio')" class="sortable">
+              Ratio
+              <i class="fa-solid"
+                 [class.fa-sort-up]="sortField() === 'ratio' && sortDirection() === 'asc'"
+                 [class.fa-sort-down]="sortField() === 'ratio' && sortDirection() === 'desc'"
+                 [class.fa-sort]="sortField() !== 'ratio'"></i>
+            </th>
+            <th (click)="sort('seeding_time')" class="sortable">
+              Seeding Time
+              <i class="fa-solid"
+                 [class.fa-sort-up]="sortField() === 'seeding_time' && sortDirection() === 'asc'"
+                 [class.fa-sort-down]="sortField() === 'seeding_time' && sortDirection() === 'desc'"
+                 [class.fa-sort]="sortField() !== 'seeding_time'"></i>
+            </th>
+            <th (click)="sort('is_private')" class="sortable">
+              Type
+              <i class="fa-solid"
+                 [class.fa-sort-up]="sortField() === 'is_private' && sortDirection() === 'asc'"
+                 [class.fa-sort-down]="sortField() === 'is_private' && sortDirection() === 'desc'"
+                 [class.fa-sort]="sortField() !== 'is_private'"></i>
+            </th>
+            <th (click)="sort('size')" class="sortable">
+              Size
+              <i class="fa-solid"
+                 [class.fa-sort-up]="sortField() === 'size' && sortDirection() === 'asc'"
+                 [class.fa-sort-down]="sortField() === 'size' && sortDirection() === 'desc'"
+                 [class.fa-sort]="sortField() !== 'size'"></i>
+            </th>
+            <th (click)="sort('progress')" class="sortable">
+              Progress
+              <i class="fa-solid"
+                 [class.fa-sort-up]="sortField() === 'progress' && sortDirection() === 'asc'"
+                 [class.fa-sort-down]="sortField() === 'progress' && sortDirection() === 'desc'"
+                 [class.fa-sort]="sortField() !== 'progress'"></i>
+            </th>
+            <th (click)="sort('is_blacklisted')" class="sortable">
+              Blacklisted
+              <i class="fa-solid"
+                 [class.fa-sort-up]="sortField() === 'is_blacklisted' && sortDirection() === 'asc'"
+                 [class.fa-sort-down]="sortField() === 'is_blacklisted' && sortDirection() === 'desc'"
+                 [class.fa-sort]="sortField() !== 'is_blacklisted'"></i>
+            </th>
             <th>Actions</th>
           </tr>
-        </ng-template>
+        </thead>
+        <tbody>
+          @for (torrent of paginatedTorrents(); track torrent.hash) {
+            <tr [class.blacklisted-row]="torrent.is_blacklisted">
+              <td class="name-cell" [title]="torrent.name">{{ torrent.name }}</td>
+              <td>
+                <span class="state-badge" [ngClass]="getStateColor(torrent.state)">
+                  {{ getStateLabel(torrent.state) }}
+                </span>
+              </td>
+              <td>{{ torrent.ratio | number:'1.2-2' }}</td>
+              <td>{{ formatSeedingTime(torrent.seeding_time) }}</td>
+              <td>
+                @if (torrent.is_private) {
+                  <span class="type-badge private">Private</span>
+                } @else {
+                  <span class="type-badge public">Public</span>
+                }
+              </td>
+              <td>{{ formatSize(torrent.size) }}</td>
+              <td>{{ formatProgress(torrent.progress) }}</td>
+              <td>
+                @if (torrent.is_blacklisted) {
+                  <i class="fa-solid fa-shield blacklisted-icon"></i>
+                }
+              </td>
+              <td>
+                <button class="btn btn-icon"
+                        [title]="torrent.is_blacklisted ? 'Remove from blacklist' : 'Add to blacklist'"
+                        (click)="toggleBlacklist(torrent)">
+                  <i [class]="torrent.is_blacklisted ? 'fa-solid fa-circle-minus' : 'fa-solid fa-circle-plus'"></i>
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="no-data-cell">No torrents found</td>
+            </tr>
+          }
+        </tbody>
+      </table>
 
-        <ng-template #body let-torrent>
-          <tr [class.blacklisted-row]="torrent.is_blacklisted" class="torrent-row">
-            <td class="name-cell">
-              <span [pTooltip]="torrent.name" tooltipPosition="top">{{ torrent.name }}</span>
-            </td>
-            <td>
-              <span class="state-badge" [ngClass]="getStateColor(torrent.state)">
-                {{ getStateLabel(torrent.state) }}
-              </span>
-            </td>
-            <td>{{ torrent.ratio | number:'1.2-2' }}</td>
-            <td>{{ formatSeedingTime(torrent.seeding_time) }}</td>
-            <td>
-              @if (torrent.is_private) {
-                <span class="type-badge private">Private</span>
-              } @else {
-                <span class="type-badge public">Public</span>
-              }
-            </td>
-            <td>{{ formatSize(torrent.size) }}</td>
-            <td>{{ formatProgress(torrent.progress) }}</td>
-            <td>
-              @if (torrent.is_blacklisted) {
-                <i class="pi pi-shield blacklisted-icon"></i>
-              }
-            </td>
-            <td>
-              <p-button [rounded]="true"
-                        [text]="true"
-                        [pTooltip]="torrent.is_blacklisted ? 'Remove from blacklist' : 'Add to blacklist'"
-                        tooltipPosition="top"
-                        [icon]="torrent.is_blacklisted ? 'pi pi-minus-circle' : 'pi pi-plus-circle'"
-                        (onClick)="toggleBlacklist(torrent)" />
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="9" class="no-data-cell">
-              No torrents found
-            </td>
-          </tr>
-        </ng-template>
-      </p-table>
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button class="btn btn-text btn-sm" [disabled]="currentPage() === 0" (click)="prevPage()">Previous</button>
+          <span class="page-info">Page {{ currentPage() + 1 }} of {{ totalPages() }}</span>
+          <button class="btn btn-text btn-sm" [disabled]="currentPage() >= totalPages() - 1" (click)="nextPage()">Next</button>
+        </div>
+      }
     </div>
   }
 </div>

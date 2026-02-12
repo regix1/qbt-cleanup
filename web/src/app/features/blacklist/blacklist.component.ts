@@ -1,30 +1,16 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { TableModule } from 'primeng/table';
-import { CardModule } from 'primeng/card';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { FloatLabelModule } from 'primeng/floatlabel';
-import { ProgressSpinnerModule } from 'primeng/progressspinner';
-import { TooltipModule } from 'primeng/tooltip';
-import { ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 import { ActionResponse, BlacklistEntry } from '../../shared/models';
 import { NotificationService } from '../../core/services/notification.service';
+import { ConfirmService } from '../../core/services/confirm.service';
 
 @Component({
   selector: 'app-blacklist',
   standalone: true,
   imports: [
     FormsModule,
-    TableModule,
-    CardModule,
-    ButtonModule,
-    InputTextModule,
-    FloatLabelModule,
-    ProgressSpinnerModule,
-    TooltipModule,
   ],
   templateUrl: './blacklist.component.html',
   styleUrl: './blacklist.component.scss',
@@ -32,7 +18,7 @@ import { NotificationService } from '../../core/services/notification.service';
 export class BlacklistComponent implements OnInit {
   private readonly api = inject(ApiService);
   private readonly notify = inject(NotificationService);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly displayedColumns: string[] = ['name', 'hash', 'reason', 'added_at', 'actions'];
@@ -94,10 +80,9 @@ export class BlacklistComponent implements OnInit {
   }
 
   removeEntry(entry: BlacklistEntry): void {
-    this.confirmationService.confirm({
+    this.confirmService.confirm({
       message: `Remove "${entry.name || entry.hash}" from the blacklist?`,
       header: 'Remove from Blacklist',
-      icon: 'pi pi-exclamation-triangle',
       accept: () => {
         this.api.removeFromBlacklist(entry.hash)
           .pipe(takeUntilDestroyed(this.destroyRef))
@@ -113,10 +98,9 @@ export class BlacklistComponent implements OnInit {
   }
 
   clearAll(): void {
-    this.confirmationService.confirm({
+    this.confirmService.confirm({
       message: 'Are you sure you want to remove ALL entries from the blacklist? This cannot be undone.',
       header: 'Clear Entire Blacklist',
-      icon: 'pi pi-exclamation-triangle',
       accept: () => {
         this.api.clearBlacklist()
           .pipe(takeUntilDestroyed(this.destroyRef))

@@ -1,43 +1,41 @@
-import { inject, Injectable } from '@angular/core';
-import { MessageService } from 'primeng/api';
+import { Injectable, signal } from '@angular/core';
+
+export interface ToastMessage {
+  readonly id: number;
+  readonly severity: 'success' | 'error' | 'info' | 'warn';
+  readonly summary: string;
+  readonly detail: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class NotificationService {
-  private readonly messageService = inject(MessageService);
+  private readonly _toasts = signal<ToastMessage[]>([]);
+  readonly toasts = this._toasts.asReadonly();
+  private nextId = 0;
 
   success(message: string): void {
-    this.messageService.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: message,
-      life: 3000,
-    });
+    this.add('success', 'Success', message, 3000);
   }
 
   error(message: string): void {
-    this.messageService.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: message,
-      life: 5000,
-    });
+    this.add('error', 'Error', message, 5000);
   }
 
   info(message: string): void {
-    this.messageService.add({
-      severity: 'info',
-      summary: 'Info',
-      detail: message,
-      life: 3000,
-    });
+    this.add('info', 'Info', message, 3000);
   }
 
   warn(message: string): void {
-    this.messageService.add({
-      severity: 'warn',
-      summary: 'Warning',
-      detail: message,
-      life: 4000,
-    });
+    this.add('warn', 'Warning', message, 4000);
+  }
+
+  remove(id: number): void {
+    this._toasts.update((toasts: ToastMessage[]) => toasts.filter((toast: ToastMessage) => toast.id !== id));
+  }
+
+  private add(severity: ToastMessage['severity'], summary: string, detail: string, life: number): void {
+    const id = this.nextId++;
+    this._toasts.update((toasts: ToastMessage[]) => [...toasts, { id, severity, summary, detail }]);
+    setTimeout(() => this.remove(id), life);
   }
 }
