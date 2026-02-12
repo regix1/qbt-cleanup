@@ -1,12 +1,11 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { MatSidenavModule } from '@angular/material/sidenav';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatListModule } from '@angular/material/list';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
 import { map, catchError, of } from 'rxjs';
+import { Toast } from 'primeng/toast';
+import { ConfirmDialog } from 'primeng/confirmdialog';
+import { ButtonModule } from 'primeng/button';
+import { Toolbar } from 'primeng/toolbar';
 import { ApiService } from './core/services/api.service';
 
 interface NavItem {
@@ -21,11 +20,10 @@ interface NavItem {
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    MatSidenavModule,
-    MatToolbarModule,
-    MatListModule,
-    MatIconModule,
-    MatButtonModule,
+    Toast,
+    ConfirmDialog,
+    ButtonModule,
+    Toolbar,
   ],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss',
@@ -44,11 +42,11 @@ export class AppComponent {
   );
 
   readonly navItems: readonly NavItem[] = [
-    { path: '/', label: 'Dashboard', icon: 'dashboard' },
-    { path: '/torrents', label: 'Torrents', icon: 'download' },
-    { path: '/blacklist', label: 'Blacklist', icon: 'block' },
-    { path: '/config', label: 'Config', icon: 'settings' },
-    { path: '/fileflows', label: 'FileFlows', icon: 'sync' },
+    { path: '/', label: 'Dashboard', icon: 'pi pi-home' },
+    { path: '/torrents', label: 'Torrents', icon: 'pi pi-download' },
+    { path: '/blacklist', label: 'Blacklist', icon: 'pi pi-ban' },
+    { path: '/config', label: 'Config', icon: 'pi pi-cog' },
+    { path: '/fileflows', label: 'FileFlows', icon: 'pi pi-sync' },
   ] as const;
 
   toggleSidenav(): void {

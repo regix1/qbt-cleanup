@@ -1,49 +1,41 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { MatTableModule, MatTableDataSource } from '@angular/material/table';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDialog, MatDialogModule } from '@angular/material/dialog';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatDividerModule } from '@angular/material/divider';
+import { TableModule } from 'primeng/table';
+import { CardModule } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { FloatLabelModule } from 'primeng/floatlabel';
+import { ProgressSpinnerModule } from 'primeng/progressspinner';
+import { TooltipModule } from 'primeng/tooltip';
+import { ConfirmationService } from 'primeng/api';
 import { ApiService } from '../../core/services/api.service';
 import { ActionResponse, BlacklistEntry } from '../../shared/models';
-import { ConfirmDialogComponent } from '../torrents/confirm-dialog.component';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'app-blacklist',
   standalone: true,
   imports: [
     FormsModule,
-    MatTableModule,
-    MatInputModule,
-    MatFormFieldModule,
-    MatIconModule,
-    MatButtonModule,
-    MatCardModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    MatDialogModule,
-    MatTooltipModule,
-    MatDividerModule,
+    TableModule,
+    CardModule,
+    ButtonModule,
+    InputTextModule,
+    FloatLabelModule,
+    ProgressSpinnerModule,
+    TooltipModule,
   ],
   templateUrl: './blacklist.component.html',
   styleUrl: './blacklist.component.scss',
 })
 export class BlacklistComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly snackBar = inject(MatSnackBar);
-  private readonly dialog = inject(MatDialog);
+  private readonly notify = inject(NotificationService);
+  private readonly confirmationService = inject(ConfirmationService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly displayedColumns: string[] = ['name', 'hash', 'reason', 'added_at', 'actions'];
-  readonly dataSource = new MatTableDataSource<BlacklistEntry>();
   readonly loading = signal<boolean>(true);
   readonly entries = signal<BlacklistEntry[]>([]);
 
@@ -64,22 +56,18 @@ export class BlacklistComponent implements OnInit {
       .subscribe({
         next: (entries: BlacklistEntry[]) => {
           this.entries.set(entries);
-          this.dataSource.data = entries;
           this.loading.set(false);
         },
         error: () => {
           this.loading.set(false);
-          this.snackBar.open('Failed to load blacklist', 'Dismiss', {
-            duration: 5000,
-            panelClass: ['error-snackbar'],
-          });
+          this.notify.error('Failed to load blacklist');
         },
       });
   }
 
   addEntry(): void {
     if (!this.canAdd()) {
-      this.snackBar.open('Hash is required', 'Dismiss', { duration: 3000 });
+      this.notify.warn('Hash is required');
       return;
     }
 
@@ -91,10 +79,7 @@ export class BlacklistComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result: ActionResponse) => {
-          this.snackBar.open(result.message, 'OK', {
-            duration: 3000,
-            panelClass: [result.success ? 'success-snackbar' : 'error-snackbar'],
-          });
+          result.success ? this.notify.success(result.message) : this.notify.error(result.message);
           if (result.success) {
             this.newHash.set('');
             this.newName.set('');
@@ -103,78 +88,47 @@ export class BlacklistComponent implements OnInit {
           }
         },
         error: () => {
-          this.snackBar.open('Failed to add to blacklist', 'Dismiss', {
-            duration: 5000,
-            panelClass: ['error-snackbar'],
-          });
+          this.notify.error('Failed to add to blacklist');
         },
       });
   }
 
   removeEntry(entry: BlacklistEntry): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: 'Remove from Blacklist',
-        message: `Remove "${entry.name || entry.hash}" from the blacklist?`,
+    this.confirmationService.confirm({
+      message: `Remove "${entry.name || entry.hash}" from the blacklist?`,
+      header: 'Remove from Blacklist',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.api.removeFromBlacklist(entry.hash)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.notify.success('Removed from blacklist');
+              this.loadBlacklist();
+            },
+            error: () => this.notify.error('Failed to remove from blacklist'),
+          });
       },
     });
-
-    dialogRef.afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((confirmed: boolean) => {
-        if (confirmed) {
-          this.api.removeFromBlacklist(entry.hash)
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: () => {
-                this.snackBar.open('Removed from blacklist', 'OK', {
-                  duration: 3000,
-                  panelClass: ['success-snackbar'],
-                });
-                this.loadBlacklist();
-              },
-              error: () => {
-                this.snackBar.open('Failed to remove from blacklist', 'Dismiss', {
-                  duration: 5000,
-                  panelClass: ['error-snackbar'],
-                });
-              },
-            });
-        }
-      });
   }
 
   clearAll(): void {
-    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
-      data: {
-        title: 'Clear Entire Blacklist',
-        message: 'Are you sure you want to remove ALL entries from the blacklist? This cannot be undone.',
+    this.confirmationService.confirm({
+      message: 'Are you sure you want to remove ALL entries from the blacklist? This cannot be undone.',
+      header: 'Clear Entire Blacklist',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        this.api.clearBlacklist()
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (result: ActionResponse) => {
+              result.success ? this.notify.success(result.message) : this.notify.error(result.message);
+              this.loadBlacklist();
+            },
+            error: () => this.notify.error('Failed to clear blacklist'),
+          });
       },
     });
-
-    dialogRef.afterClosed()
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((confirmed: boolean) => {
-        if (confirmed) {
-          this.api.clearBlacklist()
-            .pipe(takeUntilDestroyed(this.destroyRef))
-            .subscribe({
-              next: (result: ActionResponse) => {
-                this.snackBar.open(result.message, 'OK', {
-                  duration: 3000,
-                  panelClass: [result.success ? 'success-snackbar' : 'error-snackbar'],
-                });
-                this.loadBlacklist();
-              },
-              error: () => {
-                this.snackBar.open('Failed to clear blacklist', 'Dismiss', {
-                  duration: 5000,
-                  panelClass: ['error-snackbar'],
-                });
-              },
-            });
-        }
-      });
   }
 
   formatDate(dateStr: string): string {

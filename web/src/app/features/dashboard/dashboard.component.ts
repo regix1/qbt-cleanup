@@ -1,32 +1,29 @@
 import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatDividerModule } from '@angular/material/divider';
+import { Card } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { ProgressSpinner } from 'primeng/progressspinner';
+import { Divider } from 'primeng/divider';
 import { ApiService } from '../../core/services/api.service';
+import { NotificationService } from '../../core/services/notification.service';
 import { ActionResponse, StatusResponse } from '../../shared/models';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
   imports: [
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    MatDividerModule,
+    Card,
+    ButtonModule,
+    ProgressSpinner,
+    Divider,
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly status = signal<StatusResponse | null>(null);
@@ -56,10 +53,7 @@ export class DashboardComponent implements OnInit {
         },
         error: () => {
           this.loading.set(false);
-          this.snackBar.open('Failed to load status', 'Dismiss', {
-            duration: 5000,
-            panelClass: ['error-snackbar'],
-          });
+          this.notifications.error('Failed to load status');
         },
       });
   }
@@ -71,18 +65,16 @@ export class DashboardComponent implements OnInit {
       .subscribe({
         next: (result: ActionResponse) => {
           this.scanning.set(false);
-          this.snackBar.open(result.message, 'OK', {
-            duration: 5000,
-            panelClass: [result.success ? 'success-snackbar' : 'error-snackbar'],
-          });
+          if (result.success) {
+            this.notifications.success(result.message);
+          } else {
+            this.notifications.error(result.message);
+          }
           setTimeout(() => this.loadStatus(), 2000);
         },
         error: () => {
           this.scanning.set(false);
-          this.snackBar.open('Failed to trigger scan', 'Dismiss', {
-            duration: 5000,
-            panelClass: ['error-snackbar'],
-          });
+          this.notifications.error('Failed to trigger scan');
         },
       });
   }
@@ -94,17 +86,15 @@ export class DashboardComponent implements OnInit {
       .subscribe({
         next: (result: ActionResponse) => {
           this.orphanScanning.set(false);
-          this.snackBar.open(result.message, 'OK', {
-            duration: 5000,
-            panelClass: [result.success ? 'success-snackbar' : 'error-snackbar'],
-          });
+          if (result.success) {
+            this.notifications.success(result.message);
+          } else {
+            this.notifications.error(result.message);
+          }
         },
         error: () => {
           this.orphanScanning.set(false);
-          this.snackBar.open('Failed to trigger orphaned scan', 'Dismiss', {
-            duration: 5000,
-            panelClass: ['error-snackbar'],
-          });
+          this.notifications.error('Failed to trigger orphaned scan');
         },
       });
   }

@@ -1,97 +1,79 @@
 <div class="page-container">
   <div class="page-header">
     <h2>FileFlows Integration</h2>
-    <button mat-raised-button (click)="loadStatus()">
-      <mat-icon>refresh</mat-icon>
-      Refresh
-    </button>
+    <p-button label="Refresh" icon="pi pi-refresh" severity="secondary" (onClick)="loadStatus()" />
   </div>
 
   @if (loading()) {
     <div class="loading-container">
-      <mat-spinner diameter="48"></mat-spinner>
+      <p-progressSpinner strokeWidth="4" />
     </div>
   } @else if (error()) {
-    <mat-card class="section-card error-card">
-      <mat-card-content>
-        <div class="error-content">
-          <mat-icon class="error-icon">error_outline</mat-icon>
-          <h3>Unable to connect to FileFlows</h3>
-          <p>The FileFlows status endpoint is not available. Make sure FileFlows integration is configured.</p>
-          <button mat-raised-button color="primary" (click)="loadStatus()">
-            <mat-icon>refresh</mat-icon>
-            Retry
-          </button>
-        </div>
-      </mat-card-content>
-    </mat-card>
+    <p-card styleClass="section-card error-card">
+      <div class="error-content">
+        <i class="pi pi-times-circle error-icon"></i>
+        <h3>Unable to connect to FileFlows</h3>
+        <p>The FileFlows status endpoint is not available. Make sure FileFlows integration is configured.</p>
+        <p-button label="Retry" icon="pi pi-refresh" (onClick)="loadStatus()" />
+      </div>
+    </p-card>
   } @else if (status(); as s) {
     <div class="card-grid">
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" [style.color]="s.enabled ? 'var(--accent-green)' : 'var(--accent-red)'">
-            {{ s.enabled ? 'toggle_on' : 'toggle_off' }}
-          </mat-icon>
-          <span class="stat-value">{{ s.enabled ? 'Enabled' : 'Disabled' }}</span>
-          <span class="stat-label">Integration</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-power-off stat-icon" [style.color]="s.enabled ? 'var(--accent-green)' : 'var(--accent-red)'"></i>
+        <span class="stat-value">{{ s.enabled ? 'Enabled' : 'Disabled' }}</span>
+        <span class="stat-label">Integration</span>
+      </p-card>
 
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" [style.color]="s.connected ? 'var(--accent-green)' : 'var(--accent-red)'">
-            {{ s.connected ? 'cloud_done' : 'cloud_off' }}
-          </mat-icon>
-          <span class="stat-value">{{ s.connected ? 'Connected' : 'Disconnected' }}</span>
-          <span class="stat-label">Connection</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-cloud stat-icon" [style.color]="s.connected ? 'var(--accent-green)' : 'var(--accent-red)'"></i>
+        <span class="stat-value">{{ s.connected ? 'Connected' : 'Disconnected' }}</span>
+        <span class="stat-label">Connection</span>
+      </p-card>
 
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" style="color: var(--accent-blue)">engineering</mat-icon>
-          <span class="stat-value">{{ s.processing }}</span>
-          <span class="stat-label">Processing</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-wrench stat-icon" style="color: var(--accent-blue)"></i>
+        <span class="stat-value">{{ s.processing }}</span>
+        <span class="stat-label">Processing</span>
+      </p-card>
 
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" style="color: var(--accent-orange)">queue</mat-icon>
-          <span class="stat-value">{{ s.queue }}</span>
-          <span class="stat-label">Queue</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-list stat-icon" style="color: var(--accent-orange)"></i>
+        <span class="stat-value">{{ s.queue }}</span>
+        <span class="stat-label">Queue</span>
+      </p-card>
     </div>
 
     @if (s.processing_files && s.processing_files.length > 0) {
-      <mat-card class="section-card">
-        <mat-card-header>
-          <mat-icon mat-card-avatar>description</mat-icon>
-          <mat-card-title>Currently Processing</mat-card-title>
-          <mat-card-subtitle>{{ s.processing_files.length }} file(s) being processed</mat-card-subtitle>
-        </mat-card-header>
-        <mat-card-content>
-          <mat-list>
-            @for (file of s.processing_files; track file) {
-              <mat-list-item>
-                <mat-icon matListItemIcon>insert_drive_file</mat-icon>
-                <span matListItemTitle class="file-name">{{ getFileName(file) }}</span>
-                <span matListItemLine class="file-path">{{ file }}</span>
-              </mat-list-item>
-            }
-          </mat-list>
-        </mat-card-content>
-      </mat-card>
-    } @else if (s.connected) {
-      <mat-card class="section-card">
-        <mat-card-content>
-          <div class="empty-state">
-            <mat-icon>check_circle</mat-icon>
-            <p>No files currently being processed</p>
+      <p-card styleClass="section-card">
+        <ng-template #header>
+          <div class="card-header-content">
+            <i class="pi pi-file-edit"></i>
+            <div>
+              <span class="card-title">Currently Processing</span>
+              <span class="card-subtitle">{{ s.processing_files.length }} file(s) being processed</span>
+            </div>
           </div>
-        </mat-card-content>
-      </mat-card>
+        </ng-template>
+        <ul class="file-list">
+          @for (file of s.processing_files; track file) {
+            <li class="file-item">
+              <i class="pi pi-file"></i>
+              <div>
+                <span class="file-name">{{ getFileName(file) }}</span>
+                <span class="file-path">{{ file }}</span>
+              </div>
+            </li>
+          }
+        </ul>
+      </p-card>
+    } @else if (s.connected) {
+      <p-card styleClass="section-card">
+        <div class="empty-state">
+          <i class="pi pi-check-circle"></i>
+          <p>No files currently being processed</p>
+        </div>
+      </p-card>
     }
   }
 </div>

@@ -1,11 +1,16 @@
 .app-container {
+  display: flex;
   height: 100vh;
 }
 
 .app-sidenav {
   width: 240px;
-  background: var(--bg-secondary) !important;
-  border-right: 1px solid var(--border-color) !important;
+  min-width: 240px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  position: relative;
 }
 
 .sidenav-header {
@@ -18,8 +23,6 @@
   .logo-icon {
     color: var(--accent-blue);
     font-size: 28px;
-    width: 28px;
-    height: 28px;
   }
 
   .logo-text {
@@ -29,11 +32,48 @@
   }
 }
 
+.nav-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  flex: 1;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  color: var(--text-primary);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  i {
+    font-size: 20px;
+    width: 24px;
+    text-align: center;
+  }
+
+  &:hover:not(.active-link) {
+    background: rgba(79, 195, 247, 0.05);
+  }
+}
+
+.active-link {
+  background: rgba(79, 195, 247, 0.1) !important;
+  border-left: 3px solid var(--accent-blue);
+
+  i {
+    color: var(--accent-blue) !important;
+  }
+
+  span {
+    color: var(--accent-blue) !important;
+  }
+}
+
 .sidenav-footer {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
   padding: 12px 16px;
   border-top: 1px solid var(--border-color);
   text-align: center;
@@ -44,50 +84,30 @@
   }
 }
 
-.active-link {
-  background: rgba(79, 195, 247, 0.1) !important;
-  border-left: 3px solid var(--accent-blue);
-
-  mat-icon {
-    color: var(--accent-blue) !important;
-  }
-
-  span[matListItemTitle] {
-    color: var(--accent-blue) !important;
-  }
-}
-
-mat-nav-list {
-  a[mat-list-item] {
-    border-left: 3px solid transparent;
-    transition: background 0.2s ease, border-color 0.2s ease;
-
-    &:hover:not(.active-link) {
-      background: rgba(79, 195, 247, 0.05) !important;
-    }
-  }
-}
-
-.app-toolbar {
+:host ::ng-deep .app-toolbar {
   background: var(--bg-secondary) !important;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
+  padding: 0 16px;
+}
 
-  .toolbar-title {
-    margin-left: 8px;
-    font-size: 18px;
-    font-weight: 400;
-  }
+.toolbar-title {
+  margin-left: 8px;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-primary);
+}
 
-  .toolbar-version {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-right: 8px;
-  }
+.toolbar-version {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-right: 8px;
 }
 
 .app-content {
+  flex: 1;
   background: var(--bg-primary);
+  overflow-y: auto;
 }
 
 .content-area {

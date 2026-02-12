@@ -1,43 +1,46 @@
-<mat-sidenav-container class="app-container">
-  <mat-sidenav
-    mode="side"
-    [opened]="sidenavOpen()"
-    class="app-sidenav">
-    <div class="sidenav-header">
-      <mat-icon class="logo-icon">cleaning_services</mat-icon>
-      <span class="logo-text">qbt-cleanup</span>
-    </div>
-    <mat-nav-list>
-      @for (item of navItems; track item.path) {
-        <a mat-list-item
-           [routerLink]="item.path"
-           routerLinkActive="active-link"
-           [routerLinkActiveOptions]="{ exact: item.path === '/' }">
-          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
-          <span matListItemTitle>{{ item.label }}</span>
-        </a>
-      }
-    </mat-nav-list>
-    <div class="sidenav-footer">
-      @if (version()) {
-        <span class="version-label">v{{ version() }}</span>
-      }
-    </div>
-  </mat-sidenav>
+<p-toast />
+<p-confirmDialog />
 
-  <mat-sidenav-content class="app-content">
-    <mat-toolbar class="app-toolbar">
-      <button mat-icon-button (click)="toggleSidenav()">
-        <mat-icon>menu</mat-icon>
-      </button>
-      <span class="toolbar-title">qbt-cleanup</span>
-      <span class="spacer"></span>
-      @if (version()) {
-        <span class="toolbar-version">v{{ version() }}</span>
-      }
-    </mat-toolbar>
+<div class="app-container">
+  @if (sidenavOpen()) {
+    <aside class="app-sidenav">
+      <div class="sidenav-header">
+        <i class="pi pi-sparkles logo-icon"></i>
+        <span class="logo-text">qbt-cleanup</span>
+      </div>
+      <nav class="nav-list">
+        @for (item of navItems; track item.path) {
+          <a class="nav-item"
+             [routerLink]="item.path"
+             routerLinkActive="active-link"
+             [routerLinkActiveOptions]="{ exact: item.path === '/' }">
+            <i [class]="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </a>
+        }
+      </nav>
+      <div class="sidenav-footer">
+        @if (version()) {
+          <span class="version-label">v{{ version() }}</span>
+        }
+      </div>
+    </aside>
+  }
+
+  <div class="app-content">
+    <p-toolbar styleClass="app-toolbar">
+      <ng-template #start>
+        <p-button [text]="true" [rounded]="true" icon="pi pi-bars" (onClick)="toggleSidenav()" />
+        <span class="toolbar-title">qbt-cleanup</span>
+      </ng-template>
+      <ng-template #end>
+        @if (version()) {
+          <span class="toolbar-version">v{{ version() }}</span>
+        }
+      </ng-template>
+    </p-toolbar>
     <div class="content-area">
       <router-outlet />
     </div>
-  </mat-sidenav-content>
-</mat-sidenav-container>
+  </div>
+</div>

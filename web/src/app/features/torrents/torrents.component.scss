@@ -1,6 +1,10 @@
-.filter-field {
-  width: 100%;
-  margin-bottom: 16px;
+.table-header {
+  display: flex;
+  justify-content: flex-end;
+
+  :host ::ng-deep .p-inputtext {
+    width: 300px;
+  }
 }
 
 .loading-container {
@@ -15,10 +19,6 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-}
-
-.torrents-table {
-  width: 100%;
 }
 
 .name-cell {
@@ -98,7 +98,7 @@
 
 .blacklisted-icon {
   color: var(--accent-orange);
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .blacklisted-row {

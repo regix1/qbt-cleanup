@@ -1,16 +1,6 @@
 .header-actions {
   display: flex;
   gap: 12px;
-
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  mat-spinner {
-    display: inline-block;
-  }
 }
 
 .loading-container {
@@ -24,6 +14,24 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 16px;
+}
+
+.card-header-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+
+  i {
+    color: var(--accent-blue);
+    font-size: 20px;
+  }
+
+  span {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
 }
 
 .info-row {
@@ -83,14 +91,8 @@
   margin-top: 2px;
 }
 
-mat-divider {
+:host ::ng-deep .p-divider {
   margin: 12px 0 !important;
-}
-
-mat-card-header {
-  mat-icon {
-    color: var(--accent-blue);
-  }
 }
 
 @media (max-width: 768px) {

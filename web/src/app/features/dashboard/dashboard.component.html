@@ -2,175 +2,155 @@
   <div class="page-header">
     <h2>Dashboard</h2>
     <div class="header-actions">
-      <button mat-raised-button
-              color="primary"
-              (click)="runScan()"
-              [disabled]="scanning()">
-        @if (scanning()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>play_arrow</mat-icon>
-        }
-        Run Scan
-      </button>
-      <button mat-raised-button
-              (click)="runOrphanedScan()"
-              [disabled]="orphanScanning()">
-        @if (orphanScanning()) {
-          <mat-spinner diameter="20"></mat-spinner>
-        } @else {
-          <mat-icon>folder_delete</mat-icon>
-        }
-        Orphaned Scan
-      </button>
+      <p-button label="Run Scan"
+                icon="pi pi-play"
+                (onClick)="runScan()"
+                [disabled]="scanning()"
+                [loading]="scanning()" />
+      <p-button label="Orphaned Scan"
+                icon="pi pi-folder"
+                severity="secondary"
+                (onClick)="runOrphanedScan()"
+                [disabled]="orphanScanning()"
+                [loading]="orphanScanning()" />
     </div>
   </div>
 
   @if (loading()) {
     <div class="loading-container">
-      <mat-spinner diameter="48"></mat-spinner>
+      <p-progressSpinner strokeWidth="4" />
     </div>
   } @else if (status(); as s) {
     <div class="card-grid">
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" style="color: var(--accent-blue)">download</mat-icon>
-          <span class="stat-value">{{ s.torrent_count }}</span>
-          <span class="stat-label">Total Torrents</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-download stat-icon" style="color: var(--accent-blue)"></i>
+        <span class="stat-value">{{ s.torrent_count }}</span>
+        <span class="stat-label">Total Torrents</span>
+      </p-card>
 
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" style="color: var(--accent-purple)">lock</mat-icon>
-          <span class="stat-value">{{ s.private_count }}</span>
-          <span class="stat-label">Private</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-lock stat-icon" style="color: var(--accent-purple)"></i>
+        <span class="stat-value">{{ s.private_count }}</span>
+        <span class="stat-label">Private</span>
+      </p-card>
 
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" style="color: var(--accent-green)">public</mat-icon>
-          <span class="stat-value">{{ s.public_count }}</span>
-          <span class="stat-label">Public</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-globe stat-icon" style="color: var(--accent-green)"></i>
+        <span class="stat-value">{{ s.public_count }}</span>
+        <span class="stat-label">Public</span>
+      </p-card>
 
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" style="color: var(--accent-orange)">warning</mat-icon>
-          <span class="stat-value">{{ s.stalled_count }}</span>
-          <span class="stat-label">Stalled</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-exclamation-triangle stat-icon" style="color: var(--accent-orange)"></i>
+        <span class="stat-value">{{ s.stalled_count }}</span>
+        <span class="stat-label">Stalled</span>
+      </p-card>
 
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <mat-icon class="stat-icon" style="color: var(--accent-red)">block</mat-icon>
-          <span class="stat-value">{{ s.blacklist_count }}</span>
-          <span class="stat-label">Blacklisted</span>
-        </mat-card-content>
-      </mat-card>
+      <p-card styleClass="stat-card">
+        <i class="pi pi-ban stat-icon" style="color: var(--accent-red)"></i>
+        <span class="stat-value">{{ s.blacklist_count }}</span>
+        <span class="stat-label">Blacklisted</span>
+      </p-card>
     </div>
 
     <div class="info-grid">
-      <mat-card class="section-card">
-        <mat-card-header>
-          <mat-icon mat-card-avatar>history</mat-icon>
-          <mat-card-title>Last Run</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="info-row">
-            <span class="info-label">Time</span>
-            <span class="info-value">{{ formatDate(s.last_run_time) }}</span>
+      <p-card styleClass="section-card">
+        <ng-template #header>
+          <div class="card-header-content">
+            <i class="pi pi-history"></i>
+            <span>Last Run</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">Result</span>
-            @if (s.last_run_success === null) {
-              <span class="status-chip info">No runs yet</span>
-            } @else if (s.last_run_success) {
-              <span class="status-chip success">Success</span>
-            } @else {
-              <span class="status-chip error">Failed</span>
-            }
-          </div>
-          @if (s.last_run_stats) {
-            <mat-divider></mat-divider>
-            <div class="stats-grid">
-              <div class="mini-stat">
-                <span class="mini-value">{{ s.last_run_stats.total_checked }}</span>
-                <span class="mini-label">Checked</span>
-              </div>
-              <div class="mini-stat">
-                <span class="mini-value">{{ s.last_run_stats.total_removed }}</span>
-                <span class="mini-label">Removed</span>
-              </div>
-              <div class="mini-stat">
-                <span class="mini-value">{{ s.last_run_stats.private_removed }}</span>
-                <span class="mini-label">Private Rem.</span>
-              </div>
-              <div class="mini-stat">
-                <span class="mini-value">{{ s.last_run_stats.public_removed }}</span>
-                <span class="mini-label">Public Rem.</span>
-              </div>
-              <div class="mini-stat">
-                <span class="mini-value">{{ s.last_run_stats.blacklisted_skipped }}</span>
-                <span class="mini-label">Skipped</span>
-              </div>
-              <div class="mini-stat">
-                <span class="mini-value">{{ s.last_run_stats.errors }}</span>
-                <span class="mini-label">Errors</span>
-              </div>
-            </div>
+        </ng-template>
+        <div class="info-row">
+          <span class="info-label">Time</span>
+          <span class="info-value">{{ formatDate(s.last_run_time) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Result</span>
+          @if (s.last_run_success === null) {
+            <span class="status-chip info">No runs yet</span>
+          } @else if (s.last_run_success) {
+            <span class="status-chip success">Success</span>
+          } @else {
+            <span class="status-chip error">Failed</span>
           }
-        </mat-card-content>
-      </mat-card>
+        </div>
+        @if (s.last_run_stats) {
+          <p-divider />
+          <div class="stats-grid">
+            <div class="mini-stat">
+              <span class="mini-value">{{ s.last_run_stats.total_checked }}</span>
+              <span class="mini-label">Checked</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-value">{{ s.last_run_stats.total_removed }}</span>
+              <span class="mini-label">Removed</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-value">{{ s.last_run_stats.private_removed }}</span>
+              <span class="mini-label">Private Rem.</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-value">{{ s.last_run_stats.public_removed }}</span>
+              <span class="mini-label">Public Rem.</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-value">{{ s.last_run_stats.blacklisted_skipped }}</span>
+              <span class="mini-label">Skipped</span>
+            </div>
+            <div class="mini-stat">
+              <span class="mini-value">{{ s.last_run_stats.errors }}</span>
+              <span class="mini-label">Errors</span>
+            </div>
+          </div>
+        }
+      </p-card>
 
-      <mat-card class="section-card">
-        <mat-card-header>
-          <mat-icon mat-card-avatar>schedule</mat-icon>
-          <mat-card-title>Scheduler</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="info-row">
-            <span class="info-label">Status</span>
-            @if (s.scheduler_running) {
-              <span class="status-chip success">Running</span>
-            } @else {
-              <span class="status-chip warning">Stopped</span>
-            }
+      <p-card styleClass="section-card">
+        <ng-template #header>
+          <div class="card-header-content">
+            <i class="pi pi-clock"></i>
+            <span>Scheduler</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">Interval</span>
-            <span class="info-value">Every {{ s.schedule_hours }} hours</span>
-          </div>
-        </mat-card-content>
-      </mat-card>
+        </ng-template>
+        <div class="info-row">
+          <span class="info-label">Status</span>
+          @if (s.scheduler_running) {
+            <span class="status-chip success">Running</span>
+          } @else {
+            <span class="status-chip warning">Stopped</span>
+          }
+        </div>
+        <div class="info-row">
+          <span class="info-label">Interval</span>
+          <span class="info-value">Every {{ s.schedule_hours }} hours</span>
+        </div>
+      </p-card>
 
-      <mat-card class="section-card">
-        <mat-card-header>
-          <mat-icon mat-card-avatar>tune</mat-icon>
-          <mat-card-title>Behavior</mat-card-title>
-        </mat-card-header>
-        <mat-card-content>
-          <div class="info-row">
-            <span class="info-label">Dry Run</span>
-            @if (s.dry_run) {
-              <span class="status-chip warning">Enabled</span>
-            } @else {
-              <span class="status-chip success">Disabled</span>
-            }
+      <p-card styleClass="section-card">
+        <ng-template #header>
+          <div class="card-header-content">
+            <i class="pi pi-sliders-h"></i>
+            <span>Behavior</span>
           </div>
-          <div class="info-row">
-            <span class="info-label">Delete Files</span>
-            @if (s.delete_files) {
-              <span class="status-chip error">Enabled</span>
-            } @else {
-              <span class="status-chip info">Disabled</span>
-            }
-          </div>
-        </mat-card-content>
-      </mat-card>
+        </ng-template>
+        <div class="info-row">
+          <span class="info-label">Dry Run</span>
+          @if (s.dry_run) {
+            <span class="status-chip warning">Enabled</span>
+          } @else {
+            <span class="status-chip success">Disabled</span>
+          }
+        </div>
+        <div class="info-row">
+          <span class="info-label">Delete Files</span>
+          @if (s.delete_files) {
+            <span class="status-chip error">Enabled</span>
+          } @else {
+            <span class="status-chip info">Disabled</span>
+          }
+        </div>
+      </p-card>
     </div>
   }
 </div>

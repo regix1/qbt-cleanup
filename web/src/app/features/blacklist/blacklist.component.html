@@ -2,119 +2,88 @@
   <div class="page-header">
     <h2>Blacklist</h2>
     <div class="header-actions">
-      <button mat-raised-button (click)="loadBlacklist()">
-        <mat-icon>refresh</mat-icon>
-        Refresh
-      </button>
-      <button mat-raised-button
-              color="warn"
-              (click)="clearAll()"
-              [disabled]="entries().length === 0">
-        <mat-icon>delete_sweep</mat-icon>
-        Clear All
-      </button>
+      <p-button (click)="loadBlacklist()" icon="pi pi-refresh" label="Refresh" />
+      <p-button severity="danger"
+                (click)="clearAll()"
+                [disabled]="entries().length === 0"
+                icon="pi pi-trash"
+                label="Clear All" />
     </div>
   </div>
 
-  <mat-card class="section-card add-form-card">
-    <mat-card-header>
-      <mat-icon mat-card-avatar>add_circle</mat-icon>
-      <mat-card-title>Add to Blacklist</mat-card-title>
-    </mat-card-header>
-    <mat-card-content>
-      <div class="add-form">
-        <mat-form-field appearance="outline">
-          <mat-label>Torrent Hash</mat-label>
-          <input matInput
-                 [ngModel]="newHash()"
-                 (ngModelChange)="newHash.set($event)"
-                 placeholder="Enter torrent info hash"
-                 required>
-          <mat-icon matPrefix>tag</mat-icon>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Name (optional)</mat-label>
-          <input matInput
-                 [ngModel]="newName()"
-                 (ngModelChange)="newName.set($event)"
-                 placeholder="Torrent name for reference">
-          <mat-icon matPrefix>label</mat-icon>
-        </mat-form-field>
-
-        <mat-form-field appearance="outline">
-          <mat-label>Reason (optional)</mat-label>
-          <input matInput
-                 [ngModel]="newReason()"
-                 (ngModelChange)="newReason.set($event)"
-                 placeholder="Why is this blacklisted?">
-          <mat-icon matPrefix>note</mat-icon>
-        </mat-form-field>
-
-        <button mat-raised-button
-                color="primary"
-                (click)="addEntry()"
-                [disabled]="!canAdd()">
-          <mat-icon>add</mat-icon>
-          Add Entry
-        </button>
+  <p-card class="section-card add-form-card">
+    <ng-template #header>
+      <div class="card-header-content">
+        <i class="pi pi-plus-circle" style="color: var(--accent-blue)"></i>
+        <span>Add to Blacklist</span>
       </div>
-    </mat-card-content>
-  </mat-card>
+    </ng-template>
+    <div class="add-form">
+      <p-floatlabel>
+        <input pInputText id="hash" [ngModel]="newHash()" (ngModelChange)="newHash.set($event)" />
+        <label for="hash">Torrent Hash</label>
+      </p-floatlabel>
+
+      <p-floatlabel>
+        <input pInputText id="name" [ngModel]="newName()" (ngModelChange)="newName.set($event)" />
+        <label for="name">Name (optional)</label>
+      </p-floatlabel>
+
+      <p-floatlabel>
+        <input pInputText id="reason" [ngModel]="newReason()" (ngModelChange)="newReason.set($event)" />
+        <label for="reason">Reason (optional)</label>
+      </p-floatlabel>
+
+      <p-button severity="primary"
+                (click)="addEntry()"
+                [disabled]="!canAdd()"
+                icon="pi pi-plus"
+                label="Add Entry" />
+    </div>
+  </p-card>
 
   @if (loading()) {
     <div class="loading-container">
-      <mat-spinner diameter="48"></mat-spinner>
+      <p-progressSpinner [style]="{width: '48px', height: '48px'}" />
     </div>
   } @else {
     <div class="table-container">
-      <table mat-table [dataSource]="dataSource" class="blacklist-table">
-
-        <ng-container matColumnDef="name">
-          <th mat-header-cell *matHeaderCellDef>Name</th>
-          <td mat-cell *matCellDef="let entry" class="name-cell">
-            <span [matTooltip]="entry.name">{{ entry.name || '--' }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="hash">
-          <th mat-header-cell *matHeaderCellDef>Hash</th>
-          <td mat-cell *matCellDef="let entry">
-            <span class="hash-cell" [matTooltip]="entry.hash">{{ truncateHash(entry.hash) }}</span>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="reason">
-          <th mat-header-cell *matHeaderCellDef>Reason</th>
-          <td mat-cell *matCellDef="let entry">{{ entry.reason || '--' }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="added_at">
-          <th mat-header-cell *matHeaderCellDef>Added</th>
-          <td mat-cell *matCellDef="let entry">{{ formatDate(entry.added_at) }}</td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th mat-header-cell *matHeaderCellDef>Actions</th>
-          <td mat-cell *matCellDef="let entry">
-            <button mat-icon-button
-                    color="warn"
-                    matTooltip="Remove from blacklist"
-                    (click)="removeEntry(entry)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
-
-        <tr class="mat-row" *matNoDataRow>
-          <td class="mat-cell no-data-cell" [attr.colspan]="displayedColumns.length">
-            Blacklist is empty
-          </td>
-        </tr>
-      </table>
+      <p-table [value]="entries()" styleClass="blacklist-table">
+        <ng-template #header>
+          <tr>
+            <th>Name</th>
+            <th>Hash</th>
+            <th>Reason</th>
+            <th>Added</th>
+            <th>Actions</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-entry>
+          <tr>
+            <td class="name-cell">
+              <span [pTooltip]="entry.name">{{ entry.name || '--' }}</span>
+            </td>
+            <td>
+              <span class="hash-cell" [pTooltip]="entry.hash">{{ truncateHash(entry.hash) }}</span>
+            </td>
+            <td>{{ entry.reason || '--' }}</td>
+            <td>{{ formatDate(entry.added_at) }}</td>
+            <td>
+              <p-button icon="pi pi-trash"
+                        severity="danger"
+                        [rounded]="true"
+                        [text]="true"
+                        pTooltip="Remove from blacklist"
+                        (click)="removeEntry(entry)" />
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="5" class="no-data-cell">Blacklist is empty</td>
+          </tr>
+        </ng-template>
+      </p-table>
     </div>
   }
 </div>

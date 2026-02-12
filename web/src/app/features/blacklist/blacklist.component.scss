@@ -12,9 +12,21 @@
 .add-form-card {
   margin-bottom: 24px;
 
-  mat-card-header {
-    mat-icon {
+  .card-header-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 16px 0;
+
+    i {
       color: var(--accent-blue);
+      font-size: 20px;
+    }
+
+    span {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--text-primary);
     }
   }
 }

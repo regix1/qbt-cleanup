@@ -1,16 +1,3 @@
-@use '@angular/material' as mat;
-
-$dark-theme: mat.define-theme((
-  color: (
-    theme-type: dark,
-    primary: mat.$blue-palette,
-  ),
-));
-
-html {
-  @include mat.all-component-themes($dark-theme);
-}
-
 body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
@@ -44,13 +31,13 @@ a {
   text-decoration: none;
 }
 
-.mat-mdc-snack-bar-container {
-  &.success-snackbar .mdc-snackbar__surface {
-    background: #2e7d32;
-  }
-  &.error-snackbar .mdc-snackbar__surface {
-    background: #c62828;
-  }
+// PrimeNG Toast overrides
+.p-toast-message-success {
+  background: #2e7d32 !important;
+}
+
+.p-toast-message-error {
+  background: #c62828 !important;
 }
 
 .spacer {
@@ -95,11 +82,13 @@ a {
     transform: translateY(-2px);
   }
 
-  .mat-mdc-card-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px !important;
+  .p-card-body {
+    .p-card-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px !important;
+    }
   }
 
   .stat-icon {
@@ -156,31 +145,39 @@ a {
   }
 }
 
-.mat-mdc-table {
-  background: transparent !important;
-}
+// PrimeNG DataTable overrides
+.p-datatable {
+  .p-datatable-table {
+    background: transparent !important;
+  }
 
-.mat-mdc-header-row {
-  background: var(--bg-surface) !important;
-}
+  .p-datatable-thead > tr > th {
+    background: var(--bg-surface) !important;
+    color: var(--text-primary);
+    border-bottom-color: var(--border-color) !important;
+  }
 
-.mat-mdc-row {
-  &:hover {
-    background: rgba(79, 195, 247, 0.05) !important;
+  .p-datatable-tbody > tr {
+    background: transparent;
+
+    &:hover {
+      background: rgba(79, 195, 247, 0.05) !important;
+    }
+
+    > td {
+      color: var(--text-primary);
+      border-bottom-color: var(--border-color) !important;
+    }
   }
 }
 
-.mat-mdc-cell, .mat-mdc-header-cell {
-  color: var(--text-primary);
-  border-bottom-color: var(--border-color) !important;
-}
-
-.mat-mdc-paginator {
+.p-paginator {
   background: transparent !important;
   color: var(--text-secondary) !important;
 }
 
-.mat-mdc-form-field {
+// PrimeNG form overrides
+.p-inputtext, .p-select, .p-inputnumber-input {
   width: 100%;
 }
 
@@ -190,11 +187,11 @@ a {
   border-radius: 12px !important;
   margin-bottom: 16px;
 
-  .mat-mdc-card-header {
+  .p-card-header {
     padding: 16px 16px 0 16px;
   }
 
-  .mat-mdc-card-content {
+  .p-card-body .p-card-content {
     padding: 16px;
 
     &:last-child {
@@ -211,10 +208,8 @@ a {
   padding: 60px 20px;
   text-align: center;
 
-  mat-icon {
+  i.pi {
     font-size: 64px;
-    width: 64px;
-    height: 64px;
     color: var(--text-secondary);
     opacity: 0.5;
     margin-bottom: 16px;
@@ -231,6 +226,42 @@ a {
     color: var(--text-secondary);
     max-width: 400px;
   }
+}
+
+// PrimeNG Accordion overrides
+.p-accordion {
+  .p-accordionpanel {
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-color);
+    border-radius: 12px !important;
+    margin-bottom: 8px;
+  }
+
+  .p-accordionheader {
+    background: transparent !important;
+    color: var(--text-primary) !important;
+  }
+
+  .p-accordioncontent-content {
+    background: transparent !important;
+  }
+}
+
+// PrimeNG ConfirmDialog overrides
+.p-confirmdialog {
+  background: var(--bg-surface) !important;
+  border: 1px solid var(--border-color);
+}
+
+// PrimeNG Drawer overrides
+.p-drawer {
+  background: var(--bg-secondary) !important;
+  border-right-color: var(--border-color) !important;
+}
+
+// PrimeNG ToggleSwitch overrides
+.p-toggleswitch.p-toggleswitch-checked .p-toggleswitch-slider {
+  background: var(--accent-blue) !important;
 }
 
 ::-webkit-scrollbar {

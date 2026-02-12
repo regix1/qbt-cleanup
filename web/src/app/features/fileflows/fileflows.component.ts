@@ -1,11 +1,9 @@
 import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
-import { MatCardModule } from '@angular/material/card';
-import { MatIconModule } from '@angular/material/icon';
-import { MatButtonModule } from '@angular/material/button';
-import { MatListModule } from '@angular/material/list';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { Card } from 'primeng/card';
+import { ButtonModule } from 'primeng/button';
+import { ProgressSpinner } from 'primeng/progressspinner';
 import { ApiService } from '../../core/services/api.service';
 import { FileFlowsStatus } from '../../shared/models';
 
@@ -13,11 +11,9 @@ import { FileFlowsStatus } from '../../shared/models';
   selector: 'app-fileflows',
   standalone: true,
   imports: [
-    MatCardModule,
-    MatIconModule,
-    MatButtonModule,
-    MatListModule,
-    MatProgressSpinnerModule,
+    Card,
+    ButtonModule,
+    ProgressSpinner,
   ],
   templateUrl: './fileflows.component.html',
   styleUrl: './fileflows.component.scss',
