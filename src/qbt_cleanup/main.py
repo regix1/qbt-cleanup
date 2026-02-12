@@ -3,6 +3,7 @@
 
 import logging
 import signal
+import socket
 import sys
 import threading
 import time
@@ -174,7 +175,13 @@ def main():
             daemon=True,
         )
         web_thread.start()
-        logger.info(f"Web UI started on http://{config.web.host}:{config.web.port}")
+        display_host = config.web.host
+        if display_host == "0.0.0.0":
+            try:
+                display_host = socket.gethostbyname(socket.gethostname())
+            except socket.gaierror:
+                display_host = "127.0.0.1"
+        logger.info(f"Web UI started on http://{display_host}:{config.web.port}")
 
     # Log startup information
     if config.schedule.run_once:
