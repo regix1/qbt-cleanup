@@ -10,7 +10,7 @@ Automated torrent management for qBittorrent with Sonarr/Radarr compatibility.
 
 Automates torrent cleanup in qBittorrent based on ratio and seeding time. Works alongside Sonarr/Radarr without breaking their imports. Supports separate rules for private and public trackers so you can maintain good standing on private trackers while cleaning up public torrents more aggressively.
 
-Runs in Docker, persists state in SQLite, and supports optional FileFlows integration and orphaned file cleanup.
+Runs in Docker, persists state in SQLite, and includes a web UI for monitoring and management. Supports optional FileFlows integration and orphaned file cleanup.
 
 ## Quick Start
 
@@ -19,10 +19,11 @@ docker run -d \
   --name qbt-cleanup \
   --restart unless-stopped \
   -v /path/to/config:/config \
+  -p 9999:9999 \
   -e QB_HOST=192.168.1.100 \
   -e QB_PORT=8080 \
   -e QB_USERNAME=admin \
-  -e QB_PASSWORD=adminadmin \
+  -e QB_PASSWORD=yourpassword \
   -e PRIVATE_RATIO=2.0 \
   -e PRIVATE_DAYS=14 \
   -e PUBLIC_RATIO=1.0 \
@@ -37,6 +38,31 @@ For orphaned file cleanup, mount your download directories at the **same path** 
 -e CLEANUP_ORPHANED_FILES=true \
 -e ORPHANED_SCAN_DIRS=/downloads
 ```
+
+## Web UI
+
+The tool includes a built-in web interface for monitoring and managing your torrent cleanup. Access it at `http://your-server-ip:9999` after starting the container.
+
+**Features:**
+- Dashboard with live status, next run countdown, and cleanup statistics
+- Torrent list with filtering and sorting
+- Blacklist management
+- FileFlows integration status
+- Configuration overview
+- Manual cleanup trigger
+
+**Requirements:** Port 9999 must be published (`-p 9999:9999` in Docker or `ports: - 9999:9999` in Compose). The `EXPOSE` directive in the Dockerfile alone is not sufficient — you must explicitly map the port.
+
+The API is also available at `/api/docs` (Swagger UI) for programmatic access.
+
+### Web UI Configuration
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `WEB_ENABLED` | Enable the web UI | `true` |
+| `WEB_PORT` | Web UI port | `9999` |
+| `WEB_HOST` | Bind address | `0.0.0.0` |
+| `WEB_DISPLAY_HOST` | Override IP shown in startup log | (auto-detected) |
 
 ## Configuration
 
@@ -255,12 +281,14 @@ services:
       - ./qbt-cleanup/config:/config
       # Must match qBittorrent's mount path for orphaned file cleanup
       - ./downloads:/downloads
+    ports:
+      - 9999:9999
     environment:
       # Connection
       - QB_HOST=qbittorrent
       - QB_PORT=8080
       - QB_USERNAME=admin
-      - QB_PASSWORD=adminadmin
+      - QB_PASSWORD=yourpassword
 
       # Cleanup rules
       - PRIVATE_RATIO=2.0
@@ -279,6 +307,9 @@ services:
       - FORCE_DELETE_PUBLIC_AFTER_HOURS=12
       - CLEANUP_STALE_DOWNLOADS=true
       - MAX_STALLED_DAYS=3
+
+      # Web UI
+      - WEB_PORT=9999
 
       # Orphaned file cleanup (optional)
       # - CLEANUP_ORPHANED_FILES=true
@@ -376,23 +407,6 @@ A torrent is deleted when it meets ANY of:
 - Active downloads (except stalled)
 - Torrents that haven't met any deletion criteria
 
-### Architecture
-
-```
-src/qbt_cleanup/
-  main.py              Entry point and scheduler
-  cleanup.py           Orchestration
-  client.py            qBittorrent API wrapper with retry logic
-  classifier.py        Torrent classification and deletion decisions
-  fileflows.py         FileFlows /api/status integration
-  orphaned_scanner.py  Orphaned file detection and cleanup
-  state.py             SQLite state management
-  config.py            Environment variable parsing
-  models.py            Data models
-  constants.py         Enums and constants
-  utils.py             Parsing and formatting helpers
-  ctl.py               CLI control utility (blacklist, status)
-```
 
 ### State Storage
 
@@ -408,6 +422,7 @@ src/qbt_cleanup/
 - **Sonarr/Radarr** - Does not interfere with imports
 - **FileFlows** - Optional processing protection via `/api/status`
 - **Docker/Docker Compose** - Primary deployment method
+- **Web UI** - Any modern browser (Angular 20 SPA served via FastAPI)
 
 ## Troubleshooting
 

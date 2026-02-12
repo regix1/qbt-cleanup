@@ -2,6 +2,7 @@
 """Main entry point for qBittorrent cleanup tool."""
 
 import logging
+import os
 import signal
 import socket
 import sys
@@ -18,6 +19,32 @@ from .config_overrides import ConfigOverrideManager
 from .constants import SECONDS_PER_HOUR
 from .api import create_app
 from .api.app_state import AppState
+
+
+def _get_display_host() -> str:
+    """Get a meaningful display IP when bound to 0.0.0.0.
+
+    Priority: WEB_DISPLAY_HOST env var > default gateway (host IP) > fallback.
+    """
+    env_host = os.environ.get("WEB_DISPLAY_HOST")
+    if env_host:
+        return env_host
+    try:
+        with open("/proc/net/route") as f:
+            for line in f:
+                fields = line.strip().split()
+                if fields[1] == "00000000":
+                    gw_hex = fields[2]
+                    return ".".join(
+                        str(int(gw_hex[i : i + 2], 16)) for i in range(6, -1, -2)
+                    )
+    except (OSError, IndexError, ValueError):
+        pass
+    try:
+        return socket.gethostbyname(socket.gethostname())
+    except socket.gaierror:
+        return "127.0.0.1"
+
 
 # Custom log formatter with colors and clean text
 class PrettyFormatter(logging.Formatter):
@@ -177,10 +204,7 @@ def main():
         web_thread.start()
         display_host = config.web.host
         if display_host == "0.0.0.0":
-            try:
-                display_host = socket.gethostbyname(socket.gethostname())
-            except socket.gaierror:
-                display_host = "127.0.0.1"
+            display_host = _get_display_host()
         logger.info(f"Web UI started on http://{display_host}:{config.web.port}")
 
     # Log startup information
