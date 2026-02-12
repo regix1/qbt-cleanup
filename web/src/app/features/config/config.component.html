@@ -1,0 +1,76 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Configuration</h2>
+    <div class="header-actions">
+      <p-button (click)="loadConfig()" icon="pi pi-refresh" label="Reload" />
+      <p-button severity="primary"
+                (click)="saveConfig()"
+                [disabled]="!hasModifications() || saving()"
+                [loading]="saving()"
+                icon="pi pi-save"
+                label="Save Changes" />
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <p-progressSpinner [style]="{width: '48px', height: '48px'}" />
+    </div>
+  } @else {
+    <p-accordion [multiple]="true">
+      @for (section of sections(); track section.key) {
+        <p-accordionpanel class="config-panel">
+          <p-accordionheader>
+            <i [class]="section.icon + ' section-icon'"></i>
+            {{ section.name }}
+            @if (sectionHasModifications(section)) {
+              <span class="modified-badge">Modified</span>
+            }
+            <span class="spacer"></span>
+            <span class="section-count">{{ section.fields.length }} settings</span>
+          </p-accordionheader>
+          <p-accordioncontent>
+            <div class="fields-grid">
+              @for (field of section.fields; track field.key) {
+                <div class="field-row" [class.field-modified]="field.modified">
+                  <div class="field-info">
+                    <span class="field-name">{{ formatFieldName(field.key) }}</span>
+                    <span class="field-key">{{ field.key }}</span>
+                  </div>
+
+                  <div class="field-input">
+                    @if (field.type === 'boolean') {
+                      <div class="toggle-row">
+                        <p-toggleswitch [(ngModel)]="field.editValue"
+                                       (ngModelChange)="onFieldChange(section, field)" />
+                        <span class="toggle-label">{{ field.editValue ? 'Enabled' : 'Disabled' }}</span>
+                      </div>
+                    } @else if (field.type === 'number') {
+                      <input pInputText type="number"
+                             [(ngModel)]="field.editValue"
+                             (ngModelChange)="onFieldChange(section, field)" />
+                    } @else {
+                      <input pInputText type="text"
+                             [(ngModel)]="field.editValue"
+                             (ngModelChange)="onFieldChange(section, field)" />
+                    }
+                  </div>
+
+                  <div class="field-actions">
+                    @if (field.modified) {
+                      <p-button icon="pi pi-undo"
+                                [rounded]="true"
+                                [text]="true"
+                                pTooltip="Reset to original value"
+                                (click)="resetField(field)" />
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          </p-accordioncontent>
+        </p-accordionpanel>
+      }
+    </p-accordion>
+  }
+</div>

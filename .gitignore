@@ -82,5 +82,5 @@ web/yarn-debug.log*
 web/yarn-error.log*
 
 # Project specific
-config/
+/config/
 nul
