@@ -24,21 +24,16 @@ from .api.app_state import AppState
 def _get_display_host() -> str:
     """Get a meaningful display IP when bound to 0.0.0.0.
 
-    Priority: WEB_DISPLAY_HOST env var > default gateway (host IP) > fallback.
+    Priority: WEB_DISPLAY_HOST env var > local routable IP > hostname lookup > fallback.
     """
     env_host = os.environ.get("WEB_DISPLAY_HOST")
     if env_host:
         return env_host
     try:
-        with open("/proc/net/route") as f:
-            for line in f:
-                fields = line.strip().split()
-                if fields[1] == "00000000":
-                    gw_hex = fields[2]
-                    return ".".join(
-                        str(int(gw_hex[i : i + 2], 16)) for i in range(6, -1, -2)
-                    )
-    except (OSError, IndexError, ValueError):
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            return s.getsockname()[0]
+    except OSError:
         pass
     try:
         return socket.gethostbyname(socket.gethostname())
