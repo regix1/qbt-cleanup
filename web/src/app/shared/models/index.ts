@@ -86,10 +86,15 @@ export interface ConfigUpdateRequest {
   overrides: Record<string, ConfigSectionValues>;
 }
 
+export interface FileFlowsProcessingFile {
+  name: string;
+  relativePath: string;
+}
+
 export interface FileFlowsStatus {
   enabled: boolean;
   connected: boolean;
   processing: number;
   queue: number;
-  processing_files: string[];
+  processing_files: FileFlowsProcessingFile[];
 }

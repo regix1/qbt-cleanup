@@ -38,7 +38,7 @@
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-wrench stat-icon" style="color: var(--accent-blue)"></i>
+        <i class="fa-solid fa-wrench stat-icon" style="color: var(--accent-yellow)"></i>
         <span class="stat-value">{{ s.processing }}</span>
         <span class="stat-label">Processing</span>
       </div>
@@ -61,12 +61,12 @@
         </div>
         <div class="card-body">
           <ul class="file-list">
-            @for (file of s.processing_files; track file) {
+            @for (file of s.processing_files; track file.name) {
               <li class="file-item">
                 <i class="fa-solid fa-file"></i>
                 <div>
                   <span class="file-name">{{ getFileName(file) }}</span>
-                  <span class="file-path">{{ file }}</span>
+                  <span class="file-path">{{ getFilePath(file) }}</span>
                 </div>
               </li>
             }

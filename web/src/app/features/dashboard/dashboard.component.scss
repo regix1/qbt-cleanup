@@ -35,7 +35,7 @@
   border-bottom: 1px solid var(--border-color);
 
   i {
-    color: var(--accent-blue);
+    color: var(--accent-yellow);
     font-size: 20px;
   }
 
@@ -86,12 +86,12 @@
   flex-direction: column;
   align-items: center;
   padding: 8px;
-  background: rgba(79, 195, 247, 0.05);
+  background: rgba(245, 197, 24, 0.05);
   border-radius: 8px;
   transition: background 0.2s ease;
 
   &:hover {
-    background: rgba(79, 195, 247, 0.1);
+    background: rgba(245, 197, 24, 0.1);
   }
 }
 

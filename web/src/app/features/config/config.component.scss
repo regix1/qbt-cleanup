@@ -39,7 +39,7 @@
   transition: background 0.2s ease;
 
   &:hover {
-    background: rgba(79, 195, 247, 0.05);
+    background: rgba(245, 197, 24, 0.05);
   }
 
   .section-name {
@@ -66,7 +66,7 @@
 }
 
 .section-icon {
-  color: var(--accent-blue);
+  color: var(--accent-yellow);
   font-size: 20px;
 }
 
@@ -109,7 +109,7 @@
   transition: background 0.2s;
 
   &:hover {
-    background: rgba(79, 195, 247, 0.03);
+    background: rgba(245, 197, 24, 0.03);
   }
 
   &.field-modified {
@@ -162,8 +162,8 @@
   transition: background 0.2s, color 0.2s;
 
   &:hover {
-    background: rgba(79, 195, 247, 0.1);
-    color: var(--accent-blue);
+    background: rgba(245, 197, 24, 0.1);
+    color: var(--accent-yellow);
   }
 
   i {
@@ -185,7 +185,7 @@
   box-sizing: border-box;
 
   &:focus {
-    border-color: var(--accent-blue);
+    border-color: var(--accent-yellow);
   }
 
   &::placeholder {
@@ -217,7 +217,7 @@
     height: 0;
 
     &:checked + .toggle-slider {
-      background-color: var(--accent-blue);
+      background-color: var(--accent-yellow);
     }
 
     &:checked + .toggle-slider::before {
@@ -225,7 +225,7 @@
     }
 
     &:focus + .toggle-slider {
-      box-shadow: 0 0 0 2px rgba(79, 195, 247, 0.3);
+      box-shadow: 0 0 0 2px rgba(245, 197, 24, 0.3);
     }
   }
 }

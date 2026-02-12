@@ -2,7 +2,7 @@ import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
-import { FileFlowsStatus } from '../../shared/models';
+import { FileFlowsStatus, FileFlowsProcessingFile } from '../../shared/models';
 
 @Component({
   selector: 'app-fileflows',
@@ -52,9 +52,14 @@ export class FileFlowsComponent implements OnInit {
       });
   }
 
-  getFileName(filePath: string): string {
-    if (!filePath) return filePath;
-    const parts = filePath.replace(/\\/g, '/').split('/');
-    return parts[parts.length - 1] || filePath;
+  getFileName(file: FileFlowsProcessingFile): string {
+    const fullPath = file.name || file.relativePath || '';
+    if (!fullPath) return 'Unknown file';
+    const parts = fullPath.replace(/\\/g, '/').split('/');
+    return parts[parts.length - 1] || fullPath;
+  }
+
+  getFilePath(file: FileFlowsProcessingFile): string {
+    return file.name || file.relativePath || '';
   }
 }

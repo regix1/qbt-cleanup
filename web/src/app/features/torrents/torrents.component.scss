@@ -80,27 +80,27 @@
 }
 
 .state-downloading {
-  background: rgba(79, 195, 247, 0.15);
-  color: var(--accent-blue);
+  background: rgba(245, 197, 24, 0.15);
+  color: var(--accent-yellow);
 }
 
 .state-seeding {
-  background: rgba(102, 187, 106, 0.15);
+  background: rgba(124, 179, 66, 0.15);
   color: var(--accent-green);
 }
 
 .state-paused {
-  background: rgba(255, 167, 38, 0.15);
+  background: rgba(255, 143, 0, 0.15);
   color: var(--accent-orange);
 }
 
 .state-stalled {
-  background: rgba(239, 83, 80, 0.15);
+  background: rgba(230, 81, 0, 0.15);
   color: var(--accent-red);
 }
 
 .state-error {
-  background: rgba(239, 83, 80, 0.25);
+  background: rgba(230, 81, 0, 0.25);
   color: var(--accent-red);
 }
 
@@ -110,8 +110,8 @@
 }
 
 .state-checking {
-  background: rgba(79, 195, 247, 0.1);
-  color: var(--accent-blue);
+  background: rgba(245, 197, 24, 0.1);
+  color: var(--accent-yellow);
 }
 
 .state-default {
@@ -132,7 +132,7 @@
   }
 
   &.public {
-    background: rgba(102, 187, 106, 0.15);
+    background: rgba(124, 179, 66, 0.15);
     color: var(--accent-green);
   }
 }
