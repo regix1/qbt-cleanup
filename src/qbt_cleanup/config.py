@@ -101,7 +101,6 @@ class FileFlowsConfig:
     host: str = field(default_factory=lambda: os.environ.get("FILEFLOWS_HOST", "localhost"))
     port: int = field(default_factory=lambda: parse_int("FILEFLOWS_PORT", 19200))
     timeout: int = field(default_factory=lambda: parse_int("FILEFLOWS_TIMEOUT", 10, 1))
-    recent_threshold_minutes: int = field(default_factory=lambda: parse_int("FILEFLOWS_RECENT_MINUTES", 10, 1))
 
 
 @dataclass

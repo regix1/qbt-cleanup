@@ -5,24 +5,33 @@ import logging
 import os
 from typing import Optional
 
-from .constants import SECONDS_PER_DAY, SECONDS_PER_HOUR, MINUTES_PER_HOUR
+from .constants import SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 
 logger = logging.getLogger(__name__)
+
+
+_BOOL_TRUE = frozenset(('true', '1', 'yes', 'on'))
+_BOOL_FALSE = frozenset(('false', '0', 'no', 'off'))
 
 
 def parse_bool(env_var: str, default: bool = False) -> bool:
     """
     Parse boolean environment variable.
-    
+
     Args:
         env_var: Environment variable name
         default: Default value if not set
-        
+
     Returns:
         Parsed boolean value
     """
-    value = os.environ.get(env_var, str(default))
-    return value.lower() in ('true', '1', 'yes', 'on')
+    raw = os.environ.get(env_var)
+    if raw is None:
+        return default
+    lower = raw.strip().lower()
+    if lower not in _BOOL_TRUE and lower not in _BOOL_FALSE:
+        logger.warning(f"{env_var}='{raw}' is not a recognized boolean, treating as False")
+    return lower in _BOOL_TRUE
 
 
 def parse_float(env_var: str, default: float, min_val: Optional[float] = None) -> float:
@@ -101,7 +110,7 @@ def format_duration(seconds: float) -> str:
         return f"{seconds / SECONDS_PER_DAY:.1f}d"
     elif seconds >= SECONDS_PER_HOUR:
         return f"{seconds / SECONDS_PER_HOUR:.1f}h"
-    elif seconds >= MINUTES_PER_HOUR:
-        return f"{seconds / MINUTES_PER_HOUR:.0f}m"
+    elif seconds >= SECONDS_PER_MINUTE:
+        return f"{seconds / SECONDS_PER_MINUTE:.0f}m"
     else:
         return f"{seconds:.0f}s"

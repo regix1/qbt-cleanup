@@ -6,6 +6,10 @@ from typing import Any, Optional, List
 
 from .constants import DeletionReason, TorrentType, TorrentState, SECONDS_PER_DAY
 
+# Pre-computed state value sets for O(1) lookups in hot loops
+_PAUSED_VALUES: frozenset = frozenset(s.value for s in TorrentState.paused_states())
+_DOWNLOADING_VALUES: frozenset = frozenset(s.value for s in TorrentState.downloading_states())
+
 
 @dataclass
 class TorrentInfo:
@@ -18,21 +22,21 @@ class TorrentInfo:
     ratio: float
     seeding_time: float  # in seconds
     files: List[str] = field(default_factory=list)
-    
+
     @property
     def torrent_type(self) -> TorrentType:
         """Get torrent type."""
         return TorrentType.PRIVATE if self.is_private else TorrentType.PUBLIC
-    
+
     @property
     def is_paused(self) -> bool:
         """Check if torrent is paused."""
-        return self.state in TorrentState.paused_states()
+        return self.state in _PAUSED_VALUES
 
     @property
     def is_downloading(self) -> bool:
         """Check if torrent is downloading."""
-        return self.state in TorrentState.downloading_states()
+        return self.state in _DOWNLOADING_VALUES
 
     @property
     def is_stalled(self) -> bool:
@@ -71,7 +75,7 @@ class DeletionCandidate:
             parts.append(f"ratio={self.info.ratio:.2f}/{self.limits.ratio:.2f}")
             parts.append(f"time={self.info.seeding_time/SECONDS_PER_DAY:.1f}/{self.limits.days:.1f}d")
             
-            if self.reason == DeletionReason.FORCE_DELETE and self.excess_time_hours:
+            if self.reason == DeletionReason.FORCE_DELETE and self.excess_time_hours is not None:
                 parts.append(f"excess={self.excess_time_hours:.1f}h")
         
         return ", ".join(parts)

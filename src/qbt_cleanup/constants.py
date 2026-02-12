@@ -7,7 +7,7 @@ from typing import Final
 # Time constants
 SECONDS_PER_DAY: Final[int] = 86400
 SECONDS_PER_HOUR: Final[int] = 3600
-MINUTES_PER_HOUR: Final[int] = 60
+SECONDS_PER_MINUTE: Final[int] = 60
 
 # Network constants
 DEFAULT_TIMEOUT: Final[int] = 30
@@ -16,11 +16,6 @@ RETRY_DELAY: Final[float] = 5.0
 
 # File paths
 STATE_FILE: Final[str] = "/config/qbt_cleanup_state.json"
-
-# FileFlows constants
-FILEFLOWS_RECENT_THRESHOLD_MINUTES: Final[int] = 10
-FILEFLOWS_STATUS_COMPLETED: Final[int] = 1
-FILEFLOWS_STATUS_PROCESSING: Final[int] = 2
 
 # Logging and display constants
 DRY_RUN_SAMPLE_LIMIT: Final[int] = 5

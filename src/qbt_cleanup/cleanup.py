@@ -49,11 +49,9 @@ class QbtCleanup:
             if not self.client.connect():
                 return False
             
-            # Test FileFlows connection if enabled
+            # Test FileFlows connection and build initial cache
             if self.fileflows and self.fileflows.is_enabled:
-                if self.fileflows.test_connection():
-                    logger.info("[FileFlows] Connected")
-                else:
+                if not self.fileflows.test_connection():
                     logger.warning("[FileFlows] Connection failed")
                     self.fileflows = None
             
@@ -66,14 +64,18 @@ class QbtCleanup:
 
             # Get torrents
             raw_torrents = self.client.get_torrents()
+            if raw_torrents is None:
+                logger.error("Failed to fetch torrents from qBittorrent")
+                return False
             if not raw_torrents:
                 logger.info("No torrents found")
                 return True
 
             logger.info(f"Found {len(raw_torrents)} torrents")
 
-            # Process torrents
-            torrents = [self.client.process_torrent(t) for t in raw_torrents]
+            # Process torrents (only fetch file lists when FileFlows needs them)
+            fetch_files = self.fileflows is not None
+            torrents = [self.client.process_torrent(t, fetch_files=fetch_files) for t in raw_torrents]
 
             # Log torrent breakdown
             private_count = sum(1 for t in torrents if t.is_private)
@@ -102,6 +104,7 @@ class QbtCleanup:
             return False
         finally:
             self.client.disconnect()
+            self.state.close()
     
     def _log_active_features(self) -> None:
         """Log active configuration features."""

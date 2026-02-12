@@ -118,6 +118,9 @@ class OrphanedFilesScanner:
 
         try:
             torrents = self.client.get_torrents()
+            if torrents is None:
+                logger.error("Failed to fetch torrents - aborting orphaned scan for safety")
+                return set()
             logger.info(f"Found {len(torrents)} active torrents in qBittorrent")
 
             for torrent in torrents:

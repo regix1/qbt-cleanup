@@ -103,9 +103,10 @@ def signal_handler(signum, frame):
 
 def print_banner():
     """Print a startup banner."""
-    banner = """
+    from . import __version__
+    banner = f"""
 ================================================================
-          qBittorrent Cleanup Tool v2.2
+          qBittorrent Cleanup Tool v{__version__}
 ================================================================"""
     print(banner)
 
@@ -149,8 +150,9 @@ def main():
     # Load configuration
     config = Config.from_environment()
     
-    # Set up signal handler for manual scan
-    signal.signal(signal.SIGUSR1, signal_handler)
+    # Set up signal handler for manual scan (SIGUSR1 is Unix-only)
+    if hasattr(signal, 'SIGUSR1'):
+        signal.signal(signal.SIGUSR1, signal_handler)
     
     # Log startup information
     if config.schedule.run_once:

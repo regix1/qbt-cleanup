@@ -101,30 +101,30 @@ class QBittorrentClient:
             try:
                 self._client.auth_log_out()
                 logger.info("Disconnected from qBittorrent")
-            except Exception:
-                pass  # Ignore logout errors
+            except Exception as e:
+                logger.debug(f"Logout error (ignored): {e}")
             finally:
                 self._client = None
                 self._privacy_cache.clear()
 
-    def get_torrents(self) -> List[Any]:
+    def get_torrents(self) -> Optional[List[Any]]:
         """
         Get all torrents.
 
         Returns:
-            List of torrent objects
+            List of torrent objects, or None on API failure
         """
         try:
             return self.client.torrents.info()
         except qbittorrentapi.APIConnectionError as e:
             logger.error(f"API connection error fetching torrents: {e}")
-            return []
+            return None
         except qbittorrentapi.Forbidden403Error as e:
             logger.error(f"Authentication error fetching torrents: {e}")
-            return []
+            return None
         except Exception as e:
             logger.error(f"Unexpected error fetching torrents: {e}")
-            return []
+            return None
 
     def is_torrent_private(self, torrent: Any) -> bool:
         """
@@ -318,12 +318,13 @@ class QBittorrentClient:
             logger.error(f"Unexpected error deleting torrents: {e}")
             return False
 
-    def process_torrent(self, torrent: Any) -> TorrentInfo:
+    def process_torrent(self, torrent: Any, fetch_files: bool = False) -> TorrentInfo:
         """
         Process raw torrent into TorrentInfo.
 
         Args:
             torrent: Raw torrent object
+            fetch_files: Whether to fetch the file list (only needed for FileFlows)
 
         Returns:
             Processed TorrentInfo
@@ -335,6 +336,6 @@ class QBittorrentClient:
             is_private=self.is_torrent_private(torrent),
             state=torrent.state,
             ratio=torrent.ratio,
-            seeding_time=torrent.seeding_time,
-            files=self.get_torrent_files(torrent.hash)
+            seeding_time=max(0.0, float(torrent.seeding_time)),
+            files=self.get_torrent_files(torrent.hash) if fetch_files else []
         )

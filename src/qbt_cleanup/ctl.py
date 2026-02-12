@@ -9,6 +9,7 @@ from typing import Optional
 from .state import StateManager
 from .config import Config
 from .client import QBittorrentClient
+from .utils import truncate_name
 
 
 def format_timestamp(iso_timestamp: str) -> str:
@@ -31,7 +32,7 @@ def cmd_blacklist_add(args) -> int:
             config = Config.from_environment()
             client = QBittorrentClient(config.connection)
             if client.connect():
-                torrents = client.get_torrents()
+                torrents = client.get_torrents() or []
                 for t in torrents:
                     if t.hash == args.hash:
                         name = t.name
@@ -189,7 +190,7 @@ def cmd_list_torrents(args) -> int:
 
         for i, torrent in enumerate(torrents_sorted, 1):
             status = "[B]" if torrent.hash in blacklisted else "[ ]"
-            truncated_name = torrent.name[:60] if len(torrent.name) > 60 else torrent.name
+            truncated_name = truncate_name(torrent.name, 60)
             print(f"{i:<4} {status:<3} {torrent.state:<12} {truncated_name}")
 
         print(f"\n[B] = Blacklisted")
@@ -232,7 +233,7 @@ def cmd_select_torrents(args) -> int:
 
         for i, torrent in enumerate(torrents, 1):
             status = "[B]" if torrent.hash in blacklisted_hashes else "[ ]"
-            truncated_name = torrent.name[:60] if len(torrent.name) > 60 else torrent.name
+            truncated_name = truncate_name(torrent.name, 60)
             truncated_hash = torrent.hash[:16]
             print(f"{i:<4} {status:<3} {truncated_name:<60} {truncated_hash}...")
 

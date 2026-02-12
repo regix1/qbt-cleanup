@@ -375,28 +375,14 @@ class StateManager:
             count = result["count"] if result else 0
             
             if count > 0:
-                # Delete old torrents
+                # Delete torrents no longer in qBittorrent
                 conn.execute("""
-                    DELETE FROM torrents 
+                    DELETE FROM torrents
                     WHERE hash NOT IN ({})
                 """.format(','.join('?' * len(current_hashes))), current_hashes)
-                
+
                 logger.debug(f"Cleaned up state for {count} removed torrents")
-            
-            # Optional: Clean up very old entries that haven't been updated in 30 days
-            thirty_days_ago = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
-            cursor = conn.execute("""
-                DELETE FROM torrents 
-                WHERE last_updated < ? 
-                AND hash NOT IN ({})
-            """.format(','.join('?' * len(current_hashes))), 
-            [thirty_days_ago] + current_hashes)
-            
-            old_count = cursor.rowcount
-            if old_count > 0:
-                logger.debug(f"Cleaned up {old_count} torrents not updated in 30 days")
-                count += old_count
-            
+
             conn.commit()
             return count
         except Exception as e:
@@ -610,10 +596,16 @@ class StateManager:
             logger.error(f"Failed to get metadata {key}: {e}")
             return default
 
-    def __del__(self):
-        """Clean up database connection on deletion."""
+    def close(self) -> None:
+        """Close the database connection."""
         if self._connection:
             try:
                 self._connection.close()
             except Exception:
                 pass
+            finally:
+                self._connection = None
+
+    def __del__(self):
+        """Clean up database connection on deletion."""
+        self.close()

@@ -4,25 +4,13 @@ Automated torrent management for qBittorrent with Sonarr/Radarr compatibility.
 
 [![Docker Image](https://img.shields.io/badge/docker-ghcr.io%2Fregix1%2Fqbittorrent--cleanup-blue)](https://github.com/regix1/qbt-cleanup/pkgs/container/qbittorrent-cleanup)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-2.2-green)
+![Version](https://img.shields.io/badge/version-2.2.0-green)
 
 ## Overview
 
-This tool automates torrent cleanup in qBittorrent based on ratio and seeding time. It's designed to work alongside Sonarr/Radarr without breaking their imports, and it can handle private and public trackers with different rules.
+Automates torrent cleanup in qBittorrent based on ratio and seeding time. Works alongside Sonarr/Radarr without breaking their imports. Supports separate rules for private and public trackers so you can maintain good standing on private trackers while cleaning up public torrents more aggressively.
 
-The main benefit is that you can maintain good ratios on private trackers while automatically cleaning up public torrents more aggressively. Everything runs in Docker and persists state using SQLite, so tracking continues even after restarts.
-
-## Key Features
-
-- **Smart Cleanup** - Removes torrents when they hit ratio or time limits without interfering with Sonarr/Radarr imports
-- **Private/Public Differentiation** - Different rules for private vs public trackers to maintain good standing
-- **High Performance** - Uses SQLite with indexed queries for instant operations even with thousands of torrents
-- **Orphaned File Cleanup** - Identifies and removes files on disk that aren't tracked by any active torrent
-- **FileFlows Protection** - Won't delete torrents while files are being post-processed
-- **Force Delete** - Can remove stuck torrents that meet criteria but won't auto-pause
-- **Stalled Detection** - Cleans up downloads that are stuck without progress
-- **Persistent State** - Tracks torrent history across restarts using SQLite database
-- **Manual Trigger** - Run cleanup on-demand via Docker signals
+Runs in Docker, persists state in SQLite, and supports optional FileFlows integration and orphaned file cleanup.
 
 ## Quick Start
 
@@ -42,11 +30,9 @@ docker run -d \
   ghcr.io/regix1/qbittorrent-cleanup:latest
 ```
 
-**Note:** For orphaned file cleanup, also mount your download directories **at the same path as qBittorrent**:
+For orphaned file cleanup, mount your download directories at the **same path** as qBittorrent:
+
 ```bash
-# Mount at the SAME path that qBittorrent uses!
-# If qBittorrent has: -v /path/to/downloads:/downloads
-# Then use: -v /path/to/downloads:/downloads (NOT /data/downloads)
 -v /path/to/downloads:/downloads \
 -e CLEANUP_ORPHANED_FILES=true \
 -e ORPHANED_SCAN_DIRS=/downloads
@@ -54,7 +40,9 @@ docker run -d \
 
 ## Configuration
 
-### Connection Settings
+All settings are configured via environment variables.
+
+### Connection
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -64,75 +52,72 @@ docker run -d \
 | `QB_PASSWORD` | qBittorrent password | `adminadmin` |
 | `QB_VERIFY_SSL` | Verify SSL certificate | `false` |
 
-### Cleanup Criteria
+### Cleanup Limits
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `FALLBACK_RATIO` | Default ratio if not set in qBittorrent | `1.0` |
-| `FALLBACK_DAYS` | Default days if not set in qBittorrent | `7` |
-| `PRIVATE_RATIO` | Ratio requirement for private torrents | `FALLBACK_RATIO` |
+| `FALLBACK_RATIO` | Default ratio if not set per-type | `1.0` |
+| `FALLBACK_DAYS` | Default seeding days if not set per-type | `7` |
+| `PRIVATE_RATIO` | Ratio limit for private torrents | `FALLBACK_RATIO` |
 | `PRIVATE_DAYS` | Seeding days for private torrents | `FALLBACK_DAYS` |
-| `PUBLIC_RATIO` | Ratio requirement for public torrents | `FALLBACK_RATIO` |
+| `PUBLIC_RATIO` | Ratio limit for public torrents | `FALLBACK_RATIO` |
 | `PUBLIC_DAYS` | Seeding days for public torrents | `FALLBACK_DAYS` |
 
-### Behavior Settings
+### Behavior
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DELETE_FILES` | Delete files when removing torrents | `true` |
-| `DRY_RUN` | Test mode without actual deletions | `false` |
+| `DRY_RUN` | Log what would be deleted without actually deleting | `false` |
 | `SCHEDULE_HOURS` | Hours between cleanup runs | `24` |
-| `RUN_ONCE` | Run once and exit | `false` |
+| `RUN_ONCE` | Run a single cleanup and exit | `false` |
 
-### Advanced Features
+### Paused-Only and Force Delete
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CHECK_PRIVATE_PAUSED_ONLY` | Only check paused private torrents for deletion | `false` |
-| `CHECK_PUBLIC_PAUSED_ONLY` | Only check paused public torrents for deletion | `false` |
-| `FORCE_DELETE_PRIVATE_AFTER_HOURS` | Force delete private torrents that meet criteria but won't pause (hours) | `0` (disabled) |
-| `FORCE_DELETE_PUBLIC_AFTER_HOURS` | Force delete public torrents that meet criteria but won't pause (hours) | `0` (disabled) |
-| `CLEANUP_STALE_DOWNLOADS` | Enable stalled download cleanup | `false` |
-| `MAX_STALLED_PRIVATE_DAYS` | Maximum days private torrents can be stalled | `3` |
-| `MAX_STALLED_PUBLIC_DAYS` | Maximum days public torrents can be stalled | `3` |
+| `CHECK_PAUSED_ONLY` | Only delete torrents qBittorrent has paused (applies to both types) | `false` |
+| `CHECK_PRIVATE_PAUSED_ONLY` | Only delete paused private torrents | `CHECK_PAUSED_ONLY` |
+| `CHECK_PUBLIC_PAUSED_ONLY` | Only delete paused public torrents | `CHECK_PAUSED_ONLY` |
+| `FORCE_DELETE_AFTER_HOURS` | Force delete if criteria met for this many hours (applies to both types) | `0` (disabled) |
+| `FORCE_DELETE_PRIVATE_AFTER_HOURS` | Force delete threshold for private torrents | `FORCE_DELETE_AFTER_HOURS` |
+| `FORCE_DELETE_PUBLIC_AFTER_HOURS` | Force delete threshold for public torrents | `FORCE_DELETE_AFTER_HOURS` |
 
-**Understanding Force Delete:**
+Force delete handles torrents that meet your ratio/time criteria but qBittorrent won't auto-pause (e.g., share limits are disabled or set differently). After the configured hours, the torrent is deleted regardless of pause state.
 
-Force delete handles "stuck" torrents that meet your ratio/time criteria but qBittorrent refuses to auto-pause. This can happen when:
-- qBittorrent's share limits are disabled or set higher than yours
-- The torrent is configured to ignore share limits
-- There's a mismatch between qBittorrent settings and your cleanup rules
-
-**How it works:**
-1. Tool checks if torrent meets your cleanup criteria (ratio AND/OR seeding time)
-2. If `CHECK_*_PAUSED_ONLY=true`, it waits for qBittorrent to auto-pause the torrent first
-3. If the torrent is still active after X hours despite meeting criteria, force delete kicks in
-4. The torrent gets deleted even if not paused
-
-**Example scenario:**
-```yaml
-# Your settings
-- CHECK_PRIVATE_PAUSED_ONLY=true
-- FORCE_DELETE_PRIVATE_AFTER_HOURS=48
-
-# What happens:
-# Day 1: Torrent reaches 2.0 ratio → Meets criteria, tool waits for qBittorrent to pause it
-# Day 2: Still seeding (qBittorrent won't pause) → Still waiting
-# Day 3 (48h later): Still seeding → Force delete removes it
+```
+Torrent reaches 2.0 ratio
+ |- CHECK_PRIVATE_PAUSED_ONLY=false  -> Delete immediately
+ |- CHECK_PRIVATE_PAUSED_ONLY=true
+    |- qBittorrent pauses it         -> Delete immediately
+    |- qBittorrent doesn't pause it
+       |- FORCE_DELETE=0             -> Never force delete
+       |- FORCE_DELETE=48            -> Delete after 48 hours
 ```
 
-Set to `0` to disable force delete and only remove torrents that qBittorrent has already paused.
-
-### qBittorrent Settings Override
+### Stalled Download Cleanup
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `IGNORE_QBT_RATIO_PRIVATE` | Ignore qBittorrent's ratio for private | `false` |
-| `IGNORE_QBT_RATIO_PUBLIC` | Ignore qBittorrent's ratio for public | `false` |
-| `IGNORE_QBT_TIME_PRIVATE` | Ignore qBittorrent's time for private | `false` |
-| `IGNORE_QBT_TIME_PUBLIC` | Ignore qBittorrent's time for public | `false` |
+| `CLEANUP_STALE_DOWNLOADS` | Enable stalled download cleanup | `false` |
+| `MAX_STALLED_DAYS` | Max days a download can be stalled (applies to both types) | `3` |
+| `MAX_STALLED_PRIVATE_DAYS` | Max stalled days for private torrents | `MAX_STALLED_DAYS` |
+| `MAX_STALLED_PUBLIC_DAYS` | Max stalled days for public torrents | `MAX_STALLED_DAYS` |
+
+### qBittorrent Limit Overrides
+
+By default, the tool reads ratio/time limits from qBittorrent's preferences and uses those if no environment variable is explicitly set. These flags let you ignore the qBittorrent values entirely:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `IGNORE_QBT_RATIO_PRIVATE` | Ignore qBittorrent's ratio for private torrents | `false` |
+| `IGNORE_QBT_RATIO_PUBLIC` | Ignore qBittorrent's ratio for public torrents | `false` |
+| `IGNORE_QBT_TIME_PRIVATE` | Ignore qBittorrent's seeding time for private torrents | `false` |
+| `IGNORE_QBT_TIME_PUBLIC` | Ignore qBittorrent's seeding time for public torrents | `false` |
 
 ### FileFlows Integration
+
+Prevents deletion of torrents whose files are currently being processed by [FileFlows](https://fileflows.com). Uses the lightweight `/api/status` endpoint (~500 bytes) to detect actively processing files in real-time.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -140,95 +125,56 @@ Set to `0` to disable force delete and only remove torrents that qBittorrent has
 | `FILEFLOWS_HOST` | FileFlows server host | `localhost` |
 | `FILEFLOWS_PORT` | FileFlows server port | `19200` |
 | `FILEFLOWS_TIMEOUT` | API timeout in seconds | `10` |
-| `FILEFLOWS_RECENT_MINUTES` | Minutes to protect recently processed files | `10` |
+
+When enabled, the tool queries FileFlows once per cycle to get actively processing files. If a torrent's files match any processing file by name, the torrent is protected from deletion. On API failure, the last known processing state is used as a fallback to avoid accidental deletions.
 
 ### Orphaned File Cleanup
 
+Identifies and removes files on disk that aren't tracked by any active torrent in qBittorrent.
+
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CLEANUP_ORPHANED_FILES` | Enable orphaned file detection and cleanup | `false` |
-| `ORPHANED_SCAN_DIRS` | Comma-separated list of directories to scan (container paths) | ` ` (empty) |
-| `ORPHANED_MIN_AGE_HOURS` | Minimum age in hours before a file is considered orphaned | `1.0` |
-| `ORPHANED_SCHEDULE_DAYS` | Run orphaned cleanup every X days (independent of main cleanup schedule) | `7` |
+| `CLEANUP_ORPHANED_FILES` | Enable orphaned file cleanup | `false` |
+| `ORPHANED_SCAN_DIRS` | Comma-separated directories to scan (container paths) | (empty) |
+| `ORPHANED_MIN_AGE_HOURS` | Minimum file age before removal | `1.0` |
+| `ORPHANED_SCHEDULE_DAYS` | Days between orphaned cleanup runs | `7` |
 
-**Important:** This feature **recursively scans** specified directories for files/folders that exist on disk but aren't being tracked by any active torrent in qBittorrent (whether downloading, seeding, or paused). Files are only removed if they meet BOTH criteria:
+A file is only removed if it meets **both** criteria:
 1. Not tracked by any active torrent in qBittorrent
-2. Not modified/accessed for the configured minimum age (default 1 hour)
+2. Not modified for at least `ORPHANED_MIN_AGE_HOURS`
 
-This dual-check safety mechanism is useful for cleaning up leftover data from torrents that were removed incorrectly or files that were manually modified, while protecting recently active files.
+The orphaned scan runs on its own schedule (default weekly), independent of the main torrent cleanup. The schedule persists across restarts via the database.
 
-**Separate Schedule:** Orphaned file cleanup runs on its own schedule (default: every 7 days), independent of the main torrent cleanup schedule. This prevents the potentially time-consuming filesystem scan from running too frequently. The schedule is tracked in the database, so it persists across container restarts.
+**Path matching requirement:** Download directories must be mounted at the **same path** in both the qBittorrent and qbt-cleanup containers. Mismatched paths will cause all files to appear orphaned. The tool aborts the scan if it detects a path mismatch.
 
-**Recursive Scanning:** The scanner will walk through ALL subdirectories under the specified path. For example, if you specify `/data/incomplete`, it will scan:
-- `/data/incomplete/anime/torrent1/`
-- `/data/incomplete/movies/torrent2/`
-- `/data/incomplete/tvshows/season1/episode.mkv`
-- And all other files and folders at any depth
-
-**Volume Mounting Required:**
-You must mount your download directories into the container for this feature to work. The paths in `ORPHANED_SCAN_DIRS` should match the paths INSIDE the Docker container, not your host paths.
-
-**⚠️ CRITICAL: Path Matching Requirement**
-
-The download directories MUST be mounted at the **SAME PATH** in both qBittorrent and qbt-cleanup containers. If the paths don't match, the scanner will incorrectly mark all files as orphaned!
-
-**Incorrect (will delete everything!):**
 ```yaml
+# Correct - same /downloads path in both containers
 qbittorrent:
   volumes:
-    - /host/downloads:/downloads          # Path in qBittorrent: /downloads
+    - /host/downloads:/downloads
 
 qbt-cleanup:
   volumes:
-    - /host/downloads:/data/downloads     # Path in qbt-cleanup: /data/downloads ❌ DIFFERENT!
-  environment:
-    - ORPHANED_SCAN_DIRS=/data/downloads
-```
-
-**Correct:**
-```yaml
-qbittorrent:
-  volumes:
-    - /host/downloads:/downloads          # Path in qBittorrent: /downloads
-
-qbt-cleanup:
-  volumes:
-    - /host/downloads:/downloads          # Path in qbt-cleanup: /downloads ✅ SAME!
+    - /host/downloads:/downloads    # same path
   environment:
     - ORPHANED_SCAN_DIRS=/downloads
 ```
 
-The tool will **abort the orphaned scan** if it detects a path mismatch, preventing accidental deletion of all files.
-
-**Example:**
+Multiple directories:
 ```yaml
-volumes:
-  # Mount your actual download directories
-  - /path/on/host/downloads:/data/downloads
-
 environment:
-  - CLEANUP_ORPHANED_FILES=true
-  # Use the container paths (after the colon in volumes)
-  - ORPHANED_SCAN_DIRS=/data/downloads
-```
-
-**Multiple Directories:**
-```yaml
-volumes:
-  - /host/downloads/complete:/data/complete
-  - /host/downloads/movies:/data/movies
-  - /host/downloads/tv:/data/tv
-
-environment:
-  - CLEANUP_ORPHANED_FILES=true
   - ORPHANED_SCAN_DIRS=/data/complete,/data/movies,/data/tv
 ```
+
+Always test with `DRY_RUN=true` first.
+
+**Orphaned scan logs** are written to `/config/` with timestamps:
+- `orphaned_dryrun_YYYY-MM-DD_HH-MM-SS.log` - what would be deleted
+- `orphaned_cleanup_YYYY-MM-DD_HH-MM-SS.log` - what was actually deleted
 
 ## Common Use Cases
 
 ### Private Tracker Optimization
-
-Maintain good ratios on private trackers while cleaning up public torrents more aggressively:
 
 ```yaml
 environment:
@@ -236,41 +182,27 @@ environment:
   - PRIVATE_DAYS=30
   - PUBLIC_RATIO=1.0
   - PUBLIC_DAYS=3
-  - CHECK_PRIVATE_PAUSED_ONLY=true  # Wait for qBittorrent to pause
-  - CHECK_PUBLIC_PAUSED_ONLY=false   # Clean immediately
+  - CHECK_PRIVATE_PAUSED_ONLY=true
+  - CHECK_PUBLIC_PAUSED_ONLY=false
 ```
 
 ### Media Server with FileFlows
 
-Protect files during post-processing, but force delete if qBittorrent won't pause them:
-
 ```yaml
 environment:
-  # FileFlows protection
   - FILEFLOWS_ENABLED=true
   - FILEFLOWS_HOST=192.168.1.200
   - FILEFLOWS_PORT=19200
-
-  # Cleanup settings
-  - CHECK_PRIVATE_PAUSED_ONLY=true  # Wait for qBittorrent to pause
+  - CHECK_PRIVATE_PAUSED_ONLY=true
   - PRIVATE_RATIO=2.0
   - PRIVATE_DAYS=14
-
-  # Force delete after 48 hours if qBittorrent won't pause
-  # Useful when qBittorrent share limits don't match your cleanup rules
   - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
   - FORCE_DELETE_PUBLIC_AFTER_HOURS=24
 ```
 
-**Why force delete is useful here:**
-- qBittorrent may have share limits disabled or set differently
-- Some torrents might be configured to ignore share limits
-- Force delete ensures cleanup happens even if qBittorrent won't cooperate
-- FileFlows protection still prevents deletion during active processing
+FileFlows protection prevents deletion during active processing. Force delete handles torrents that qBittorrent won't auto-pause.
 
 ### Aggressive Space Management
-
-Remove completed torrents quickly to save disk space:
 
 ```yaml
 environment:
@@ -284,67 +216,21 @@ environment:
 
 ### Orphaned File Cleanup
 
-Clean up leftover files that aren't tracked by any active torrent (runs weekly by default):
-
 ```yaml
 volumes:
-  # Mount your download directories so the container can access them
   - /path/to/downloads:/downloads
-  - /path/to/completed:/downloads/completed
 
 environment:
   - CLEANUP_ORPHANED_FILES=true
-  # Use container paths (the paths after the : in volumes above)
   - ORPHANED_SCAN_DIRS=/downloads
-  - ORPHANED_MIN_AGE_HOURS=1.0  # Only remove files untouched for 1+ hours
-  - ORPHANED_SCHEDULE_DAYS=7  # Run every 7 days (weekly)
-  - DRY_RUN=true  # IMPORTANT: Test first to see what would be removed!
+  - ORPHANED_MIN_AGE_HOURS=1.0
+  - ORPHANED_SCHEDULE_DAYS=7
+  - DRY_RUN=true  # test first!
 ```
 
-**How it works:**
-1. Mounts your actual download directories into the container
-2. Scans the container paths for files/folders
-3. Checks each file against TWO criteria:
-   - Not tracked by any active torrent in qBittorrent
-   - Not modified/accessed for the minimum age (default 1 hour)
-4. Removes only files that meet BOTH criteria
-
-**Important:** Always test with `DRY_RUN=true` first to verify what will be deleted!
-
-**Orphaned File Logs:**
-The orphaned file scanner creates one timestamped log file per scan in `/config/`:
-
-- **`orphaned_dryrun_YYYY-MM-DD_HH-MM-SS.log`** - Dry run results
-  - Shows exactly what would be deleted
-  - Includes file/directory sizes in GB
-  - Example: `orphaned_dryrun_2025-11-06_04-16-33.log`
-
-- **`orphaned_cleanup_YYYY-MM-DD_HH-MM-SS.log`** - Actual deletion results
-  - Records what was deleted
-  - Includes file/directory sizes in GB
-  - Example: `orphaned_cleanup_2025-11-06_14-30-45.log`
-
-Each scan creates a separate log file, making it easy to track history and review results.
-
-Example workflow:
-```bash
-# 1. Run dry run to see what would be deleted
-docker-compose up -d  # with DRY_RUN=true
-
-# 2. Review the output (check the most recent file)
-ls -lt /home/torrent/qbt-cleanup/config/orphaned_dryrun_*.log | head -1
-cat /home/torrent/qbt-cleanup/config/orphaned_dryrun_2025-11-06_04-16-33.log
-
-# 3. If everything looks good, disable dry run
-# Edit docker-compose.yml: DRY_RUN=false
-docker-compose up -d
-```
-
-## Docker Compose Example
+## Docker Compose
 
 ```yaml
-version: '3'
-
 services:
   qbittorrent:
     image: hotio/qbittorrent:latest
@@ -355,7 +241,7 @@ services:
       - TZ=America/New_York
     volumes:
       - ./config:/config
-      - ./downloads:/downloads  # ← Note this path
+      - ./downloads:/downloads
     ports:
       - 8080:8080
 
@@ -367,8 +253,7 @@ services:
       - qbittorrent
     volumes:
       - ./qbt-cleanup/config:/config
-      # ⚠️ CRITICAL: Must use SAME path as qBittorrent container!
-      # qBittorrent uses /downloads, so we use /downloads (NOT /data/downloads)
+      # Must match qBittorrent's mount path for orphaned file cleanup
       - ./downloads:/downloads
     environment:
       # Connection
@@ -389,7 +274,7 @@ services:
       - CHECK_PUBLIC_PAUSED_ONLY=false
       - SCHEDULE_HOURS=6
 
-      # Advanced features (optional)
+      # Advanced (optional)
       - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
       - FORCE_DELETE_PUBLIC_AFTER_HOURS=12
       - CLEANUP_STALE_DOWNLOADS=true
@@ -397,15 +282,13 @@ services:
 
       # Orphaned file cleanup (optional)
       # - CLEANUP_ORPHANED_FILES=true
-      # - ORPHANED_SCAN_DIRS=/downloads  # Must match the volume mount path!
-      # - ORPHANED_SCHEDULE_DAYS=7  # Run every 7 days (weekly)
+      # - ORPHANED_SCAN_DIRS=/downloads
+      # - ORPHANED_SCHEDULE_DAYS=7
 ```
 
 ## Manual Control
 
 ### Trigger Immediate Cleanup
-
-Trigger an immediate cleanup without waiting for the schedule:
 
 ```bash
 docker kill --signal=SIGUSR1 qbt-cleanup
@@ -413,245 +296,129 @@ docker kill --signal=SIGUSR1 qbt-cleanup
 
 ### View Logs
 
-View real-time logs:
-
 ```bash
 docker logs -f qbt-cleanup
 ```
 
-### View Orphaned File Cleanup Logs
-
-Review orphaned file cleanup operations:
+### Orphaned Scan Logs
 
 ```bash
 # List all orphaned scan logs
 ls -lth ./qbt-cleanup/config/orphaned_*.log
 
-# View the most recent dry run log
+# View the most recent dry run
 cat $(ls -t ./qbt-cleanup/config/orphaned_dryrun_*.log | head -n1)
 
-# View the most recent cleanup log
+# View the most recent cleanup
 cat $(ls -t ./qbt-cleanup/config/orphaned_cleanup_*.log | head -n1)
-
-# Search for specific files in logs
-grep "Black.Phone" ./qbt-cleanup/config/orphaned_*.log
 ```
-
-These logs are stored in your mounted `/config` directory and persist across container restarts. Each scan creates a new timestamped log file.
 
 ### Blacklist Management
 
-Protect specific torrents from automatic deletion using the built-in control utility.
+Protect specific torrents from automatic deletion.
 
-#### Interactive Selection (Easiest)
-
-Use the interactive selector to see all torrents and toggle blacklist status by number:
+**Interactive selection (recommended):**
 
 ```bash
 docker exec -it qbt-cleanup qbt-cleanup-ctl select
 ```
 
-This displays a numbered list like:
-```
-#    Status Name                                                         Hash
-==========================================================================================
-1    [ ]    Ubuntu 22.04 LTS                                             a1b2c3d4e5f6...
-2    [B]    Important Movie (2023)                                       b2c3d4e5f6a1...
-3    [ ]    My Favorite Show S01E01                                      c3d4e5f6a1b2...
+Displays a numbered list of all torrents. Enter numbers to toggle blacklist status.
 
-[B] = Already blacklisted
-
-Enter torrent numbers to toggle blacklist (space-separated, e.g., '1 3 5')
-Or enter 'q' to quit without changes
-
-Select torrents: 1 3
-```
-
-This will toggle the blacklist status - adding if not blacklisted, removing if already blacklisted.
-
-#### Manual Commands
-
-For scripting or specific hash-based operations:
+**Manual commands:**
 
 ```bash
-# Add a torrent to the blacklist (prevents deletion)
-docker exec qbt-cleanup qbt-cleanup-ctl blacklist add <TORRENT_HASH>
+# Add to blacklist
+docker exec qbt-cleanup qbt-cleanup-ctl blacklist add <HASH>
+docker exec qbt-cleanup qbt-cleanup-ctl blacklist add <HASH> --name "Movie" --reason "Keep forever"
 
-# Add with name and reason (optional)
-docker exec qbt-cleanup qbt-cleanup-ctl blacklist add <TORRENT_HASH> --name "Important Movie" --reason "Keep forever"
-
-# List all blacklisted torrents
+# List blacklisted torrents
 docker exec qbt-cleanup qbt-cleanup-ctl blacklist list
 
-# Remove a torrent from the blacklist
-docker exec qbt-cleanup qbt-cleanup-ctl blacklist remove <TORRENT_HASH>
+# Remove from blacklist
+docker exec qbt-cleanup qbt-cleanup-ctl blacklist remove <HASH>
 
 # Clear entire blacklist
 docker exec qbt-cleanup qbt-cleanup-ctl blacklist clear -y
 
-# Check status and statistics
+# Show status and stats
 docker exec qbt-cleanup qbt-cleanup-ctl status
 
-# List all tracked torrents
+# List tracked torrents
 docker exec qbt-cleanup qbt-cleanup-ctl list --limit 10
 ```
 
-**Note:** The interactive `select` command requires the `-it` flags for Docker to enable interactive input.
-
-## Performance
-
-The tool uses SQLite for state management with optimized algorithms for fast operation even with large libraries:
-
-| Torrents | Load Time | Save Time | Memory Usage |
-|----------|-----------|-----------|--------------|
-| 500 | ~5ms | ~2ms per update | Minimal |
-| 5,000 | ~10ms | ~2ms per update | Minimal |
-| 50,000 | ~50ms | ~2ms per update | Minimal |
-
-### Optimizations
-
-- **Transaction Batching:** State updates are batched into single transactions for efficiency
-- **O(1) Path Matching:** Orphaned file scanner uses optimized index for near-constant time lookups
-- **FileFlows Cache Safety:** Falls back to cached data on API failure to maintain protection
-- **Indexed Queries:** SQLite database uses indexes for instant lookups
-
-### State Storage
-
-- **Database:** SQLite with indexed queries and WAL mode
-- **Location:** `/config/qbt_cleanup_state.db`
-- **Migration:** Automatic from JSON/MessagePack formats
-- **Cleanup:** Automatically removes torrents that no longer exist
-- **Blacklist:** Permanently stored in database, persists across restarts
-
 ## How It Works
-
-### Architecture
-
-The tool uses a modular Python package structure:
-
-- **src/qbt_cleanup/** - Main package directory
-  - **state.py** - SQLite database for persistent state management
-  - **client.py** - qBittorrent API wrapper with retry logic
-  - **classifier.py** - Torrent categorization logic
-  - **fileflows.py** - FileFlows API integration
-  - **orphaned_scanner.py** - Orphaned file detection and cleanup
-  - **cleanup.py** - Main orchestration
-  - **config.py** - Environment variable parsing
-  - **main.py** - Entry point and scheduler
-  - **ctl.py** - Control utility for runtime management
 
 ### Process Flow
 
-1. Connect to qBittorrent and FileFlows (if enabled)
-2. Fetch all torrents and their metadata
-3. Update SQLite database with current torrent states
-4. Remove database entries for non-existent torrents
-5. Check if torrents are blacklisted
-6. Classify torrents based on configured rules
-7. Check FileFlows protection status
-8. Delete torrents that meet criteria
-9. Run orphaned file cleanup (if enabled):
-   - Collect all active torrent file paths from qBittorrent
-   - Recursively scan configured directories and all subdirectories
-   - For each file/folder found, check if it's tracked by any active torrent
-   - Check file modification time (must be older than minimum age)
-   - Remove orphaned files/folders that meet both criteria
-10. Commit database changes
+1. Connect to qBittorrent (and FileFlows if enabled)
+2. Fetch all torrents and metadata
+3. Build torrent file lists (only when FileFlows is active)
+4. Update SQLite database with current torrent states
+5. Remove stale database entries for torrents no longer in qBittorrent
+6. Check blacklist, classify torrents against configured rules
+7. Check FileFlows protection for candidates marked for deletion
+8. Delete torrents that meet all criteria
+9. Run orphaned file cleanup on its own schedule (if enabled)
 
 ### Deletion Logic
 
-A torrent is deleted when it meets ANY of these conditions:
+A torrent is deleted when it meets ANY of:
 
-1. **Standard Deletion:** Ratio OR seeding time exceeded AND either:
-   - `CHECK_*_PAUSED_ONLY=false` (delete immediately when criteria met)
-   - `CHECK_*_PAUSED_ONLY=true` AND torrent is paused (wait for qBittorrent to pause it first)
+1. **Standard deletion** - Ratio OR seeding time exceeded, and either paused-only is off or the torrent is paused
+2. **Force delete** - Meets criteria but won't pause, and has exceeded the force delete threshold
+3. **Stalled cleanup** - Download stalled with no progress for the configured number of days
 
-2. **Force Delete:** When `CHECK_*_PAUSED_ONLY=true` but qBittorrent won't pause the torrent:
-   - Torrent meets ratio/time criteria
-   - Has been meeting criteria for longer than `FORCE_DELETE_*_AFTER_HOURS`
-   - Gets deleted even if still actively seeding
-   - Use this to handle torrents that are "stuck" seeding
+**Protected from deletion:**
+- Blacklisted torrents
+- Files actively being processed by FileFlows
+- Active downloads (except stalled)
+- Torrents that haven't met any deletion criteria
 
-3. **Stalled Cleanup:** Download stalled for too long (if enabled)
-   - Torrent is incomplete (downloading state)
-   - No download progress for X days
-   - Cleans up stuck/dead downloads
-
-**Deletion Flow Example:**
+### Architecture
 
 ```
-Torrent reaches 2.0 ratio at 10:00 AM
-├─ CHECK_PRIVATE_PAUSED_ONLY=false → Delete immediately
-├─ CHECK_PRIVATE_PAUSED_ONLY=true
-│  ├─ qBittorrent pauses it → Delete immediately
-│  └─ qBittorrent doesn't pause it
-│     ├─ FORCE_DELETE_PRIVATE_AFTER_HOURS=0 → Never delete (wait forever)
-│     └─ FORCE_DELETE_PRIVATE_AFTER_HOURS=48 → Delete after 48 hours (at 10:00 AM in 2 days)
+src/qbt_cleanup/
+  main.py              Entry point and scheduler
+  cleanup.py           Orchestration
+  client.py            qBittorrent API wrapper with retry logic
+  classifier.py        Torrent classification and deletion decisions
+  fileflows.py         FileFlows /api/status integration
+  orphaned_scanner.py  Orphaned file detection and cleanup
+  state.py             SQLite state management
+  config.py            Environment variable parsing
+  models.py            Data models
+  constants.py         Enums and constants
+  utils.py             Parsing and formatting helpers
+  ctl.py               CLI control utility (blacklist, status)
 ```
 
-**Protection from deletion:**
-- Files are being processed by FileFlows
-- They don't meet any deletion criteria
-- They're actively downloading (except stalled torrents)
-- They are on the blacklist (manually protected)
+### State Storage
 
-## Frequently Asked Questions
-
-### Can this tool rename files while keeping torrents seeding?
-
-No, this is not possible. The BitTorrent protocol requires exact file names and structures to match the torrent's metadata hash. If you rename files:
-- The torrent client cannot verify pieces against the metadata
-- The torrent will show as incomplete and stop seeding
-- You would need to create a new torrent with the renamed files
-
-This is a fundamental limitation of how BitTorrent works.
-
-### Why separate rules for Private and Public torrents?
-
-Private trackers typically have strict ratio requirements and track your account's performance. Public trackers generally don't have these requirements. This tool allows you to:
-- Maintain higher ratios on private trackers to keep good standing
-- Clean up public torrents more aggressively to save space
-- Use different strategies based on tracker type
-
-### How does the SQLite database improve performance?
-
-SQLite provides:
-- Indexed queries for instant lookups
-- Atomic updates without rewriting the entire file
-- Automatic cleanup of non-existent torrents
-- Crash recovery and data integrity
-- Efficient storage even with thousands of torrents
-
-### What happens if the container restarts?
-
-All state is preserved in the SQLite database at `/config/qbt_cleanup_state.db`. The tool will:
-- Continue tracking stalled durations
-- Remember previous torrent states
-- Automatically migrate from JSON if upgrading
+- **Engine:** SQLite with WAL mode and indexed queries
+- **Location:** `/config/qbt_cleanup_state.db`
+- **Migration:** Automatic from JSON/MessagePack formats on first run
+- **Cleanup:** Automatically removes entries for torrents no longer in qBittorrent
+- **Blacklist:** Stored in database, persists across restarts
 
 ## Compatibility
 
-- **qBittorrent** 4.3.0+ (5.0.0+ for enhanced private tracker detection)
-- **Sonarr/Radarr** - Doesn't interfere with their import process
-- **FileFlows** - Optional integration for processing protection
+- **qBittorrent** 4.3.0+ (5.0.0+ for native private tracker detection)
+- **Sonarr/Radarr** - Does not interfere with imports
+- **FileFlows** - Optional processing protection via `/api/status`
 - **Docker/Docker Compose** - Primary deployment method
-- **Kubernetes** - Configure via environment variables
 
 ## Troubleshooting
 
 ### Permission Issues
 
-If you see permission errors, ensure the config directory is writable:
-
 ```bash
-# Fix permissions (adjust UID:GID to match your setup)
 sudo chown -R 1000:1000 ./qbt-cleanup/config
 sudo chmod 755 ./qbt-cleanup/config
 ```
 
 ### SSL Certificate Warnings
-
-For self-signed certificates:
 
 ```yaml
 environment:
@@ -660,36 +427,30 @@ environment:
 
 ### Database Issues
 
-Check database status:
-
 ```bash
-# View database size
 ls -lh ./qbt-cleanup/config/qbt_cleanup_state.db
-
-# Check if database is accessible
-docker exec qbt-cleanup ls -la /config/
+docker exec qbt-cleanup qbt-cleanup-ctl status
 ```
 
-### Torrents Not Being Detected as Private
+### Private Tracker Detection
 
-The tool uses two methods to detect private torrents:
-1. qBittorrent 5.0.0+ `isPrivate` field (preferred)
-2. Tracker message analysis (fallback)
+The tool detects private torrents via:
+1. qBittorrent 5.0.0+ `isPrivate` field (preferred, no extra API calls)
+2. Tracker message analysis (fallback for older versions)
 
-If detection isn't working correctly, check your qBittorrent version and tracker configuration.
+Check your qBittorrent version and tracker configuration if detection isn't working.
 
-## Contributing
+## FAQ
 
-Contributions are welcome. The modular architecture makes it straightforward to:
-- Add new features or integrations
-- Improve classification logic
-- Enhance error handling
-- Add support for other torrent clients
+**Can this tool rename files while keeping torrents seeding?**
+No. BitTorrent requires exact file names matching the torrent metadata hash. Renaming files breaks piece verification and stops seeding.
+
+**Why separate rules for private and public?**
+Private trackers track your ratio and may ban accounts with poor standing. Public trackers don't. This lets you seed longer on private trackers while cleaning up public torrents quickly.
+
+**What happens on container restart?**
+All state is preserved in SQLite. Stalled durations, torrent history, blacklist entries, and orphaned cleanup schedule all persist.
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details
-
-## Acknowledgments
-
-Built for the self-hosting community to provide better torrent management that works seamlessly with the arr ecosystem.
+MIT License - See [LICENSE](LICENSE) for details.
