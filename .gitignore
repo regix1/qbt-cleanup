@@ -72,5 +72,15 @@ dmypy.json
 # Docker
 .dockerignore
 
+# Angular / Node
+web/node_modules/
+web/dist/
+web/.angular/
+web/.cache/
+web/npm-debug.log*
+web/yarn-debug.log*
+web/yarn-error.log*
+
 # Project specific
 config/
+nul

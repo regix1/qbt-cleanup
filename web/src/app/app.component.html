@@ -1,0 +1,43 @@
+<mat-sidenav-container class="app-container">
+  <mat-sidenav
+    mode="side"
+    [opened]="sidenavOpen()"
+    class="app-sidenav">
+    <div class="sidenav-header">
+      <mat-icon class="logo-icon">cleaning_services</mat-icon>
+      <span class="logo-text">qbt-cleanup</span>
+    </div>
+    <mat-nav-list>
+      @for (item of navItems; track item.path) {
+        <a mat-list-item
+           [routerLink]="item.path"
+           routerLinkActive="active-link"
+           [routerLinkActiveOptions]="{ exact: item.path === '/' }">
+          <mat-icon matListItemIcon>{{ item.icon }}</mat-icon>
+          <span matListItemTitle>{{ item.label }}</span>
+        </a>
+      }
+    </mat-nav-list>
+    <div class="sidenav-footer">
+      @if (version()) {
+        <span class="version-label">v{{ version() }}</span>
+      }
+    </div>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="app-content">
+    <mat-toolbar class="app-toolbar">
+      <button mat-icon-button (click)="toggleSidenav()">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="toolbar-title">qbt-cleanup</span>
+      <span class="spacer"></span>
+      @if (version()) {
+        <span class="toolbar-version">v{{ version() }}</span>
+      }
+    </mat-toolbar>
+    <div class="content-area">
+      <router-outlet />
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

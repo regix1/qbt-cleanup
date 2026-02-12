@@ -1,0 +1,120 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Blacklist</h2>
+    <div class="header-actions">
+      <button mat-raised-button (click)="loadBlacklist()">
+        <mat-icon>refresh</mat-icon>
+        Refresh
+      </button>
+      <button mat-raised-button
+              color="warn"
+              (click)="clearAll()"
+              [disabled]="entries().length === 0">
+        <mat-icon>delete_sweep</mat-icon>
+        Clear All
+      </button>
+    </div>
+  </div>
+
+  <mat-card class="section-card add-form-card">
+    <mat-card-header>
+      <mat-icon mat-card-avatar>add_circle</mat-icon>
+      <mat-card-title>Add to Blacklist</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="add-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Torrent Hash</mat-label>
+          <input matInput
+                 [ngModel]="newHash()"
+                 (ngModelChange)="newHash.set($event)"
+                 placeholder="Enter torrent info hash"
+                 required>
+          <mat-icon matPrefix>tag</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Name (optional)</mat-label>
+          <input matInput
+                 [ngModel]="newName()"
+                 (ngModelChange)="newName.set($event)"
+                 placeholder="Torrent name for reference">
+          <mat-icon matPrefix>label</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Reason (optional)</mat-label>
+          <input matInput
+                 [ngModel]="newReason()"
+                 (ngModelChange)="newReason.set($event)"
+                 placeholder="Why is this blacklisted?">
+          <mat-icon matPrefix>note</mat-icon>
+        </mat-form-field>
+
+        <button mat-raised-button
+                color="primary"
+                (click)="addEntry()"
+                [disabled]="!canAdd()">
+          <mat-icon>add</mat-icon>
+          Add Entry
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  @if (loading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="48"></mat-spinner>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table mat-table [dataSource]="dataSource" class="blacklist-table">
+
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let entry" class="name-cell">
+            <span [matTooltip]="entry.name">{{ entry.name || '--' }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="hash">
+          <th mat-header-cell *matHeaderCellDef>Hash</th>
+          <td mat-cell *matCellDef="let entry">
+            <span class="hash-cell" [matTooltip]="entry.hash">{{ truncateHash(entry.hash) }}</span>
+          </td>
+        </ng-container>
+
+        <ng-container matColumnDef="reason">
+          <th mat-header-cell *matHeaderCellDef>Reason</th>
+          <td mat-cell *matCellDef="let entry">{{ entry.reason || '--' }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="added_at">
+          <th mat-header-cell *matHeaderCellDef>Added</th>
+          <td mat-cell *matCellDef="let entry">{{ formatDate(entry.added_at) }}</td>
+        </ng-container>
+
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef>Actions</th>
+          <td mat-cell *matCellDef="let entry">
+            <button mat-icon-button
+                    color="warn"
+                    matTooltip="Remove from blacklist"
+                    (click)="removeEntry(entry)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+        <tr class="mat-row" *matNoDataRow>
+          <td class="mat-cell no-data-cell" [attr.colspan]="displayedColumns.length">
+            Blacklist is empty
+          </td>
+        </tr>
+      </table>
+    </div>
+  }
+</div>

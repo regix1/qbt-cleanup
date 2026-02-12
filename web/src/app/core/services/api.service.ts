@@ -1,0 +1,68 @@
+import { inject, Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import {
+  HealthResponse,
+  StatusResponse,
+  Torrent,
+  BlacklistEntry,
+  BlacklistAddRequest,
+  ActionResponse,
+  ConfigResponse,
+  ConfigUpdateRequest,
+  FileFlowsStatus,
+} from '../../shared/models';
+
+@Injectable({ providedIn: 'root' })
+export class ApiService {
+  private readonly baseUrl = '/api';
+  private readonly http = inject(HttpClient);
+
+  getHealth(): Observable<HealthResponse> {
+    return this.http.get<HealthResponse>(`${this.baseUrl}/health`);
+  }
+
+  getStatus(): Observable<StatusResponse> {
+    return this.http.get<StatusResponse>(`${this.baseUrl}/status`);
+  }
+
+  getTorrents(): Observable<Torrent[]> {
+    return this.http.get<Torrent[]>(`${this.baseUrl}/torrents`);
+  }
+
+  getBlacklist(): Observable<BlacklistEntry[]> {
+    return this.http.get<BlacklistEntry[]>(`${this.baseUrl}/blacklist`);
+  }
+
+  addToBlacklist(request: BlacklistAddRequest): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/blacklist`, request);
+  }
+
+  removeFromBlacklist(hash: string): Observable<ActionResponse> {
+    return this.http.delete<ActionResponse>(`${this.baseUrl}/blacklist/${hash}`);
+  }
+
+  clearBlacklist(): Observable<ActionResponse> {
+    return this.http.delete<ActionResponse>(`${this.baseUrl}/blacklist`);
+  }
+
+  getConfig(): Observable<ConfigResponse> {
+    return this.http.get<ConfigResponse>(`${this.baseUrl}/config`);
+  }
+
+  updateConfig(request: ConfigUpdateRequest): Observable<ActionResponse> {
+    return this.http.put<ActionResponse>(`${this.baseUrl}/config`, request);
+  }
+
+  runScan(): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/actions/scan`, {});
+  }
+
+  runOrphanedScan(): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/actions/orphaned-scan`, {});
+  }
+
+  getFileFlowsStatus(): Observable<FileFlowsStatus> {
+    return this.http.get<FileFlowsStatus>(`${this.baseUrl}/fileflows/status`);
+  }
+}

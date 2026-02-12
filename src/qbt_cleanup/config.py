@@ -115,6 +115,14 @@ class OrphanedFilesConfig:
 
 
 @dataclass
+class WebConfig:
+    """Web UI configuration."""
+    enabled: bool = field(default_factory=lambda: parse_bool("WEB_ENABLED", True))
+    port: int = field(default_factory=lambda: parse_int("WEB_PORT", 9999, 1))
+    host: str = field(default_factory=lambda: os.environ.get("WEB_HOST", "0.0.0.0"))
+
+
+@dataclass
 class Config:
     """Main configuration container."""
     connection: ConnectionConfig = field(default_factory=ConnectionConfig)
@@ -123,7 +131,8 @@ class Config:
     schedule: ScheduleConfig = field(default_factory=ScheduleConfig)
     fileflows: FileFlowsConfig = field(default_factory=FileFlowsConfig)
     orphaned: OrphanedFilesConfig = field(default_factory=OrphanedFilesConfig)
-    
+    web: WebConfig = field(default_factory=WebConfig)
+
     @classmethod
     def from_environment(cls) -> "Config":
         """Create configuration from environment variables."""

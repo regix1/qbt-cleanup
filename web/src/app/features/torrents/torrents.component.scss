@@ -1,0 +1,117 @@
+.filter-field {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 80px 0;
+}
+
+.table-container {
+  overflow-x: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.torrents-table {
+  width: 100%;
+}
+
+.name-cell {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.state-downloading {
+  background: rgba(79, 195, 247, 0.15);
+  color: var(--accent-blue);
+}
+
+.state-seeding {
+  background: rgba(102, 187, 106, 0.15);
+  color: var(--accent-green);
+}
+
+.state-paused {
+  background: rgba(255, 167, 38, 0.15);
+  color: var(--accent-orange);
+}
+
+.state-stalled {
+  background: rgba(239, 83, 80, 0.15);
+  color: var(--accent-red);
+}
+
+.state-error {
+  background: rgba(239, 83, 80, 0.25);
+  color: var(--accent-red);
+}
+
+.state-queued {
+  background: rgba(171, 71, 188, 0.15);
+  color: var(--accent-purple);
+}
+
+.state-checking {
+  background: rgba(79, 195, 247, 0.1);
+  color: var(--accent-blue);
+}
+
+.state-default {
+  background: rgba(224, 224, 224, 0.1);
+  color: var(--text-secondary);
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.private {
+    background: rgba(171, 71, 188, 0.15);
+    color: var(--accent-purple);
+  }
+
+  &.public {
+    background: rgba(102, 187, 106, 0.15);
+    color: var(--accent-green);
+  }
+}
+
+.blacklisted-icon {
+  color: var(--accent-orange);
+  font-size: 20px;
+}
+
+.blacklisted-row {
+  background: rgba(255, 167, 38, 0.03) !important;
+}
+
+.torrent-row {
+  cursor: default;
+  transition: background 0.15s ease;
+}
+
+.no-data-cell {
+  text-align: center;
+  padding: 40px !important;
+  color: var(--text-secondary);
+}

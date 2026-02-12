@@ -20,27 +20,32 @@ services:
       - qbittorrent
     volumes:
       - ./qbt-cleanup/config:/config
+    ports:
+      - 9999:9999
     environment:
       # Connection
       - QB_HOST=qbittorrent
       - QB_PORT=8080
       - QB_USERNAME=admin
       - QB_PASSWORD=adminadmin
-      
+
       # Cleanup rules
       - PRIVATE_RATIO=2.0
       - PRIVATE_DAYS=14
       - PUBLIC_RATIO=1.0
       - PUBLIC_DAYS=3
-      
+
       # Behavior
       - DELETE_FILES=true
       - CHECK_PRIVATE_PAUSED_ONLY=true
       - CHECK_PUBLIC_PAUSED_ONLY=false
       - SCHEDULE_HOURS=6
-      
+
       # Advanced features (optional)
       - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
       - FORCE_DELETE_PUBLIC_AFTER_HOURS=12
       - CLEANUP_STALE_DOWNLOADS=true
       - MAX_STALLED_DAYS=3
+
+      # Web UI
+      - WEB_PORT=9999

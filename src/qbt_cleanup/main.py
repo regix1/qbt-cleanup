@@ -4,18 +4,24 @@
 import logging
 import signal
 import sys
+import threading
 import time
 from threading import Event
 from datetime import datetime, timedelta
 
+import uvicorn
+
 from .config import Config
 from .cleanup import QbtCleanup
+from .config_overrides import ConfigOverrideManager
 from .constants import SECONDS_PER_HOUR
+from .api import create_app
+from .api.app_state import AppState
 
 # Custom log formatter with colors and clean text
 class PrettyFormatter(logging.Formatter):
     """Custom formatter with colors and clean text output."""
-    
+
     # ANSI color codes
     COLORS = {
         'DEBUG': '\033[36m',    # Cyan
@@ -27,22 +33,22 @@ class PrettyFormatter(logging.Formatter):
         'BOLD': '\033[1m',      # Bold
         'DIM': '\033[2m',       # Dim
     }
-    
+
     def __init__(self, use_colors=True):
         """Initialize formatter."""
         self.use_colors = use_colors and sys.stdout.isatty()
         super().__init__()
-    
+
     def format(self, record):
         """Format log record with colors."""
         # Get color for level
         levelname = record.levelname
         color = self.COLORS.get(levelname, '')
         reset = self.COLORS['RESET'] if self.use_colors else ''
-        
+
         # Format time
         time_str = datetime.fromtimestamp(record.created).strftime('%H:%M:%S')
-        
+
         # Build the formatted message
         if self.use_colors:
             # Colored output
@@ -57,11 +63,11 @@ class PrettyFormatter(logging.Formatter):
         else:
             # Plain output
             formatted = f"{time_str} [{levelname:5}] {record.getMessage()}"
-        
+
         # Add exception info if present
         if record.exc_info:
             formatted += f"\n{self.formatException(record.exc_info)}"
-        
+
         return formatted
 
 
@@ -72,11 +78,11 @@ def setup_logging(debug=False):
     root_logger = logging.getLogger()
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
-    
+
     # Create console handler with pretty formatter
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setFormatter(PrettyFormatter(use_colors=True))
-    
+
     # Set levels
     if debug:
         root_logger.setLevel(logging.DEBUG)
@@ -87,7 +93,8 @@ def setup_logging(debug=False):
         # Suppress some noisy loggers
         logging.getLogger('urllib3').setLevel(logging.WARNING)
         logging.getLogger('qbittorrentapi').setLevel(logging.WARNING)
-    
+        logging.getLogger('uvicorn').setLevel(logging.WARNING)
+
     root_logger.addHandler(console_handler)
 
 
@@ -114,10 +121,10 @@ def print_banner():
 def run_cleanup_cycle(config: Config) -> bool:
     """
     Run a single cleanup cycle.
-    
+
     Args:
         config: Application configuration
-        
+
     Returns:
         True if successful
     """
@@ -143,55 +150,78 @@ def main():
     """Main entry point."""
     # Set up pretty logging
     setup_logging(debug=False)
-    
+
     # Print banner
     print_banner()
-    
+
     # Load configuration
     config = Config.from_environment()
-    
+
+    # Create shared application state
+    app_state = AppState(config, manual_scan_event)
+
     # Set up signal handler for manual scan (SIGUSR1 is Unix-only)
     if hasattr(signal, 'SIGUSR1'):
         signal.signal(signal.SIGUSR1, signal_handler)
-    
+
+    # Start web UI if enabled
+    if config.web.enabled:
+        app = create_app(app_state)
+        web_thread = threading.Thread(
+            target=uvicorn.run,
+            args=(app,),
+            kwargs={"host": config.web.host, "port": config.web.port, "log_level": "warning"},
+            daemon=True,
+        )
+        web_thread.start()
+        logger.info(f"Web UI started on http://{config.web.host}:{config.web.port}")
+
     # Log startup information
     if config.schedule.run_once:
         logger.info(f"Mode: Single run")
     else:
         logger.info(f"Mode: Scheduled (every {config.schedule.interval_hours}h)")
         logger.info(f"Manual trigger: docker kill --signal=SIGUSR1 qbt-cleanup")
-    
+
     print("-" * 64)
-    
+
     # Run once mode
     if config.schedule.run_once:
+        app_state.set_running()
         success = run_cleanup_cycle(config)
+        app_state.update_after_run(success)
         if success:
             logger.info("Exiting successfully")
         else:
             logger.error("Exiting with errors")
         sys.exit(0 if success else 1)
-    
+
     # Scheduled mode
     while True:
         try:
+            # Reload config from overrides at the start of each cycle
+            config = ConfigOverrideManager.get_effective_config()
+            app_state.update_config(config)
+
             # Run cleanup
-            run_cleanup_cycle(config)
-            
+            app_state.set_running()
+            success = run_cleanup_cycle(config)
+            app_state.update_after_run(success)
+
             # Calculate next run time
             next_run_seconds = config.schedule.interval_hours * SECONDS_PER_HOUR
             next_run_time = datetime.now() + timedelta(seconds=next_run_seconds)
             logger.info(f"Next run: {next_run_time.strftime('%H:%M:%S')} ({config.schedule.interval_hours}h)")
             print("-" * 64)
-            
+
             # Wait for next run or manual trigger
-            manual_scan_event.clear()
-            triggered = manual_scan_event.wait(timeout=next_run_seconds)
-            
+            app_state.scan_event.clear()
+            triggered = app_state.scan_event.wait(timeout=next_run_seconds)
+
             if triggered:
                 logger.info("Manual scan requested")
                 print("-" * 64)
-            
+
         except KeyboardInterrupt:
             logger.info("Shutdown requested - goodbye")
             sys.exit(0)
