@@ -73,6 +73,9 @@ class ConfigOverrideManager:
             # If the current value is a dataclass, recurse into it
             if hasattr(current_value, "__dataclass_fields__") and isinstance(value, dict):
                 ConfigOverrideManager._apply_overrides(current_value, value)
+            elif isinstance(current_value, list) and isinstance(value, str):
+                # Handle comma-separated strings for list fields (e.g. scan_dirs)
+                setattr(instance, key, [s.strip() for s in value.split(",") if s.strip()])
             else:
                 setattr(instance, key, value)
 

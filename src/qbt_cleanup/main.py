@@ -4,7 +4,6 @@
 import logging
 import os
 import signal
-import socket
 import sys
 import threading
 import time
@@ -21,24 +20,14 @@ from .api import create_app
 from .api.app_state import AppState
 
 
-def _get_display_host() -> str:
-    """Get a meaningful display IP when bound to 0.0.0.0.
+def _get_display_host(bind_host: str) -> str:
+    """Get the display host for the startup log message.
 
-    Priority: WEB_DISPLAY_HOST env var > local routable IP > hostname lookup > fallback.
+    Returns WEB_DISPLAY_HOST env var if set, otherwise the actual bind address.
+    Inside Docker, the container cannot reliably determine the host's real IP,
+    so we show the bind address as-is (standard behaviour).
     """
-    env_host = os.environ.get("WEB_DISPLAY_HOST")
-    if env_host:
-        return env_host
-    try:
-        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
-            s.connect(("8.8.8.8", 80))
-            return s.getsockname()[0]
-    except OSError:
-        pass
-    try:
-        return socket.gethostbyname(socket.gethostname())
-    except socket.gaierror:
-        return "127.0.0.1"
+    return os.environ.get("WEB_DISPLAY_HOST", bind_host)
 
 
 # Custom log formatter with colors and clean text
@@ -199,9 +188,7 @@ def main():
             daemon=True,
         )
         web_thread.start()
-        display_host = config.web.host
-        if display_host == "0.0.0.0":
-            display_host = _get_display_host()
+        display_host = _get_display_host(config.web.host)
         logger.info(f"Web UI started on http://{display_host}:{config.web.port}")
 
     # Log startup information
