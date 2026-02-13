@@ -47,6 +47,7 @@ export class TorrentsComponent implements OnInit {
   // Dropdown state
   readonly openDropdown = signal<string>('');
   readonly actionMenuHash = signal<string>('');
+  readonly actionMenuPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
 
   // Sorting & pagination
   readonly sortField = signal<keyof Torrent>('name');
@@ -278,9 +279,6 @@ export class TorrentsComponent implements OnInit {
     if (!target.closest('.custom-dropdown')) {
       this.closeDropdowns();
     }
-    if (!target.closest('.action-menu-wrapper')) {
-      this.actionMenuHash.set('');
-    }
   }
 
   ngOnInit(): void {
@@ -451,8 +449,21 @@ export class TorrentsComponent implements OnInit {
     return state;
   }
 
-  toggleActionMenu(hash: string): void {
-    this.actionMenuHash.set(this.actionMenuHash() === hash ? '' : hash);
+  openActionMenu(event: MouseEvent, hash: string): void {
+    event.stopPropagation();
+    if (this.actionMenuHash() === hash) {
+      this.actionMenuHash.set('');
+      return;
+    }
+    const btn = (event.target as HTMLElement).closest('button')!;
+    const rect = btn.getBoundingClientRect();
+    this.actionMenuPos.set({ top: rect.bottom + 4, left: rect.right - 180 });
+    this.actionMenuHash.set(hash);
+  }
+
+  getMenuTorrent(hash: string): Torrent[] {
+    const torrent = this.torrents().find((t: Torrent) => t.hash === hash);
+    return torrent ? [torrent] : [];
   }
 
   toggleBlacklist(torrent: Torrent): void {

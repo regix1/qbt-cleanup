@@ -215,28 +215,9 @@
                 }
               </td>
               <td class="col-actions">
-                <div class="action-menu-wrapper" (click)="$event.stopPropagation()">
-                  <button class="btn btn-icon" title="Actions" (click)="toggleActionMenu(torrent.hash)">
-                    <i class="fa-solid fa-ellipsis-vertical"></i>
-                  </button>
-                  @if (actionMenuHash() === torrent.hash) {
-                    <div class="action-menu">
-                      <button class="action-menu-item" (click)="toggleBlacklist(torrent)">
-                        @if (torrent.is_blacklisted) {
-                          <i class="fa-solid fa-shield-halved"></i>
-                          <span>Remove from Blacklist</span>
-                        } @else {
-                          <i class="fa-solid fa-shield"></i>
-                          <span>Add to Blacklist</span>
-                        }
-                      </button>
-                      <button class="action-menu-item danger" (click)="deleteTorrent(torrent)">
-                        <i class="fa-solid fa-trash-can"></i>
-                        <span>Delete Torrent</span>
-                      </button>
-                    </div>
-                  }
-                </div>
+                <button class="btn btn-icon" title="Actions" (click)="openActionMenu($event, torrent.hash)">
+                  <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
               </td>
             </tr>
           } @empty {
@@ -260,3 +241,24 @@
     </div>
   }
 </div>
+
+@if (actionMenuHash(); as hash) {
+  <div class="action-menu-backdrop" (click)="actionMenuHash.set('')"></div>
+  <div class="action-menu" [style.top.px]="actionMenuPos().top" [style.left.px]="actionMenuPos().left">
+    @for (torrent of getMenuTorrent(hash); track torrent.hash) {
+      <button class="action-menu-item" (click)="toggleBlacklist(torrent)">
+        @if (torrent.is_blacklisted) {
+          <i class="fa-solid fa-shield-halved"></i>
+          <span>Remove from Blacklist</span>
+        } @else {
+          <i class="fa-solid fa-shield"></i>
+          <span>Add to Blacklist</span>
+        }
+      </button>
+      <button class="action-menu-item danger" (click)="deleteTorrent(torrent)">
+        <i class="fa-solid fa-trash-can"></i>
+        <span>Delete Torrent</span>
+      </button>
+    }
+  </div>
+}

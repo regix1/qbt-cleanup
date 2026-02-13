@@ -432,20 +432,20 @@
 }
 
 // Row action menu
-.action-menu-wrapper {
-  position: relative;
+.action-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
 }
 
 .action-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 180px;
+  position: fixed;
+  width: 180px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  z-index: 300;
+  z-index: 1000;
   overflow: hidden;
   animation: dropdown-open 150ms ease-out;
 }
