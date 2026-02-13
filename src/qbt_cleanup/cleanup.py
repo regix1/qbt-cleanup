@@ -220,10 +220,10 @@ class QbtCleanup:
             logger.warning("Orphaned file scanner not initialized")
             return True
 
+        from datetime import datetime, timezone
+
         # Check if enough time has passed since last run (skip check when forced)
         if not force:
-            from datetime import datetime, timezone, timedelta
-
             last_run_str = self.state.get_metadata("last_orphaned_cleanup")
             if last_run_str:
                 try:

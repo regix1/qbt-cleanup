@@ -4,7 +4,7 @@
 import sys
 import argparse
 from datetime import datetime
-from typing import Optional
+
 
 from .state import StateManager
 from .config import Config

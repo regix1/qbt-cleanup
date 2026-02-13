@@ -4,7 +4,7 @@
 import sqlite3
 import logging
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from typing import Dict, Any, Optional, List
 from pathlib import Path
 from contextlib import contextmanager

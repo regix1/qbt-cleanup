@@ -3,7 +3,7 @@
 
 import os
 from dataclasses import dataclass, field
-from typing import Optional
+
 
 from .utils import parse_bool, parse_float, parse_int
 
