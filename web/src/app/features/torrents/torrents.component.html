@@ -1,134 +1,167 @@
 <div class="page-container">
   <div class="page-header">
     <h2>Torrents</h2>
-    <button class="btn btn-primary" (click)="loadTorrents()">
-      <i class="fa-solid fa-arrows-rotate"></i>
-      <span>Refresh</span>
-    </button>
+    <div class="header-actions">
+      <button class="btn btn-secondary btn-sm" (click)="toggleCompactMode()" [title]="compactMode() ? 'Expand table' : 'Compact table'">
+        <i class="fa-solid" [class.fa-compress]="!compactMode()" [class.fa-expand]="compactMode()"></i>
+      </button>
+      <button class="btn btn-primary" (click)="loadTorrents()">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        <span>Refresh</span>
+      </button>
+    </div>
   </div>
 
   @if (loading()) {
     <app-loading-container size="lg" />
   } @else {
-    <div class="table-toolbar">
-      <div class="search-field">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="text" class="form-input"
-               placeholder="Filter by name, state, category..."
-               [value]="filterText()"
-               (input)="onFilterChange($event)" />
-      </div>
-      <div class="actions-dropdown">
-        <button class="btn btn-secondary btn-sm" (click)="toggleActionsMenu()">
-          <i class="fa-solid fa-filter"></i>
-          <span>Actions</span>
-          <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
-        </button>
-        @if (showActionsMenu()) {
-          <div class="dropdown-menu">
-            <button class="dropdown-item" (click)="clearFilter()">
-              <i class="fa-solid fa-xmark"></i> Clear Filter
-            </button>
-            <div class="dropdown-divider"></div>
+    <div class="filter-bar">
+      <div class="filter-row">
+        <div class="search-field">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" class="form-input"
+                 placeholder="Search by name..."
+                 [value]="searchText()"
+                 (input)="onSearchChange($event)" />
+        </div>
+        <div class="filter-dropdowns">
+          <select class="form-select" [value]="stateFilter()" (change)="onStateFilterChange($event)">
+            <option value="">All States</option>
             @for (state of availableStates(); track state) {
-              <button class="dropdown-item" (click)="filterByState(state)">
-                <span class="state-badge state-sm" [ngClass]="getStateColor(state)">{{ getStateLabel(state) }}</span>
-              </button>
+              <option [value]="state">{{ getStateLabel(state) }} ({{ state }})</option>
+            }
+          </select>
+          <select class="form-select" [value]="categoryFilter()" (change)="onCategoryFilterChange($event)">
+            <option value="">All Categories</option>
+            @for (cat of availableCategories(); track cat) {
+              <option [value]="cat">{{ cat }}</option>
+            }
+          </select>
+          <select class="form-select" [value]="typeFilter()" (change)="onTypeFilterChange($event)">
+            <option value="all">All Types</option>
+            <option value="private">Private</option>
+            <option value="public">Public</option>
+          </select>
+          <select class="form-select" [value]="blacklistFilter()" (change)="onBlacklistFilterChange($event)">
+            <option value="all">All Blacklist</option>
+            <option value="yes">Blacklisted</option>
+            <option value="no">Not Blacklisted</option>
+          </select>
+          <select class="form-select" [value]="trackerFilter()" (change)="onTrackerFilterChange($event)">
+            <option value="">All Trackers</option>
+            @for (tracker of availableTrackers(); track tracker) {
+              <option [value]="tracker">{{ tracker }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      @if (hasActiveFilters()) {
+        <div class="filter-chips-row">
+          <div class="filter-chips">
+            @for (filter of activeFilters(); track filter.type) {
+              <span class="filter-chip">
+                {{ filter.label }}
+                <button class="chip-dismiss" (click)="removeFilter(filter)">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </span>
             }
           </div>
-        }
-      </div>
+          <button class="btn btn-ghost btn-sm" (click)="clearAllFilters()">Clear All</button>
+        </div>
+      }
     </div>
 
-    <div class="table-container">
+    <div class="table-container" [class.compact-mode]="compactMode()">
       <table class="data-table">
         <thead>
           <tr>
-            <th (click)="sort('name')" class="sortable">
+            <th class="col-name sortable" (click)="sort('name')">
               Name
               <i class="fa-solid"
                  [class.fa-sort-up]="sortField() === 'name' && sortDirection() === 'asc'"
                  [class.fa-sort-down]="sortField() === 'name' && sortDirection() === 'desc'"
                  [class.fa-sort]="sortField() !== 'name'"></i>
             </th>
-            <th (click)="sort('state')" class="sortable">
+            <th class="col-state sortable" (click)="sort('state')">
               State
               <i class="fa-solid"
                  [class.fa-sort-up]="sortField() === 'state' && sortDirection() === 'asc'"
                  [class.fa-sort-down]="sortField() === 'state' && sortDirection() === 'desc'"
                  [class.fa-sort]="sortField() !== 'state'"></i>
             </th>
-            <th (click)="sort('ratio')" class="sortable">
+            <th class="col-ratio sortable" (click)="sort('ratio')">
               Ratio
               <i class="fa-solid"
                  [class.fa-sort-up]="sortField() === 'ratio' && sortDirection() === 'asc'"
                  [class.fa-sort-down]="sortField() === 'ratio' && sortDirection() === 'desc'"
                  [class.fa-sort]="sortField() !== 'ratio'"></i>
             </th>
-            <th (click)="sort('seeding_time')" class="sortable">
+            <th class="col-seed-time sortable" (click)="sort('seeding_time')">
               Seeding Time
               <i class="fa-solid"
                  [class.fa-sort-up]="sortField() === 'seeding_time' && sortDirection() === 'asc'"
                  [class.fa-sort-down]="sortField() === 'seeding_time' && sortDirection() === 'desc'"
                  [class.fa-sort]="sortField() !== 'seeding_time'"></i>
             </th>
-            <th (click)="sort('is_private')" class="sortable">
+            <th class="col-type sortable" (click)="sort('is_private')">
               Type
               <i class="fa-solid"
                  [class.fa-sort-up]="sortField() === 'is_private' && sortDirection() === 'asc'"
                  [class.fa-sort-down]="sortField() === 'is_private' && sortDirection() === 'desc'"
                  [class.fa-sort]="sortField() !== 'is_private'"></i>
             </th>
-            <th (click)="sort('size')" class="sortable">
+            <th class="col-size sortable" (click)="sort('size')">
               Size
               <i class="fa-solid"
                  [class.fa-sort-up]="sortField() === 'size' && sortDirection() === 'asc'"
                  [class.fa-sort-down]="sortField() === 'size' && sortDirection() === 'desc'"
                  [class.fa-sort]="sortField() !== 'size'"></i>
             </th>
-            <th (click)="sort('progress')" class="sortable">
+            <th class="col-progress sortable" (click)="sort('progress')">
               Progress
               <i class="fa-solid"
                  [class.fa-sort-up]="sortField() === 'progress' && sortDirection() === 'asc'"
                  [class.fa-sort-down]="sortField() === 'progress' && sortDirection() === 'desc'"
                  [class.fa-sort]="sortField() !== 'progress'"></i>
             </th>
-            <th (click)="sort('is_blacklisted')" class="sortable">
+            <th class="col-blacklist sortable" (click)="sort('is_blacklisted')">
               Blacklisted
               <i class="fa-solid"
                  [class.fa-sort-up]="sortField() === 'is_blacklisted' && sortDirection() === 'asc'"
                  [class.fa-sort-down]="sortField() === 'is_blacklisted' && sortDirection() === 'desc'"
                  [class.fa-sort]="sortField() !== 'is_blacklisted'"></i>
             </th>
-            <th>Actions</th>
+            <th class="col-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
           @for (torrent of paginatedTorrents(); track torrent.hash) {
             <tr [class.blacklisted-row]="torrent.is_blacklisted">
-              <td class="name-cell" [title]="torrent.name">{{ torrent.name }}</td>
-              <td>
+              <td class="col-name name-cell" [title]="torrent.name">{{ torrent.name }}</td>
+              <td class="col-state">
                 <span class="state-badge" [ngClass]="getStateColor(torrent.state, torrent.progress)">
                   {{ getStateLabel(torrent.state, torrent.progress) }}
                 </span>
               </td>
-              <td>{{ torrent.ratio | number:'1.2-2' }}</td>
-              <td>{{ formatSeedingTime(torrent.seeding_time) }}</td>
-              <td>
+              <td class="col-ratio">{{ torrent.ratio | number:'1.2-2' }}</td>
+              <td class="col-seed-time">{{ formatSeedingTime(torrent.seeding_time) }}</td>
+              <td class="col-type">
                 @if (torrent.is_private) {
                   <span class="type-badge private">Private</span>
                 } @else {
                   <span class="type-badge public">Public</span>
                 }
               </td>
-              <td>{{ formatSize(torrent.size) }}</td>
-              <td>{{ formatProgress(torrent.progress) }}</td>
-              <td>
+              <td class="col-size">{{ formatSize(torrent.size) }}</td>
+              <td class="col-progress">{{ formatProgress(torrent.progress) }}</td>
+              <td class="col-blacklist">
                 @if (torrent.is_blacklisted) {
                   <i class="fa-solid fa-shield blacklisted-icon"></i>
                 }
               </td>
-              <td>
+              <td class="col-actions">
                 <button class="btn btn-icon"
                         [title]="torrent.is_blacklisted ? 'Remove from blacklist' : 'Add to blacklist'"
                         (click)="toggleBlacklist(torrent)">
@@ -143,12 +176,15 @@
           }
         </tbody>
       </table>
+    </div>
 
+    <div class="pagination-bar">
+      <span class="pagination-info">{{ paginationInfo() }}</span>
       @if (totalPages() > 1) {
-        <div class="pagination">
-          <button [disabled]="currentPage() === 0" (click)="prevPage()">Previous</button>
+        <div class="pagination-controls">
+          <button class="btn btn-secondary btn-sm" [disabled]="currentPage() === 0" (click)="prevPage()">Previous</button>
           <span class="page-info">Page {{ currentPage() + 1 }} of {{ totalPages() }}</span>
-          <button [disabled]="currentPage() >= totalPages() - 1" (click)="nextPage()">Next</button>
+          <button class="btn btn-secondary btn-sm" [disabled]="currentPage() >= totalPages() - 1" (click)="nextPage()">Next</button>
         </div>
       }
     </div>
