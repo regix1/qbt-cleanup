@@ -10,37 +10,37 @@
   @if (loading()) {
     <app-loading-container size="lg" />
   } @else {
-    <div class="table-container">
-      <div class="table-toolbar">
-        <div class="search-field">
-          <i class="fa-solid fa-magnifying-glass"></i>
-          <input type="text" class="form-input"
-                 placeholder="Filter by name, state, category..."
-                 [value]="filterText()"
-                 (input)="onFilterChange($event)" />
-        </div>
-        <div class="actions-dropdown">
-          <button class="btn btn-secondary btn-sm" (click)="toggleActionsMenu()">
-            <i class="fa-solid fa-filter"></i>
-            <span>Actions</span>
-            <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
-          </button>
-          @if (showActionsMenu()) {
-            <div class="dropdown-menu">
-              <button class="dropdown-item" (click)="clearFilter()">
-                <i class="fa-solid fa-xmark"></i> Clear Filter
-              </button>
-              <div class="dropdown-divider"></div>
-              @for (state of availableStates(); track state) {
-                <button class="dropdown-item" (click)="filterByState(state)">
-                  <span class="state-badge state-sm" [ngClass]="getStateColor(state)">{{ getStateLabel(state) }}</span>
-                </button>
-              }
-            </div>
-          }
-        </div>
+    <div class="table-toolbar">
+      <div class="search-field">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" class="form-input"
+               placeholder="Filter by name, state, category..."
+               [value]="filterText()"
+               (input)="onFilterChange($event)" />
       </div>
+      <div class="actions-dropdown">
+        <button class="btn btn-secondary btn-sm" (click)="toggleActionsMenu()">
+          <i class="fa-solid fa-filter"></i>
+          <span>Actions</span>
+          <i class="fa-solid fa-chevron-down" style="font-size: 10px; margin-left: 2px;"></i>
+        </button>
+        @if (showActionsMenu()) {
+          <div class="dropdown-menu">
+            <button class="dropdown-item" (click)="clearFilter()">
+              <i class="fa-solid fa-xmark"></i> Clear Filter
+            </button>
+            <div class="dropdown-divider"></div>
+            @for (state of availableStates(); track state) {
+              <button class="dropdown-item" (click)="filterByState(state)">
+                <span class="state-badge state-sm" [ngClass]="getStateColor(state)">{{ getStateLabel(state) }}</span>
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
 
+    <div class="table-container">
       <table class="data-table">
         <thead>
           <tr>

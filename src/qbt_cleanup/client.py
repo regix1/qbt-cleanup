@@ -32,6 +32,7 @@ class QBittorrentClient:
         """
         self.config = config
         self._client: Optional[qbittorrentapi.Client] = None
+        self._quiet: bool = False
         self._privacy_method_logged = False
         self._privacy_cache: Dict[str, bool] = {}
 
@@ -42,9 +43,12 @@ class QBittorrentClient:
             raise RuntimeError("Client not connected")
         return self._client
 
-    def connect(self) -> bool:
+    def connect(self, *, quiet: bool = False) -> bool:
         """
         Connect to qBittorrent.
+
+        Args:
+            quiet: If True, suppress connect/disconnect log messages (for API polling).
 
         Returns:
             True if connection successful
@@ -74,10 +78,17 @@ class QBittorrentClient:
                 api_version = self._client.app.web_api_version
                 ssl_status = "enabled" if self.config.verify_ssl else "disabled"
 
-                logger.info(
-                    f"Connected to qBittorrent {version} "
-                    f"(API: {api_version}, SSL: {ssl_status})"
-                )
+                self._quiet = quiet
+                if not quiet:
+                    logger.info(
+                        f"Connected to qBittorrent {version} "
+                        f"(API: {api_version}, SSL: {ssl_status})"
+                    )
+                else:
+                    logger.debug(
+                        f"Connected to qBittorrent {version} "
+                        f"(API: {api_version}, SSL: {ssl_status})"
+                    )
                 return True
 
             except (qbittorrentapi.LoginFailed, qbittorrentapi.APIConnectionError) as e:
@@ -100,11 +111,15 @@ class QBittorrentClient:
         if self._client:
             try:
                 self._client.auth_log_out()
-                logger.info("Disconnected from qBittorrent")
+                if not getattr(self, '_quiet', False):
+                    logger.info("Disconnected from qBittorrent")
+                else:
+                    logger.debug("Disconnected from qBittorrent")
             except Exception as e:
                 logger.debug(f"Logout error (ignored): {e}")
             finally:
                 self._client = None
+                self._quiet = False
                 self._privacy_cache.clear()
 
     def get_torrents(self) -> Optional[List[Any]]:
@@ -147,13 +162,15 @@ class QBittorrentClient:
         # Try newer API field first (qBittorrent 5.0.0+)
         if hasattr(torrent, 'isPrivate') and torrent.isPrivate is not None:
             if not self._privacy_method_logged:
-                logger.info("Using qBittorrent 5.0.0+ isPrivate field")
+                log_fn = logger.debug if self._quiet else logger.info
+                log_fn("Using qBittorrent 5.0.0+ isPrivate field")
                 self._privacy_method_logged = True
             is_private = torrent.isPrivate
         else:
             # Fallback to tracker message checking
             if not self._privacy_method_logged:
-                logger.info("Using tracker message method for privacy detection")
+                log_fn = logger.debug if self._quiet else logger.info
+                log_fn("Using tracker message method for privacy detection")
                 self._privacy_method_logged = True
 
             is_private = self._check_private_via_trackers(torrent_hash)

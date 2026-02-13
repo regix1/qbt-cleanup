@@ -39,7 +39,7 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
         state_mgr = StateManager()
         qbt_client = QBittorrentClient(config.connection)
 
-        if not qbt_client.connect():
+        if not qbt_client.connect(quiet=True):
             raise HTTPException(
                 status_code=503,
                 detail="Unable to connect to qBittorrent",

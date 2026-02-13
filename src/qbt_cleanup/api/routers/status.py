@@ -75,7 +75,7 @@ def status(request: Request) -> StatusResponse:
         qbt_client = QBittorrentClient(config.connection)
 
         # Connect and gather torrent stats
-        if qbt_client.connect():
+        if qbt_client.connect(quiet=True):
             torrents = qbt_client.get_torrents()
             if torrents is not None:
                 torrent_count = len(torrents)
