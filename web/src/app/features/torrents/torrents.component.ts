@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, signal, OnInit } from '@angular/core';
+import { Component, computed, DestroyRef, HostListener, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../core/services/api.service';
@@ -43,6 +43,9 @@ export class TorrentsComponent implements OnInit {
 
   // Layout
   readonly compactMode = signal<boolean>(false);
+
+  // Dropdown state
+  readonly openDropdown = signal<string>('');
 
   // Sorting & pagination
   readonly sortField = signal<keyof Torrent>('name');
@@ -104,6 +107,29 @@ export class TorrentsComponent implements OnInit {
   });
 
   readonly hasActiveFilters = computed<boolean>(() => this.activeFilters().length > 0);
+
+  // Dropdown display labels
+  readonly stateFilterLabel = computed<string>(() =>
+    this.stateFilter() ? this.getStateLabel(this.stateFilter()) + ' (' + this.stateFilter() + ')' : 'All States',
+  );
+
+  readonly categoryFilterLabel = computed<string>(() =>
+    this.categoryFilter() || 'All Categories',
+  );
+
+  readonly typeFilterLabel = computed<string>(() => {
+    const v = this.typeFilter();
+    return v === 'all' ? 'All Types' : v === 'private' ? 'Private' : 'Public';
+  });
+
+  readonly blacklistFilterLabel = computed<string>(() => {
+    const v = this.blacklistFilter();
+    return v === 'all' ? 'All Blacklist' : v === 'yes' ? 'Blacklisted' : 'Not Blacklisted';
+  });
+
+  readonly trackerFilterLabel = computed<string>(() =>
+    this.trackerFilter() || 'All Trackers',
+  );
 
   readonly filteredTorrents = computed<Torrent[]>(() => {
     let result = this.torrents();
@@ -245,6 +271,14 @@ export class TorrentsComponent implements OnInit {
     unknown: 'Unknown',
   };
 
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.custom-dropdown')) {
+      this.closeDropdowns();
+    }
+  }
+
   ngOnInit(): void {
     this.loadTorrents();
   }
@@ -265,6 +299,18 @@ export class TorrentsComponent implements OnInit {
       });
   }
 
+  toggleDropdown(name: string): void {
+    if (this.openDropdown() === name) {
+      this.openDropdown.set('');
+    } else {
+      this.openDropdown.set(name);
+    }
+  }
+
+  closeDropdowns(): void {
+    this.openDropdown.set('');
+  }
+
   sort(field: keyof Torrent): void {
     if (this.sortField() === field) {
       this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
@@ -281,34 +327,34 @@ export class TorrentsComponent implements OnInit {
     this.currentPage.set(0);
   }
 
-  onStateFilterChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+  onStateFilterChange(value: string): void {
     this.stateFilter.set(value);
     this.currentPage.set(0);
+    this.closeDropdowns();
   }
 
-  onCategoryFilterChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+  onCategoryFilterChange(value: string): void {
     this.categoryFilter.set(value);
     this.currentPage.set(0);
+    this.closeDropdowns();
   }
 
-  onTypeFilterChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value as 'all' | 'private' | 'public';
+  onTypeFilterChange(value: 'all' | 'private' | 'public'): void {
     this.typeFilter.set(value);
     this.currentPage.set(0);
+    this.closeDropdowns();
   }
 
-  onBlacklistFilterChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value as 'all' | 'yes' | 'no';
+  onBlacklistFilterChange(value: 'all' | 'yes' | 'no'): void {
     this.blacklistFilter.set(value);
     this.currentPage.set(0);
+    this.closeDropdowns();
   }
 
-  onTrackerFilterChange(event: Event): void {
-    const value = (event.target as HTMLSelectElement).value;
+  onTrackerFilterChange(value: string): void {
     this.trackerFilter.set(value);
     this.currentPage.set(0);
+    this.closeDropdowns();
   }
 
   removeFilter(filter: ActiveFilter): void {

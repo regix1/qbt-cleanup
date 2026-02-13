@@ -2,8 +2,11 @@
   <div class="page-header">
     <h2>Torrents</h2>
     <div class="header-actions">
-      <button class="btn btn-secondary btn-sm" (click)="toggleCompactMode()" [title]="compactMode() ? 'Expand table' : 'Compact table'">
-        <i class="fa-solid" [class.fa-compress]="!compactMode()" [class.fa-expand]="compactMode()"></i>
+      <button class="btn btn-toggle btn-sm"
+              [class.active]="compactMode()"
+              (click)="toggleCompactMode()"
+              [title]="compactMode() ? 'Expand table' : 'Compact table'">
+        <i class="fa-solid" [class.fa-table-columns]="compactMode()" [class.fa-table]="!compactMode()"></i>
       </button>
       <button class="btn btn-primary" (click)="loadTorrents()">
         <i class="fa-solid fa-arrows-rotate"></i>
@@ -25,34 +28,84 @@
                  (input)="onSearchChange($event)" />
         </div>
         <div class="filter-dropdowns">
-          <select class="form-select" [value]="stateFilter()" (change)="onStateFilterChange($event)">
-            <option value="">All States</option>
-            @for (state of availableStates(); track state) {
-              <option [value]="state">{{ getStateLabel(state) }} ({{ state }})</option>
+          <div class="custom-dropdown" (click)="$event.stopPropagation()">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'state'" (click)="toggleDropdown('state')">
+              <span>{{ stateFilterLabel() }}</span>
+              <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+            </button>
+            @if (openDropdown() === 'state') {
+              <div class="dropdown-panel">
+                <div class="dropdown-option" [class.selected]="stateFilter() === ''" (click)="onStateFilterChange('')">All States</div>
+                @for (state of availableStates(); track state) {
+                  <div class="dropdown-option" [class.selected]="stateFilter() === state" (click)="onStateFilterChange(state)">
+                    {{ getStateLabel(state) }} ({{ state }})
+                  </div>
+                }
+              </div>
             }
-          </select>
-          <select class="form-select" [value]="categoryFilter()" (change)="onCategoryFilterChange($event)">
-            <option value="">All Categories</option>
-            @for (cat of availableCategories(); track cat) {
-              <option [value]="cat">{{ cat }}</option>
+          </div>
+
+          <div class="custom-dropdown" (click)="$event.stopPropagation()">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'category'" (click)="toggleDropdown('category')">
+              <span>{{ categoryFilterLabel() }}</span>
+              <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+            </button>
+            @if (openDropdown() === 'category') {
+              <div class="dropdown-panel">
+                <div class="dropdown-option" [class.selected]="categoryFilter() === ''" (click)="onCategoryFilterChange('')">All Categories</div>
+                @for (cat of availableCategories(); track cat) {
+                  <div class="dropdown-option" [class.selected]="categoryFilter() === cat" (click)="onCategoryFilterChange(cat)">
+                    {{ cat }}
+                  </div>
+                }
+              </div>
             }
-          </select>
-          <select class="form-select" [value]="typeFilter()" (change)="onTypeFilterChange($event)">
-            <option value="all">All Types</option>
-            <option value="private">Private</option>
-            <option value="public">Public</option>
-          </select>
-          <select class="form-select" [value]="blacklistFilter()" (change)="onBlacklistFilterChange($event)">
-            <option value="all">All Blacklist</option>
-            <option value="yes">Blacklisted</option>
-            <option value="no">Not Blacklisted</option>
-          </select>
-          <select class="form-select" [value]="trackerFilter()" (change)="onTrackerFilterChange($event)">
-            <option value="">All Trackers</option>
-            @for (tracker of availableTrackers(); track tracker) {
-              <option [value]="tracker">{{ tracker }}</option>
+          </div>
+
+          <div class="custom-dropdown" (click)="$event.stopPropagation()">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'type'" (click)="toggleDropdown('type')">
+              <span>{{ typeFilterLabel() }}</span>
+              <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+            </button>
+            @if (openDropdown() === 'type') {
+              <div class="dropdown-panel">
+                <div class="dropdown-option" [class.selected]="typeFilter() === 'all'" (click)="onTypeFilterChange('all')">All Types</div>
+                <div class="dropdown-option" [class.selected]="typeFilter() === 'private'" (click)="onTypeFilterChange('private')">Private</div>
+                <div class="dropdown-option" [class.selected]="typeFilter() === 'public'" (click)="onTypeFilterChange('public')">Public</div>
+              </div>
             }
-          </select>
+          </div>
+
+          <div class="custom-dropdown" (click)="$event.stopPropagation()">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'blacklist'" (click)="toggleDropdown('blacklist')">
+              <span>{{ blacklistFilterLabel() }}</span>
+              <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+            </button>
+            @if (openDropdown() === 'blacklist') {
+              <div class="dropdown-panel">
+                <div class="dropdown-option" [class.selected]="blacklistFilter() === 'all'" (click)="onBlacklistFilterChange('all')">All Blacklist</div>
+                <div class="dropdown-option" [class.selected]="blacklistFilter() === 'yes'" (click)="onBlacklistFilterChange('yes')">Blacklisted</div>
+                <div class="dropdown-option" [class.selected]="blacklistFilter() === 'no'" (click)="onBlacklistFilterChange('no')">Not Blacklisted</div>
+              </div>
+            }
+          </div>
+
+          <div class="custom-dropdown" (click)="$event.stopPropagation()">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'tracker'" (click)="toggleDropdown('tracker')">
+              <span>{{ trackerFilterLabel() }}</span>
+              <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+            </button>
+            @if (openDropdown() === 'tracker') {
+              <div class="dropdown-panel">
+                <div class="dropdown-option" [class.selected]="trackerFilter() === ''" (click)="onTrackerFilterChange('')">All Trackers</div>
+                @for (tracker of availableTrackers(); track tracker) {
+                  <div class="dropdown-option" [class.selected]="trackerFilter() === tracker" (click)="onTrackerFilterChange(tracker)">
+                    {{ tracker }}
+                  </div>
+                }
+              </div>
+            }
+          </div>
         </div>
       </div>
 

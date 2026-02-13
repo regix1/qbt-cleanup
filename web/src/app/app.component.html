@@ -2,32 +2,30 @@
 <app-confirm-dialog />
 
 <div class="app-container">
-  @if (sidenavOpen()) {
-    <div class="sidenav-overlay" (click)="toggleSidenav()"></div>
-    <aside class="app-sidenav">
-      <div class="sidenav-header">
-        <img src="bee.svg" alt="logo" class="logo-icon" />
-        <span class="logo-text">qbt-cleanup</span>
-      </div>
-      <nav class="nav-list">
-        @for (item of navItems; track item.path) {
-          <a class="nav-item"
-             [routerLink]="item.path"
-             routerLinkActive="active-link"
-             [routerLinkActiveOptions]="{ exact: item.path === '/' }"
-             (click)="closeSidenavOnMobile()">
-            <i [class]="item.icon"></i>
-            <span>{{ item.label }}</span>
-          </a>
-        }
-      </nav>
-      <div class="sidenav-footer">
-        @if (version()) {
-          <span class="version-label">v{{ version() }}</span>
-        }
-      </div>
-    </aside>
-  }
+  <div class="sidenav-overlay" [class.visible]="sidenavOpen()" (click)="toggleSidenav()"></div>
+  <aside class="app-sidenav" [class.open]="sidenavOpen()">
+    <div class="sidenav-header">
+      <img src="bee.svg" alt="logo" class="logo-icon" />
+      <span class="logo-text">qbt-cleanup</span>
+    </div>
+    <nav class="nav-list">
+      @for (item of navItems; track item.path) {
+        <a class="nav-item"
+           [routerLink]="item.path"
+           routerLinkActive="active-link"
+           [routerLinkActiveOptions]="{ exact: item.path === '/' }"
+           (click)="closeSidenavOnMobile()">
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+    <div class="sidenav-footer">
+      @if (version()) {
+        <span class="version-label">v{{ version() }}</span>
+      }
+    </div>
+  </aside>
 
   <div class="app-content">
     <header class="app-toolbar">

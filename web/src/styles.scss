@@ -45,6 +45,7 @@ a {
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
+  animation: page-enter 0.35s ease-out both;
 
   @media (max-width: 768px) {
     padding: 16px;
@@ -579,6 +580,21 @@ select.form-input {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section-card, .stat-card {
+  animation: page-enter 0.4s ease-out both;
 }
 
 .loading-container {
