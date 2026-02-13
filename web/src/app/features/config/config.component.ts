@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../core/services/api.service';
@@ -48,6 +48,9 @@ export class ConfigComponent implements OnInit {
   private readonly notify = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
+  private readonly scrollSentinel = viewChild<ElementRef<HTMLElement>>('scrollSentinel');
+  readonly isStuck = signal(false);
+
   readonly sections = signal<ConfigSection[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
@@ -56,6 +59,20 @@ export class ConfigComponent implements OnInit {
       section.fields.some((field: ConfigField) => field.modified)
     )
   );
+
+  constructor() {
+    afterNextRender(() => {
+      const sentinel = this.scrollSentinel()?.nativeElement;
+      if (!sentinel) return;
+
+      const observer = new IntersectionObserver(
+        (entries: IntersectionObserverEntry[]) => this.isStuck.set(!entries[0].isIntersecting),
+        { threshold: 0 }
+      );
+      observer.observe(sentinel);
+      this.destroyRef.onDestroy(() => observer.disconnect());
+    });
+  }
 
   private readonly fieldDescriptions: Readonly<Record<string, Record<string, string>>> = {
     connection: {

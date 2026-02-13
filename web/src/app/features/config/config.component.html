@@ -1,5 +1,6 @@
 <div class="page-container">
-  <div class="page-header">
+  <div class="scroll-sentinel" #scrollSentinel></div>
+  <div class="page-header" [class.stuck]="isStuck()">
     <h2>Configuration</h2>
     <div class="header-actions">
       <button class="btn btn-secondary" (click)="loadConfig()">

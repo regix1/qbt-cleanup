@@ -1,3 +1,29 @@
+.scroll-sentinel {
+  height: 1px;
+  margin-bottom: -1px;
+}
+
+:host ::ng-deep .page-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--bg-primary);
+  margin: 0 -24px 24px;
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  &.stuck {
+    border-bottom-color: var(--border-color);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  @media (max-width: 768px) {
+    margin: 0 -16px 24px;
+    padding: 16px 16px 12px;
+  }
+}
+
 .header-actions {
   display: flex;
   gap: 12px;
