@@ -4,6 +4,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from .. import __version__
@@ -41,9 +42,20 @@ def create_app(app_state: AppState) -> FastAPI:
     app.include_router(actions.router, prefix="/api", tags=["actions"])
     app.include_router(fileflows.router, prefix="/api", tags=["fileflows"])
 
-    # Mount static files for Angular SPA (must be last - catch-all)
+    # Serve Angular SPA with deep-link support
     static_dir = "/app/web"
     if os.path.isdir(static_dir):
-        app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+        index_path = os.path.join(static_dir, "index.html")
+
+        # Mount static assets (JS/CSS/images) — does NOT handle SPA fallback
+        app.mount("/assets", StaticFiles(directory=static_dir), name="static-assets")
+
+        @app.get("/{full_path:path}")
+        async def serve_spa(full_path: str) -> FileResponse:
+            """Serve static files if they exist, otherwise index.html for Angular routing."""
+            file_path = os.path.join(static_dir, full_path)
+            if full_path and os.path.isfile(file_path):
+                return FileResponse(file_path)
+            return FileResponse(index_path)
 
     return app

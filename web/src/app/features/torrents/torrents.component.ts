@@ -30,7 +30,7 @@ export class TorrentsComponent implements OnInit {
   readonly loading = signal<boolean>(true);
 
   readonly filterText = signal<string>('');
-  readonly sortField = signal<string>('name');
+  readonly sortField = signal<keyof Torrent>('name');
   readonly sortDirection = signal<'asc' | 'desc'>('asc');
   readonly currentPage = signal<number>(0);
   readonly pageSize = signal<number>(25);
@@ -58,8 +58,8 @@ export class TorrentsComponent implements OnInit {
     const direction = this.sortDirection();
 
     items.sort((a: Torrent, b: Torrent) => {
-      const aValue = a[field as keyof Torrent];
-      const bValue = b[field as keyof Torrent];
+      const aValue = a[field];
+      const bValue = b[field];
 
       let comparison = 0;
       if (typeof aValue === 'string' && typeof bValue === 'string') {
@@ -151,7 +151,7 @@ export class TorrentsComponent implements OnInit {
       });
   }
 
-  sort(field: string): void {
+  sort(field: keyof Torrent): void {
     if (this.sortField() === field) {
       this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
     } else {
@@ -172,7 +172,7 @@ export class TorrentsComponent implements OnInit {
   }
 
   filterByState(state: string): void {
-    this.filterText.set(this.getStateLabel(state));
+    this.filterText.set(state);
     this.currentPage.set(0);
     this.showActionsMenu.set(false);
   }
