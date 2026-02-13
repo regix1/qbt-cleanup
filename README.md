@@ -10,7 +10,7 @@ Automated torrent management for qBittorrent with Sonarr/Radarr compatibility.
 
 Automates torrent cleanup in qBittorrent based on ratio and seeding time. Works alongside Sonarr/Radarr without breaking their imports. Supports separate rules for private and public trackers so you can maintain good standing on private trackers while cleaning up public torrents more aggressively.
 
-Runs in Docker, persists state in SQLite, and includes a web UI for monitoring and management. Supports optional FileFlows integration and orphaned file cleanup.
+Runs in Docker, persists state in SQLite, and includes a web UI for monitoring and management. Runtime configuration overrides can be applied through the web UI without restarting the container. Supports optional FileFlows integration and orphaned file cleanup. Scans can be triggered via the scheduler, SIGUSR1 signal, the Web UI, or the REST API.
 
 ## Quick Start
 
@@ -31,6 +31,8 @@ docker run -d \
   ghcr.io/regix1/qbittorrent-cleanup:latest
 ```
 
+The web UI is available at `http://your-server-ip:9999` after starting.
+
 For orphaned file cleanup, mount your download directories at the **same path** as qBittorrent:
 
 ```bash
@@ -39,23 +41,52 @@ For orphaned file cleanup, mount your download directories at the **same path** 
 -e ORPHANED_SCAN_DIRS=/downloads
 ```
 
+To disable the web interface: `-e WEB_ENABLED=false`
+
 ## Web UI
 
-The tool includes a built-in web interface for monitoring and managing your torrent cleanup. Access it at `http://your-server-ip:9999` after starting the container.
+Access the web interface at `http://your-server-ip:9999`. Requires port mapping (`-p 9999:9999` in Docker or `ports: - 9999:9999` in Compose). Interactive API documentation is available at `/api/docs` (Swagger UI).
 
-**Features:**
-- Dashboard with live status, next run countdown, and cleanup statistics
-- Torrent list with filtering and sorting
-- Blacklist management
-- FileFlows integration status
-- Configuration overview
-- Manual cleanup trigger
+### Dashboard
 
-**Requirements:** Port 9999 must be published (`-p 9999:9999` in Docker or `ports: - 9999:9999` in Compose). The `EXPOSE` directive in the Dockerfile alone is not sufficient — you must explicitly map the port.
+- **5 stat cards** showing Total, Private, Public, Stalled, and Blacklisted torrent counts
+- **Last Run card** with timestamp, success/fail indicator, and mini-stats: checked, removed, private removed, public removed, skipped, errors
+- **Scheduler card** showing running/stopped state and the configured interval
+- **Behavior card** displaying dry run and delete files settings
+- **Run Scan** and **Orphaned Scan** buttons for triggering manual scans
+- Auto-refreshes every 30 seconds
 
-The API is also available at `/api/docs` (Swagger UI) for programmatic access.
+### Torrents
 
-### Web UI Configuration
+- **6 independent filter dimensions:** name search, state dropdown, category dropdown, type (private/public), blacklist status, tracker hostname
+- Active filter chips with individual dismiss and "Clear All"
+- **8 sortable columns:** Name, State, Ratio, Seeding Time, Type, Size, Progress, Blacklisted
+- Pagination (25 per page) with "Showing X-Y of Z" info
+- Compact mode toggle for fitting the table to the viewport
+- Per-torrent blacklist toggle with confirmation dialog
+
+### Blacklist
+
+- **Add form:** hash input with optional name and reason fields
+- **Torrent picker:** searchable dropdown of available torrents that auto-fills hash and name
+- **Table:** name, hash, reason, date added, and remove button per entry
+- **Clear All** with confirmation dialog
+
+### Configuration
+
+- **7 accordion sections:** Connection, Limits, Behavior, Schedule, FileFlows, Orphaned, Web
+- Smart field types: toggle switches for booleans, number inputs, password fields with visibility toggle
+- Per-field descriptions and reset buttons to restore defaults
+- **Save** button persists changes to `/config/config_overrides.json`
+- Changes take effect on the next cleanup cycle without container restart
+
+### FileFlows
+
+- **4 stat cards:** Integration status, Connection, Processing count, Queue count
+- List of currently processing files
+- Auto-refreshes every 15 seconds
+
+### Disabling the Web UI
 
 | Variable | Description | Default |
 |----------|-------------|---------|
@@ -66,7 +97,7 @@ The API is also available at `/api/docs` (Swagger UI) for programmatic access.
 
 ## Configuration
 
-All settings are configured via environment variables.
+All settings are configured via environment variables. Settings can also be changed at runtime through the Web UI Configuration page, which persists overrides to `/config/config_overrides.json`.
 
 ### Connection
 
@@ -198,6 +229,70 @@ Always test with `DRY_RUN=true` first.
 - `orphaned_dryrun_YYYY-MM-DD_HH-MM-SS.log` - what would be deleted
 - `orphaned_cleanup_YYYY-MM-DD_HH-MM-SS.log` - what was actually deleted
 
+## Docker Compose
+
+```yaml
+services:
+  qbittorrent:
+    image: hotio/qbittorrent:latest
+    container_name: qbittorrent
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ./config:/config
+      - ./downloads:/downloads
+    ports:
+      - 8080:8080
+
+  qbt-cleanup:
+    image: ghcr.io/regix1/qbittorrent-cleanup:latest
+    container_name: qbt-cleanup
+    restart: unless-stopped
+    depends_on:
+      - qbittorrent
+    volumes:
+      - ./qbt-cleanup/config:/config
+      # Must match qBittorrent's mount path for orphaned file cleanup
+      - ./downloads:/downloads
+    ports:
+      - 9999:9999
+    environment:
+      # Connection
+      - QB_HOST=qbittorrent
+      - QB_PORT=8080
+      - QB_USERNAME=admin
+      - QB_PASSWORD=yourpassword
+
+      # Cleanup rules
+      - PRIVATE_RATIO=2.0
+      - PRIVATE_DAYS=14
+      - PUBLIC_RATIO=1.0
+      - PUBLIC_DAYS=3
+
+      # Behavior
+      - DELETE_FILES=true
+      - CHECK_PRIVATE_PAUSED_ONLY=true
+      - CHECK_PUBLIC_PAUSED_ONLY=false
+      - SCHEDULE_HOURS=6
+
+      # Advanced (optional)
+      - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
+      - FORCE_DELETE_PUBLIC_AFTER_HOURS=12
+      - CLEANUP_STALE_DOWNLOADS=true
+      - MAX_STALLED_DAYS=3
+
+      # Web UI
+      - WEB_ENABLED=true
+      - WEB_PORT=9999
+
+      # Orphaned file cleanup (optional)
+      # - CLEANUP_ORPHANED_FILES=true
+      # - ORPHANED_SCAN_DIRS=/downloads
+      # - ORPHANED_SCHEDULE_DAYS=7
+```
+
 ## Common Use Cases
 
 ### Private Tracker Optimization
@@ -254,76 +349,22 @@ environment:
   - DRY_RUN=true  # test first!
 ```
 
-## Docker Compose
-
-```yaml
-services:
-  qbittorrent:
-    image: hotio/qbittorrent:latest
-    container_name: qbittorrent
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=America/New_York
-    volumes:
-      - ./config:/config
-      - ./downloads:/downloads
-    ports:
-      - 8080:8080
-
-  qbt-cleanup:
-    image: ghcr.io/regix1/qbittorrent-cleanup:latest
-    container_name: qbt-cleanup
-    restart: unless-stopped
-    depends_on:
-      - qbittorrent
-    volumes:
-      - ./qbt-cleanup/config:/config
-      # Must match qBittorrent's mount path for orphaned file cleanup
-      - ./downloads:/downloads
-    ports:
-      - 9999:9999
-    environment:
-      # Connection
-      - QB_HOST=qbittorrent
-      - QB_PORT=8080
-      - QB_USERNAME=admin
-      - QB_PASSWORD=yourpassword
-
-      # Cleanup rules
-      - PRIVATE_RATIO=2.0
-      - PRIVATE_DAYS=14
-      - PUBLIC_RATIO=1.0
-      - PUBLIC_DAYS=3
-
-      # Behavior
-      - DELETE_FILES=true
-      - CHECK_PRIVATE_PAUSED_ONLY=true
-      - CHECK_PUBLIC_PAUSED_ONLY=false
-      - SCHEDULE_HOURS=6
-
-      # Advanced (optional)
-      - FORCE_DELETE_PRIVATE_AFTER_HOURS=48
-      - FORCE_DELETE_PUBLIC_AFTER_HOURS=12
-      - CLEANUP_STALE_DOWNLOADS=true
-      - MAX_STALLED_DAYS=3
-
-      # Web UI
-      - WEB_PORT=9999
-
-      # Orphaned file cleanup (optional)
-      # - CLEANUP_ORPHANED_FILES=true
-      # - ORPHANED_SCAN_DIRS=/downloads
-      # - ORPHANED_SCHEDULE_DAYS=7
-```
-
 ## Manual Control
 
-### Trigger Immediate Cleanup
+### Trigger Cleanup
 
 ```bash
+# Via signal
 docker kill --signal=SIGUSR1 qbt-cleanup
+
+# Via API
+curl -X POST http://localhost:9999/api/actions/scan
+
+# Via API (orphaned files, bypasses schedule)
+curl -X POST http://localhost:9999/api/actions/orphaned-scan
 ```
+
+Or click **Run Scan** / **Orphaned Scan** on the Web UI Dashboard.
 
 ### View Logs
 
@@ -346,7 +387,7 @@ cat $(ls -t ./qbt-cleanup/config/orphaned_cleanup_*.log | head -n1)
 
 ### Blacklist Management
 
-Protect specific torrents from automatic deletion.
+Blacklist can be managed through the Web UI (Blacklist page) or via the CLI:
 
 **Interactive selection (recommended):**
 
@@ -379,6 +420,48 @@ docker exec qbt-cleanup qbt-cleanup-ctl status
 docker exec qbt-cleanup qbt-cleanup-ctl list --limit 10
 ```
 
+## API Reference
+
+Interactive documentation is available at `/api/docs` (Swagger UI).
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/health` | Health check with version and uptime |
+| GET | `/api/status` | Dashboard status with torrent counts and last run stats |
+| GET | `/api/torrents` | List all torrents with live qBittorrent data |
+| GET | `/api/blacklist` | List all blacklisted torrents |
+| POST | `/api/blacklist` | Add a torrent to the blacklist |
+| DELETE | `/api/blacklist/{hash}` | Remove a torrent from the blacklist |
+| DELETE | `/api/blacklist` | Clear the entire blacklist |
+| GET | `/api/config` | Get effective configuration (env + runtime overrides) |
+| PUT | `/api/config` | Update runtime configuration overrides |
+| POST | `/api/actions/scan` | Trigger a manual cleanup scan |
+| POST | `/api/actions/orphaned-scan` | Trigger an orphaned file scan (bypasses schedule) |
+| GET | `/api/fileflows/status` | FileFlows integration status and processing files |
+
+```bash
+# Trigger scan
+curl -X POST http://localhost:9999/api/actions/scan
+
+# Check status
+curl http://localhost:9999/api/status
+
+# Update config at runtime
+curl -X PUT http://localhost:9999/api/config \
+  -H "Content-Type: application/json" \
+  -d '{"overrides": {"limits": {"private_ratio": 3.0}}}'
+```
+
+## Architecture
+
+For contributors and advanced users.
+
+- **Backend**: Python 3.11 with FastAPI, SQLite (WAL mode) at `/config/qbt_cleanup_state.db`
+- **Frontend**: Angular 20 SPA with standalone components, signals, lazy-loaded routes, dark theme. Built at Docker image time, served as static files.
+- **Runtime Config**: Env vars provide defaults. Web UI saves overrides to `/config/config_overrides.json`. Config is reloaded each cycle.
+- **Threading**: Main thread runs the scheduler loop. Web UI (uvicorn) runs in a daemon thread. `AppState` bridges the two via lock + `threading.Event` objects.
+- **Docker**: Multi-stage build -- Node 20 (Angular) then Python 3.11-slim. PUID/PGID support.
+
 ## How It Works
 
 ### Process Flow
@@ -407,7 +490,6 @@ A torrent is deleted when it meets ANY of:
 - Active downloads (except stalled)
 - Torrents that haven't met any deletion criteria
 
-
 ### State Storage
 
 - **Engine:** SQLite with WAL mode and indexed queries
@@ -415,6 +497,7 @@ A torrent is deleted when it meets ANY of:
 - **Migration:** Automatic from JSON/MessagePack formats on first run
 - **Cleanup:** Automatically removes entries for torrents no longer in qBittorrent
 - **Blacklist:** Stored in database, persists across restarts
+- **Runtime Overrides:** `/config/config_overrides.json`
 
 ## Compatibility
 
@@ -465,6 +548,9 @@ Private trackers track your ratio and may ban accounts with poor standing. Publi
 
 **What happens on container restart?**
 All state is preserved in SQLite. Stalled durations, torrent history, blacklist entries, and orphaned cleanup schedule all persist.
+
+**Do runtime config changes survive container restarts?**
+Yes. Changes made through the Web UI Configuration page are saved to `/config/config_overrides.json`, which persists as long as `/config` is mounted as a volume. They overlay environment variable defaults on each cleanup cycle.
 
 ## License
 

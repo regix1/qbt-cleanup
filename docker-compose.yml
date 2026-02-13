@@ -48,4 +48,5 @@ services:
       - MAX_STALLED_DAYS=3
 
       # Web UI
+      - WEB_ENABLED=true
       - WEB_PORT=9999

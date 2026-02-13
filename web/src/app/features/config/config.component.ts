@@ -239,7 +239,12 @@ export class ConfigComponent implements OnInit {
   formatFieldName(key: string): string {
     return key
       .replace(/_/g, ' ')
-      .replace(/\b\w/g, (char: string) => char.toUpperCase());
+      .replace(/\b\w/g, (char: string) => char.toUpperCase())
+      .replace(/\bSsl\b/g, 'SSL')
+      .replace(/\bUi\b/g, 'UI')
+      .replace(/\bApi\b/g, 'API')
+      .replace(/\bUrl\b/g, 'URL')
+      .replace(/\bIp\b/g, 'IP');
   }
 
   private buildSections(config: ConfigResponse): void {
