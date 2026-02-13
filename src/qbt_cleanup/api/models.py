@@ -71,6 +71,13 @@ class BlacklistAddRequest(BaseModel):
     reason: Optional[str] = ""
 
 
+class TorrentDeleteRequest(BaseModel):
+    """Request model for deleting a torrent."""
+
+    hash: str
+    delete_files: bool = False
+
+
 class ConfigResponse(BaseModel):
     """Response model containing the full configuration."""
 

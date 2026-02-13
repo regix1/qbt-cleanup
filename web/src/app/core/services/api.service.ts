@@ -30,6 +30,12 @@ export class ApiService {
     return this.http.get<Torrent[]>(`${this.baseUrl}/torrents`);
   }
 
+  deleteTorrent(hash: string, deleteFiles: boolean): Observable<ActionResponse> {
+    return this.http.request<ActionResponse>('DELETE', `${this.baseUrl}/torrents`, {
+      body: { hash, delete_files: deleteFiles },
+    });
+  }
+
   getBlacklist(): Observable<BlacklistEntry[]> {
     return this.http.get<BlacklistEntry[]>(`${this.baseUrl}/blacklist`);
   }

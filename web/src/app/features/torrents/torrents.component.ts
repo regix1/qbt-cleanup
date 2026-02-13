@@ -482,4 +482,22 @@ export class TorrentsComponent implements OnInit {
       });
     }
   }
+
+  deleteTorrent(torrent: Torrent): void {
+    this.confirmService.confirm({
+      header: 'Delete Torrent',
+      message: `Delete "${torrent.name}"? This will remove the torrent from qBittorrent and delete its files from disk.`,
+      accept: () => {
+        this.api.deleteTorrent(torrent.hash, true)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.notifications.success('Torrent deleted');
+              this.loadTorrents();
+            },
+            error: () => this.notifications.error('Failed to delete torrent'),
+          });
+      },
+    });
+  }
 }

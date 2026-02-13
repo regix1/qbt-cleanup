@@ -454,3 +454,17 @@
     background: rgba(245, 197, 24, 0.1);
   }
 }
+
+.action-buttons {
+  display: flex;
+  gap: 2px;
+}
+
+.btn-icon-danger {
+  color: var(--accent-copper);
+
+  &:hover {
+    color: #fff;
+    background: var(--accent-copper);
+  }
+}

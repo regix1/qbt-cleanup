@@ -10,7 +10,7 @@ from fastapi import APIRouter, HTTPException, Request
 from ...client import QBittorrentClient
 from ...state import StateManager
 from ..app_state import AppState
-from ..models import TorrentResponse
+from ..models import ActionResponse, TorrentDeleteRequest, TorrentResponse
 
 logger = logging.getLogger(__name__)
 
@@ -89,5 +89,46 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
     finally:
         if state_mgr is not None:
             state_mgr.close()
+        if qbt_client is not None:
+            qbt_client.disconnect()
+
+
+@router.delete("/torrents", response_model=ActionResponse)
+def delete_torrent(body: TorrentDeleteRequest, request: Request) -> ActionResponse:
+    """Delete a torrent from qBittorrent.
+
+    Optionally removes downloaded files from disk.
+    """
+    app_state = get_app_state(request)
+    config = app_state.config
+
+    qbt_client: QBittorrentClient | None = None
+
+    try:
+        qbt_client = QBittorrentClient(config.connection)
+
+        if not qbt_client.connect(quiet=True):
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to connect to qBittorrent",
+            )
+
+        success = qbt_client.delete_torrents([body.hash], body.delete_files)
+
+        if success:
+            action = "Deleted (with files)" if body.delete_files else "Removed (torrent only)"
+            logger.info(f"{action}: {body.hash[:8]}")
+            return ActionResponse(
+                success=True,
+                message=f"Torrent {'deleted with files' if body.delete_files else 'removed'}",
+            )
+        else:
+            return ActionResponse(success=False, message="Failed to delete torrent")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Error deleting torrent: {exc}")
+        raise HTTPException(status_code=500, detail=str(exc))
+    finally:
         if qbt_client is not None:
             qbt_client.disconnect()

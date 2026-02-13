@@ -20,6 +20,7 @@
   max-width: 440px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   animation: dialog-scale-in 0.2s ease-out;
+  overflow: hidden;
 }
 
 .confirm-header {
@@ -49,6 +50,8 @@
     font-size: 14px;
     color: var(--text-secondary);
     line-height: 1.5;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 }
 

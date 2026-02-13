@@ -2,7 +2,7 @@
   <div class="page-header">
     <h2>Torrents</h2>
     <div class="header-actions">
-      <button class="btn btn-toggle btn-sm"
+      <button class="btn btn-toggle"
               [class.active]="compactMode()"
               (click)="toggleCompactMode()"
               [title]="compactMode() ? 'Expand table' : 'Compact table'">
@@ -215,11 +215,18 @@
                 }
               </td>
               <td class="col-actions">
-                <button class="btn btn-icon"
-                        [title]="torrent.is_blacklisted ? 'Remove from blacklist' : 'Add to blacklist'"
-                        (click)="toggleBlacklist(torrent)">
-                  <i [class]="torrent.is_blacklisted ? 'fa-solid fa-circle-minus' : 'fa-solid fa-circle-plus'"></i>
-                </button>
+                <div class="action-buttons">
+                  <button class="btn btn-icon"
+                          [title]="torrent.is_blacklisted ? 'Remove from blacklist' : 'Add to blacklist'"
+                          (click)="toggleBlacklist(torrent)">
+                    <i [class]="torrent.is_blacklisted ? 'fa-solid fa-circle-minus' : 'fa-solid fa-circle-plus'"></i>
+                  </button>
+                  <button class="btn btn-icon btn-icon-danger"
+                          title="Delete torrent"
+                          (click)="deleteTorrent(torrent)">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </div>
               </td>
             </tr>
           } @empty {
