@@ -106,7 +106,9 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  right: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(600px, 90vw);
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
