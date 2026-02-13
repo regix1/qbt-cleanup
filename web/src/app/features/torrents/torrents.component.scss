@@ -418,9 +418,11 @@
   background: transparent;
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 6px 10px;
+  padding: 8px 16px;
   border-radius: 6px;
   font-size: 14px;
+  font-weight: 500;
+  line-height: 1.4;
   cursor: pointer;
   transition: all 0.2s ease;
 
