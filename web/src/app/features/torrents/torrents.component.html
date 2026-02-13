@@ -2,7 +2,7 @@
   <div class="page-header">
     <h2>Torrents</h2>
     <div class="header-actions">
-      <button class="btn btn-toggle"
+      <button class="btn btn-secondary"
               [class.active]="compactMode()"
               (click)="toggleCompactMode()"
               [title]="compactMode() ? 'Expand table' : 'Compact table'">
@@ -215,17 +215,27 @@
                 }
               </td>
               <td class="col-actions">
-                <div class="action-buttons">
-                  <button class="btn btn-icon"
-                          [title]="torrent.is_blacklisted ? 'Remove from blacklist' : 'Add to blacklist'"
-                          (click)="toggleBlacklist(torrent)">
-                    <i [class]="torrent.is_blacklisted ? 'fa-solid fa-circle-minus' : 'fa-solid fa-circle-plus'"></i>
+                <div class="action-menu-wrapper" (click)="$event.stopPropagation()">
+                  <button class="btn btn-icon" title="Actions" (click)="toggleActionMenu(torrent.hash)">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
                   </button>
-                  <button class="btn btn-icon btn-icon-danger"
-                          title="Delete torrent"
-                          (click)="deleteTorrent(torrent)">
-                    <i class="fa-solid fa-trash-can"></i>
-                  </button>
+                  @if (actionMenuHash() === torrent.hash) {
+                    <div class="action-menu">
+                      <button class="action-menu-item" (click)="toggleBlacklist(torrent)">
+                        @if (torrent.is_blacklisted) {
+                          <i class="fa-solid fa-shield-halved"></i>
+                          <span>Remove from Blacklist</span>
+                        } @else {
+                          <i class="fa-solid fa-shield"></i>
+                          <span>Add to Blacklist</span>
+                        }
+                      </button>
+                      <button class="action-menu-item danger" (click)="deleteTorrent(torrent)">
+                        <i class="fa-solid fa-trash-can"></i>
+                        <span>Delete Torrent</span>
+                      </button>
+                    </div>
+                  }
                 </div>
               </td>
             </tr>

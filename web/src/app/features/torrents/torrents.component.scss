@@ -414,30 +414,6 @@
   gap: 8px;
 }
 
-.btn-toggle {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-secondary);
-  padding: 8px 16px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 1.4;
-  cursor: pointer;
-  transition: all 0.2s ease;
-
-  &:hover {
-    border-color: var(--accent-yellow);
-    color: var(--text-primary);
-  }
-
-  &.active {
-    border-color: var(--accent-yellow);
-    background: rgba(245, 197, 24, 0.1);
-    color: var(--accent-yellow);
-  }
-}
-
 .btn-ghost {
   background: transparent;
   border: none;
@@ -455,16 +431,64 @@
   }
 }
 
-.action-buttons {
-  display: flex;
-  gap: 2px;
+// Row action menu
+.action-menu-wrapper {
+  position: relative;
 }
 
-.btn-icon-danger {
-  color: var(--accent-copper);
+.action-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  min-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  z-index: 300;
+  overflow: hidden;
+  animation: dropdown-open 150ms ease-out;
+}
+
+.action-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  text-align: left;
+
+  i {
+    width: 16px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
 
   &:hover {
-    color: #fff;
-    background: var(--accent-copper);
+    background: rgba(245, 197, 24, 0.08);
+
+    i {
+      color: var(--accent-yellow);
+    }
+  }
+
+  &.danger {
+    color: var(--accent-copper);
+
+    i {
+      color: var(--accent-copper);
+    }
+
+    &:hover {
+      background: rgba(200, 90, 40, 0.1);
+    }
   }
 }

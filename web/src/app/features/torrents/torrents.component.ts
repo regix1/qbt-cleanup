@@ -46,6 +46,7 @@ export class TorrentsComponent implements OnInit {
 
   // Dropdown state
   readonly openDropdown = signal<string>('');
+  readonly actionMenuHash = signal<string>('');
 
   // Sorting & pagination
   readonly sortField = signal<keyof Torrent>('name');
@@ -277,6 +278,9 @@ export class TorrentsComponent implements OnInit {
     if (!target.closest('.custom-dropdown')) {
       this.closeDropdowns();
     }
+    if (!target.closest('.action-menu-wrapper')) {
+      this.actionMenuHash.set('');
+    }
   }
 
   ngOnInit(): void {
@@ -447,7 +451,12 @@ export class TorrentsComponent implements OnInit {
     return state;
   }
 
+  toggleActionMenu(hash: string): void {
+    this.actionMenuHash.set(this.actionMenuHash() === hash ? '' : hash);
+  }
+
   toggleBlacklist(torrent: Torrent): void {
+    this.actionMenuHash.set('');
     if (torrent.is_blacklisted) {
       this.confirmService.confirm({
         header: 'Remove from Blacklist',
@@ -484,6 +493,7 @@ export class TorrentsComponent implements OnInit {
   }
 
   deleteTorrent(torrent: Torrent): void {
+    this.actionMenuHash.set('');
     this.confirmService.confirm({
       header: 'Delete Torrent',
       message: `Delete "${torrent.name}"? This will remove the torrent from qBittorrent and delete its files from disk.`,

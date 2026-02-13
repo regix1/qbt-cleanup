@@ -276,6 +276,12 @@ a {
   &:active:not(:disabled) {
     background: rgba(245, 197, 24, 0.15);
   }
+
+  &.active {
+    border-color: var(--accent-yellow);
+    background: rgba(245, 197, 24, 0.1);
+    color: var(--accent-yellow);
+  }
 }
 
 .btn-danger {
