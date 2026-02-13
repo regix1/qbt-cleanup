@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { Component, computed, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
@@ -46,6 +46,14 @@ export class BlacklistComponent implements OnInit {
       t.name.toLowerCase().includes(search) || t.hash.toLowerCase().includes(search)
     );
   });
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    if (!target.closest('.hash-dropdown') && !target.closest('.hash-picker-btn')) {
+      this.showHashDropdown.set(false);
+    }
+  }
 
   ngOnInit(): void {
     this.loadBlacklist();
