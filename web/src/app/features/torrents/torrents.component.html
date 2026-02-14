@@ -2,10 +2,10 @@
   <div class="page-header">
     <h2>Torrents</h2>
     <div class="header-actions">
-      @if (isColumnOrderCustom()) {
+      @if (isColumnsCustomized()) {
         <button class="btn btn-secondary"
-                (click)="resetColumnOrder()"
-                title="Reset column order">
+                (click)="resetColumns()"
+                title="Reset column order & sizes">
           <i class="fa-solid fa-arrow-rotate-left"></i>
         </button>
       }
@@ -147,8 +147,10 @@
       }
     </div>
 
-    <div class="table-container" [class.compact-mode]="compactMode()">
-      <table class="data-table">
+    <div class="table-container"
+         [class.compact-mode]="compactMode()"
+         [class.is-resizing]="isResizing()">
+      <table class="data-table" [class.fixed-layout]="hasCustomWidths()">
         <thead>
           <tr cdkDropList
               cdkDropListOrientation="horizontal"
@@ -156,6 +158,7 @@
             @for (col of columnOrder(); track col.id) {
               <th [class]="col.cssClass"
                   [class.sortable]="!!col.sortField"
+                  [style.width.px]="getColumnWidth(col)"
                   cdkDrag>
                 <i class="fa-solid fa-grip-vertical drag-handle" cdkDragHandle></i>
                 <span class="th-sort-trigger" (click)="onHeaderClick(col)">
@@ -167,6 +170,7 @@
                        [class.fa-sort]="sortField() !== col.sortField"></i>
                   }
                 </span>
+                <div class="resize-handle" (mousedown)="onResizeStart($event, col)"></div>
                 <ng-template cdkDragPreview>
                   <div class="column-drag-preview">
                     <i class="fa-solid fa-grip-vertical"></i>

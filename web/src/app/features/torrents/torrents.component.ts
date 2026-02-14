@@ -19,20 +19,22 @@ export interface ColumnDef {
   label: string;
   sortField?: keyof Torrent;
   cssClass: string;
+  minWidth: number;
 }
 
 const COLUMN_ORDER_KEY = 'qbt-torrents-column-order';
+const COLUMN_WIDTHS_KEY = 'qbt-torrents-column-widths';
 
 const DEFAULT_COLUMNS: ColumnDef[] = [
-  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name' },
-  { id: 'state', label: 'State', sortField: 'state', cssClass: 'col-state' },
-  { id: 'ratio', label: 'Ratio', sortField: 'ratio', cssClass: 'col-ratio' },
-  { id: 'seedTime', label: 'Seeding Time', sortField: 'seeding_time', cssClass: 'col-seed-time' },
-  { id: 'type', label: 'Type', sortField: 'is_private', cssClass: 'col-type' },
-  { id: 'size', label: 'Size', sortField: 'size', cssClass: 'col-size' },
-  { id: 'progress', label: 'Progress', sortField: 'progress', cssClass: 'col-progress' },
-  { id: 'blacklist', label: 'Blacklisted', sortField: 'is_blacklisted', cssClass: 'col-blacklist' },
-  { id: 'actions', label: 'Actions', cssClass: 'col-actions' },
+  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name', minWidth: 120 },
+  { id: 'state', label: 'State', sortField: 'state', cssClass: 'col-state', minWidth: 70 },
+  { id: 'ratio', label: 'Ratio', sortField: 'ratio', cssClass: 'col-ratio', minWidth: 60 },
+  { id: 'seedTime', label: 'Seeding Time', sortField: 'seeding_time', cssClass: 'col-seed-time', minWidth: 80 },
+  { id: 'type', label: 'Type', sortField: 'is_private', cssClass: 'col-type', minWidth: 70 },
+  { id: 'size', label: 'Size', sortField: 'size', cssClass: 'col-size', minWidth: 60 },
+  { id: 'progress', label: 'Progress', sortField: 'progress', cssClass: 'col-progress', minWidth: 70 },
+  { id: 'blacklist', label: 'Blacklisted', sortField: 'is_blacklisted', cssClass: 'col-blacklist', minWidth: 60 },
+  { id: 'actions', label: 'Actions', cssClass: 'col-actions', minWidth: 50 },
 ];
 
 @Component({
@@ -59,14 +61,27 @@ export class TorrentsComponent implements OnInit {
   readonly torrents = signal<Torrent[]>([]);
   readonly loading = signal<boolean>(true);
 
-  // Column ordering
+  // Column ordering & sizing
   readonly columnOrder = signal<ColumnDef[]>(this.loadColumnOrder());
+  readonly columnWidths = signal<Record<string, number>>(this.loadColumnWidths());
+  readonly isResizing = signal<boolean>(false);
 
-  readonly isColumnOrderCustom = computed<boolean>(() => {
-    const current = this.columnOrder();
-    if (current.length !== DEFAULT_COLUMNS.length) return true;
-    return current.some((col: ColumnDef, index: number) => col.id !== DEFAULT_COLUMNS[index].id);
+  readonly isColumnsCustomized = computed<boolean>(() => {
+    const currentOrder = this.columnOrder();
+    const orderChanged = currentOrder.length !== DEFAULT_COLUMNS.length
+      || currentOrder.some((col: ColumnDef, index: number) => col.id !== DEFAULT_COLUMNS[index].id);
+    const widthsChanged = Object.keys(this.columnWidths()).length > 0;
+    return orderChanged || widthsChanged;
   });
+
+  readonly hasCustomWidths = computed<boolean>(() =>
+    Object.keys(this.columnWidths()).length > 0,
+  );
+
+  // Resize tracking
+  private resizeColumnId = '';
+  private resizeStartX = 0;
+  private resizeStartWidth = 0;
 
   // Filter signals
   readonly searchText = signal<string>('');
@@ -181,25 +196,21 @@ export class TorrentsComponent implements OnInit {
   readonly filteredTorrents = computed<Torrent[]>(() => {
     let result = this.torrents();
 
-    // Search text — name only
     const search = this.searchText().toLowerCase().trim();
     if (search) {
       result = result.filter((t: Torrent) => t.name.toLowerCase().includes(search));
     }
 
-    // State filter
     const state = this.stateFilter();
     if (state) {
       result = result.filter((t: Torrent) => t.state === state);
     }
 
-    // Category filter
     const category = this.categoryFilter();
     if (category) {
       result = result.filter((t: Torrent) => t.category === category);
     }
 
-    // Type filter
     const type = this.typeFilter();
     if (type === 'private') {
       result = result.filter((t: Torrent) => t.is_private);
@@ -207,7 +218,6 @@ export class TorrentsComponent implements OnInit {
       result = result.filter((t: Torrent) => !t.is_private);
     }
 
-    // Blacklist filter
     const blacklist = this.blacklistFilter();
     if (blacklist === 'yes') {
       result = result.filter((t: Torrent) => t.is_blacklisted);
@@ -215,7 +225,6 @@ export class TorrentsComponent implements OnInit {
       result = result.filter((t: Torrent) => !t.is_blacklisted);
     }
 
-    // Unregistered filter
     const unreg = this.unregisteredFilter();
     if (unreg === 'yes') {
       result = result.filter((t: Torrent) => t.is_unregistered);
@@ -223,7 +232,6 @@ export class TorrentsComponent implements OnInit {
       result = result.filter((t: Torrent) => !t.is_unregistered);
     }
 
-    // Tracker filter
     const tracker = this.trackerFilter();
     if (tracker) {
       result = result.filter((t: Torrent) => {
@@ -326,6 +334,13 @@ export class TorrentsComponent implements OnInit {
     unknown: 'Unknown',
   };
 
+  constructor() {
+    this.destroyRef.onDestroy(() => {
+      document.removeEventListener('mousemove', this.onResizeMove);
+      document.removeEventListener('mouseup', this.onResizeEnd);
+    });
+  }
+
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: Event): void {
     const target = event.target as HTMLElement;
@@ -362,9 +377,11 @@ export class TorrentsComponent implements OnInit {
     this.saveColumnOrder();
   }
 
-  resetColumnOrder(): void {
+  resetColumns(): void {
     this.columnOrder.set([...DEFAULT_COLUMNS]);
+    this.columnWidths.set({});
     localStorage.removeItem(COLUMN_ORDER_KEY);
+    localStorage.removeItem(COLUMN_WIDTHS_KEY);
   }
 
   onHeaderClick(col: ColumnDef): void {
@@ -372,6 +389,54 @@ export class TorrentsComponent implements OnInit {
       this.sort(col.sortField);
     }
   }
+
+  // Column resizing
+  getColumnWidth(col: ColumnDef): number | null {
+    const widths = this.columnWidths();
+    return widths[col.id] ?? null;
+  }
+
+  onResizeStart(event: MouseEvent, col: ColumnDef): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    this.resizeColumnId = col.id;
+    this.resizeStartX = event.clientX;
+    this.isResizing.set(true);
+
+    // Snapshot current width from DOM
+    const th = (event.target as HTMLElement).closest('th');
+    if (th) {
+      this.resizeStartWidth = th.getBoundingClientRect().width;
+    }
+
+    // If no custom widths yet, snapshot all column widths from DOM
+    if (!this.hasCustomWidths()) {
+      this.snapshotColumnWidths();
+    }
+
+    document.addEventListener('mousemove', this.onResizeMove);
+    document.addEventListener('mouseup', this.onResizeEnd);
+  }
+
+  private readonly onResizeMove = (event: MouseEvent): void => {
+    const delta = event.clientX - this.resizeStartX;
+    const col = this.columnOrder().find((c: ColumnDef) => c.id === this.resizeColumnId);
+    const minWidth = col?.minWidth ?? 50;
+    const newWidth = Math.max(minWidth, this.resizeStartWidth + delta);
+    this.columnWidths.update((widths: Record<string, number>) => ({
+      ...widths,
+      [this.resizeColumnId]: newWidth,
+    }));
+  };
+
+  private readonly onResizeEnd = (): void => {
+    document.removeEventListener('mousemove', this.onResizeMove);
+    document.removeEventListener('mouseup', this.onResizeEnd);
+    this.isResizing.set(false);
+    this.resizeColumnId = '';
+    this.saveColumnWidths();
+  };
 
   toggleDropdown(name: string): void {
     if (this.openDropdown() === name) {
@@ -629,5 +694,40 @@ export class TorrentsComponent implements OnInit {
   private saveColumnOrder(): void {
     const ids = this.columnOrder().map((c: ColumnDef) => c.id);
     localStorage.setItem(COLUMN_ORDER_KEY, JSON.stringify(ids));
+  }
+
+  private loadColumnWidths(): Record<string, number> {
+    try {
+      const stored = localStorage.getItem(COLUMN_WIDTHS_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return {};
+  }
+
+  private saveColumnWidths(): void {
+    const widths = this.columnWidths();
+    if (Object.keys(widths).length > 0) {
+      localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(widths));
+    } else {
+      localStorage.removeItem(COLUMN_WIDTHS_KEY);
+    }
+  }
+
+  private snapshotColumnWidths(): void {
+    const headerRow = document.querySelector('.data-table thead tr');
+    if (!headerRow) return;
+    const ths = headerRow.querySelectorAll('th');
+    const widths: Record<string, number> = {};
+    const columns = this.columnOrder();
+    ths.forEach((th: Element, index: number) => {
+      if (index < columns.length) {
+        widths[columns[index].id] = (th as HTMLElement).getBoundingClientRect().width;
+      }
+    });
+    this.columnWidths.set(widths);
   }
 }
