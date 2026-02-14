@@ -129,7 +129,7 @@ def list_categories(request: Request) -> CategoriesResponse:
                 detail="Unable to connect to qBittorrent",
             )
 
-        raw_categories = qbt_client.client.torrents.categories()
+        raw_categories = qbt_client.client.torrent_categories.categories
         categories = [
             CategoryInfo(name=name, save_path=info.get("savePath", ""))
             for name, info in raw_categories.items()
