@@ -7,10 +7,18 @@
       </div>
       <div class="confirm-body">
         <p>{{ dialog.message }}</p>
+        @if (dialog.inputPlaceholder) {
+          <input class="form-input confirm-input"
+                 type="text"
+                 [placeholder]="dialog.inputPlaceholder"
+                 [value]="inputValue()"
+                 (input)="onInputChange($event)" />
+        }
       </div>
       <div class="confirm-footer">
         <button class="btn btn-secondary" (click)="reject()" type="button">Cancel</button>
-        <button class="btn btn-danger" (click)="accept()" type="button">Confirm</button>
+        <button class="btn btn-danger" (click)="accept()" type="button"
+                [disabled]="dialog.inputPlaceholder && !inputValue()">Confirm</button>
       </div>
     </div>
   </div>

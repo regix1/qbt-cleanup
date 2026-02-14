@@ -3,7 +3,9 @@ import { Injectable, signal } from '@angular/core';
 export interface ConfirmState {
   readonly header: string;
   readonly message: string;
-  readonly accept: () => void;
+  readonly accept: (inputValue?: string) => void;
+  readonly inputPlaceholder?: string;
+  readonly inputDefault?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -15,10 +17,10 @@ export class ConfirmService {
     this._state.set(options);
   }
 
-  accept(): void {
+  accept(inputValue?: string): void {
     const current = this._state();
     if (current) {
-      current.accept();
+      current.accept(inputValue);
       this._state.set(null);
     }
   }

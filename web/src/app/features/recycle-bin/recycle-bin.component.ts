@@ -67,15 +67,17 @@ export class RecycleBinComponent implements OnInit {
   }
 
   restoreItem(item: RecycleBinItem): void {
-    if (!item.original_path) {
-      this.notify.error('Cannot restore: no original path metadata available for this item');
-      return;
-    }
+    const hasMetadata = !!item.original_path;
     this.confirmService.confirm({
       header: 'Restore Item',
-      message: `Restore "${item.name}" to its original location?\n\n${item.original_path}`,
-      accept: () => {
-        this.api.restoreRecycleBinItem(item.name)
+      message: hasMetadata
+        ? `Restore "${item.name}" to its original location?`
+        : `No original path metadata found. Enter the destination directory to restore "${item.name}":`,
+      inputPlaceholder: hasMetadata ? undefined : '/path/to/restore/directory',
+      inputDefault: item.original_path || '',
+      accept: (inputValue?: string) => {
+        const targetPath = hasMetadata ? undefined : inputValue;
+        this.api.restoreRecycleBinItem(item.name, targetPath)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (response: ActionResponse) => {

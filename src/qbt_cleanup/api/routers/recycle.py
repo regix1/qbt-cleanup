@@ -136,8 +136,13 @@ def delete_recycle_item(item_name: str) -> ActionResponse:
         return ActionResponse(success=False, message=f"Failed to delete: {e}")
 
 
+class RestoreRequest(BaseModel):
+    """Request model for restoring a recycle bin item."""
+    target_path: str = ""
+
+
 @router.post("/recycle-bin/{item_name}/restore", response_model=ActionResponse)
-def restore_recycle_item(item_name: str) -> ActionResponse:
+def restore_recycle_item(item_name: str, body: RestoreRequest | None = None) -> ActionResponse:
     """Restore an item from the recycle bin to its original location."""
     config = ConfigOverrideManager.get_effective_config()
     recycle_path = Path(config.recycle_bin.path)
@@ -152,22 +157,24 @@ def restore_recycle_item(item_name: str) -> ActionResponse:
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid item path")
 
-    # Read sidecar metadata
-    meta_file = recycle_path / f"{item_name}.meta.json"
-    if not meta_file.exists():
+    # Determine restore path: body param > sidecar metadata
+    original_path = ""
+    if body and body.target_path:
+        original_path = body.target_path
+    else:
+        meta_file = recycle_path / f"{item_name}.meta.json"
+        if meta_file.exists():
+            try:
+                meta = json.loads(meta_file.read_text())
+                original_path = meta.get("original_path", "")
+            except (json.JSONDecodeError, OSError):
+                pass
+
+    if not original_path:
         raise HTTPException(
             status_code=400,
-            detail="No metadata found — cannot determine original location",
+            detail="No restore path provided and no metadata found",
         )
-
-    try:
-        meta = json.loads(meta_file.read_text())
-    except (json.JSONDecodeError, OSError) as e:
-        raise HTTPException(status_code=400, detail=f"Invalid metadata: {e}")
-
-    original_path = meta.get("original_path", "")
-    if not original_path:
-        raise HTTPException(status_code=400, detail="No original path in metadata")
 
     # Strip the timestamp prefix (YYYYMMDD_HHMMSS_) to get the original name
     original_name = re.sub(r"^\d{8}_\d{6}_", "", item_name)
@@ -186,7 +193,10 @@ def restore_recycle_item(item_name: str) -> ActionResponse:
     try:
         dest_dir.mkdir(parents=True, exist_ok=True)
         shutil.move(str(item_path), str(dest))
-        meta_file.unlink()
+        # Clean up sidecar metadata if it exists
+        meta_file = recycle_path / f"{item_name}.meta.json"
+        if meta_file.exists():
+            meta_file.unlink()
         logger.info(f"[Recycle Bin] Restored: {item_name} -> {dest}")
         return ActionResponse(success=True, message=f"Restored to {dest}")
     except Exception as e:
