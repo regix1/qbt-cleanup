@@ -38,6 +38,7 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
     """
     app_state = get_app_state(request)
     config = app_state.config
+    recycling = app_state.get_recycling_hashes()
 
     state_mgr: StateManager | None = None
     qbt_client: QBittorrentClient | None = None
@@ -86,6 +87,7 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
                     tracker=tracker_url,
                     added_on=getattr(torrent, "added_on", 0) or 0,
                     save_path=getattr(torrent, "save_path", "") or "",
+                    is_recycling=info.hash in recycling,
                 )
             )
 
@@ -223,6 +225,7 @@ def delete_torrent(body: TorrentDeleteRequest, request: Request) -> ActionRespon
         # If recycle requested, move files to recycle bin first
         recycled_name = ""
         if body.recycle:
+            app_state.add_recycling(body.hash)
             recycled_name = _move_torrent_to_recycle_bin(qbt_client, body.hash)
             if not recycled_name:
                 return ActionResponse(
@@ -256,5 +259,6 @@ def delete_torrent(body: TorrentDeleteRequest, request: Request) -> ActionRespon
         logger.error(f"Error deleting torrent: {exc}")
         raise HTTPException(status_code=500, detail=str(exc))
     finally:
+        app_state.remove_recycling(body.hash)
         if qbt_client is not None:
             qbt_client.disconnect()

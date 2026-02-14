@@ -41,6 +41,11 @@ export class RecycleBinComponent implements OnInit {
         next: (response: RecycleBinResponse) => {
           this.data.set(response);
           this.loading.set(false);
+          // Clear local restoring state if item is no longer in the list
+          const currentRestoring = this.restoringItem();
+          if (currentRestoring && !response.items.some((item: RecycleBinItem) => item.name === currentRestoring)) {
+            this.restoringItem.set('');
+          }
         },
         error: () => {
           this.loading.set(false);

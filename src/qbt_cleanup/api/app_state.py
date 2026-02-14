@@ -29,6 +29,8 @@ class AppState:
         self.last_run_success: Optional[bool] = None
         self.last_run_stats: Optional[dict] = None
         self.scheduler_running: bool = False
+        self.recycling_hashes: set[str] = set()
+        self.restoring_items: set[str] = set()
         self._lock = threading.Lock()
 
     def update_after_run(self, success: bool, stats: Optional[dict] = None) -> None:
@@ -72,3 +74,33 @@ class AppState:
                 "last_run_stats": self.last_run_stats,
                 "scheduler_running": self.scheduler_running,
             }
+
+    def add_recycling(self, torrent_hash: str) -> None:
+        """Mark a torrent as currently being recycled."""
+        with self._lock:
+            self.recycling_hashes.add(torrent_hash)
+
+    def remove_recycling(self, torrent_hash: str) -> None:
+        """Unmark a torrent from being recycled."""
+        with self._lock:
+            self.recycling_hashes.discard(torrent_hash)
+
+    def get_recycling_hashes(self) -> set[str]:
+        """Return a snapshot of currently recycling torrent hashes."""
+        with self._lock:
+            return set(self.recycling_hashes)
+
+    def add_restoring(self, item_name: str) -> None:
+        """Mark a recycle bin item as currently being restored."""
+        with self._lock:
+            self.restoring_items.add(item_name)
+
+    def remove_restoring(self, item_name: str) -> None:
+        """Unmark a recycle bin item from being restored."""
+        with self._lock:
+            self.restoring_items.discard(item_name)
+
+    def get_restoring_items(self) -> set[str]:
+        """Return a snapshot of currently restoring item names."""
+        with self._lock:
+            return set(self.restoring_items)

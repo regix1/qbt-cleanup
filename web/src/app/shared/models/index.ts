@@ -51,6 +51,7 @@ export interface Torrent {
   tracker: string;
   added_on: number;
   save_path: string;
+  is_recycling: boolean;
 }
 
 export interface BlacklistEntry {
@@ -118,6 +119,7 @@ export interface RecycleBinItem {
   modified_time: number;
   age_days: number;
   original_path: string;
+  is_restoring: boolean;
 }
 
 export interface RecycleBinResponse {

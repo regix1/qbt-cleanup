@@ -191,7 +191,7 @@
                   }
                   @case ('state') {
                     <td class="col-state">
-                      @if (recyclingHash() === torrent.hash) {
+                      @if (recyclingHash() === torrent.hash || torrent.is_recycling) {
                         <span class="state-badge state-recycling">
                           <i class="fa-solid fa-spinner fa-spin"></i> Recycling
                         </span>
@@ -235,7 +235,7 @@
                   }
                   @case ('actions') {
                     <td class="col-actions">
-                      @if (recyclingHash() === torrent.hash) {
+                      @if (recyclingHash() === torrent.hash || torrent.is_recycling) {
                         <span class="recycling-indicator" title="Recycling...">
                           <i class="fa-solid fa-spinner fa-spin"></i>
                         </span>

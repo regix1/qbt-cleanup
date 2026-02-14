@@ -36,6 +36,7 @@ class RecycleBinItem(BaseModel):
     modified_time: float
     age_days: float
     original_path: str = ""
+    is_restoring: bool = False
 
 
 class RecycleBinResponse(BaseModel):
@@ -48,7 +49,7 @@ class RecycleBinResponse(BaseModel):
 
 
 @router.get("/recycle-bin", response_model=RecycleBinResponse)
-def list_recycle_bin() -> RecycleBinResponse:
+def list_recycle_bin(request: Request) -> RecycleBinResponse:
     """List all items in the recycle bin."""
     config = ConfigOverrideManager.get_effective_config()
     recycle_config = config.recycle_bin
@@ -61,6 +62,9 @@ def list_recycle_bin() -> RecycleBinResponse:
             total_size=0,
             purge_after_days=recycle_config.purge_after_days,
         )
+
+    app_state = _get_app_state(request)
+    restoring = app_state.get_restoring_items()
 
     recycle_path = Path(recycle_config.path)
     items: List[RecycleBinItem] = []
@@ -99,6 +103,7 @@ def list_recycle_bin() -> RecycleBinResponse:
                     modified_time=stat.st_mtime,
                     age_days=round(age_seconds / 86400, 1),
                     original_path=original_path,
+                    is_restoring=item.name in restoring,
                 ))
             except OSError as e:
                 logger.warning(f"Error reading recycle bin item {item}: {e}")
@@ -160,6 +165,8 @@ def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest 
     recycle_path = Path(config.recycle_bin.path)
     item_path = recycle_path / item_name
 
+    app_state = _get_app_state(request)
+
     if not item_path.exists():
         raise HTTPException(status_code=404, detail="Item not found")
 
@@ -203,6 +210,7 @@ def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest 
         )
 
     try:
+        app_state.add_restoring(item_name)
         result = resilient_move(item_path, dest)
 
         if not result.success:
@@ -243,20 +251,44 @@ def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest 
                             save_path=str(dest_dir),
                             is_paused=True,
                         )
+                        time.sleep(2)
+
+                        # Resolve the actual hash — re-added torrents may get
+                        # a different hash (v1 vs v2 / hybrid BitTorrent).
+                        actual_hash = torrent_hash
                         if torrent_hash:
-                            time.sleep(2)
-                            qbt_client.client.torrents.recheck(torrent_hashes=torrent_hash)
+                            check = qbt_client.client.torrents.info(torrent_hashes=torrent_hash)
+                            if not check:
+                                logger.info("[Recycle Bin] Stored hash not found, searching by content_path")
+                                resolved_dest = str(dest.resolve())
+                                for t in qbt_client.client.torrents.info():
+                                    content = getattr(t, "content_path", "") or ""
+                                    if content and str(Path(content).resolve()) == resolved_dest:
+                                        actual_hash = t.hash
+                                        logger.info(f"[Recycle Bin] Found torrent with new hash {actual_hash[:8]}")
+                                        break
+                        else:
+                            # No stored hash — find by content_path
+                            resolved_dest = str(dest.resolve())
+                            for t in qbt_client.client.torrents.info():
+                                content = getattr(t, "content_path", "") or ""
+                                if content and str(Path(content).resolve()) == resolved_dest:
+                                    actual_hash = t.hash
+                                    break
+
+                        if actual_hash:
+                            qbt_client.client.torrents.recheck(torrent_hashes=actual_hash)
                             # Wait for recheck to complete before resuming
                             checking_states = {"checkingUP", "checkingDL", "checkingResumeData"}
                             for _ in range(30):
                                 time.sleep(1)
                                 try:
-                                    info = qbt_client.client.torrents.info(torrent_hashes=torrent_hash)
+                                    info = qbt_client.client.torrents.info(torrent_hashes=actual_hash)
                                     if info and info[0].state not in checking_states:
                                         break
                                 except Exception:
                                     break
-                            qbt_client.client.torrents.resume(torrent_hashes=torrent_hash)
+                            qbt_client.client.torrents.resume(torrent_hashes=actual_hash)
                         torrent_readded = True
                         logger.info(f"[Recycle Bin] Re-added torrent to qBittorrent")
                     finally:
@@ -276,6 +308,8 @@ def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest 
     except Exception as e:
         logger.error(f"[Recycle Bin] Error restoring {item_name}: {e}")
         return ActionResponse(success=False, message=f"Failed to restore: {e}")
+    finally:
+        app_state.remove_restoring(item_name)
 
 
 @router.delete("/recycle-bin", response_model=ActionResponse)
