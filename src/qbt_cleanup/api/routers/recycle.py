@@ -12,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
 from ...config_overrides import ConfigOverrideManager
+from ...resilient_move import resilient_move
 from ..models import ActionResponse
 
 logger = logging.getLogger(__name__)
@@ -191,14 +192,31 @@ def restore_recycle_item(item_name: str, body: RestoreRequest | None = None) -> 
         )
 
     try:
-        dest_dir.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(item_path), str(dest))
+        result = resilient_move(item_path, dest)
+
+        if not result.success:
+            return ActionResponse(
+                success=False,
+                message="Failed to restore: no files could be copied",
+            )
+
+        if result.partial:
+            logger.warning(
+                f"[Recycle Bin] Partial restore: {result.files_copied} files restored, "
+                f"{result.files_failed} failed for {item_name}"
+            )
+
         # Clean up sidecar metadata if it exists
         meta_file = recycle_path / f"{item_name}.meta.json"
         if meta_file.exists():
             meta_file.unlink()
+
+        message = f"Restored to {dest}"
+        if result.partial:
+            message += f" (partial: {result.files_failed} files could not be restored)"
+
         logger.info(f"[Recycle Bin] Restored: {item_name} -> {dest}")
-        return ActionResponse(success=True, message=f"Restored to {dest}")
+        return ActionResponse(success=True, message=message)
     except Exception as e:
         logger.error(f"[Recycle Bin] Error restoring {item_name}: {e}")
         return ActionResponse(success=False, message=f"Failed to restore: {e}")

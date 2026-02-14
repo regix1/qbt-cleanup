@@ -496,9 +496,9 @@ class QbtCleanup:
         Args:
             candidates: List of DeletionCandidate objects
         """
-        import shutil
         from pathlib import Path
         from datetime import datetime
+        from .resilient_move import resilient_move, write_move_metadata
 
         recycle_path = Path(self.config.recycle_bin.path)
         recycle_path.mkdir(parents=True, exist_ok=True)
@@ -514,17 +514,19 @@ class QbtCleanup:
             if not source.exists():
                 continue
 
-            # Create unique destination using timestamp and torrent name
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in candidate.info.name[:50])
             dest = recycle_path / f"{timestamp}_{safe_name}"
 
-            try:
-                if source.is_dir():
-                    shutil.copytree(source, dest)
+            result = resilient_move(source, dest, remove_source=False)
+            if result.success:
+                if result.partial:
+                    logger.warning(
+                        f"[Recycle Bin] Partial save: {result.files_copied}/{result.files_copied + result.files_failed} "
+                        f"files for {candidate.info.name}"
+                    )
                 else:
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(source, dest)
-                logger.debug(f"[Recycle Bin] Saved: {candidate.info.name}")
-            except Exception as e:
-                logger.warning(f"[Recycle Bin] Failed to save {candidate.info.name}: {e}")
+                    logger.debug(f"[Recycle Bin] Saved: {candidate.info.name}")
+                write_move_metadata(recycle_path, dest.name, str(source.parent), result)
+            else:
+                logger.warning(f"[Recycle Bin] Failed to save {candidate.info.name}")

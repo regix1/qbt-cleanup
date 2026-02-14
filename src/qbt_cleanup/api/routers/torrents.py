@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import json
 import logging
-import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -14,6 +12,7 @@ from fastapi import APIRouter, HTTPException, Request
 
 from ...client import QBittorrentClient
 from ...config_overrides import ConfigOverrideManager
+from ...resilient_move import resilient_move, write_move_metadata
 from ...state import StateManager
 from ..app_state import AppState
 from ..models import ActionResponse, TorrentDeleteRequest, TorrentResponse
@@ -105,6 +104,8 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
     """Move torrent files to the recycle bin.
 
     Returns the recycled item name if files were successfully moved, or empty string on failure.
+    Partial moves (some files copied, some missing) are considered success since
+    the recycle bin is a safety net before deletion.
     """
     config = ConfigOverrideManager.get_effective_config()
     recycle_config = config.recycle_bin
@@ -114,7 +115,6 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
         return ""
 
     try:
-        # Get torrent info to find content path
         torrents = qbt_client.client.torrents.info(torrent_hashes=torrent_hash)
         if not torrents:
             logger.warning(f"[Recycle Bin] Could not find torrent {torrent_hash[:8]}")
@@ -136,17 +136,24 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
         dest = recycle_path / f"{timestamp}_{source.name}"
         recycle_path.mkdir(parents=True, exist_ok=True)
 
-        shutil.move(str(source), str(dest))
+        result = resilient_move(source, dest)
 
-        # Write sidecar metadata for restore support
-        try:
-            meta = {"original_path": str(source.parent)}
-            meta_file = recycle_path / f"{dest.name}.meta.json"
-            meta_file.write_text(json.dumps(meta))
-        except OSError as e:
-            logger.warning(f"[Recycle Bin] Failed to write metadata for {dest.name}: {e}")
+        if result.success:
+            if result.partial:
+                logger.warning(
+                    f"[Recycle Bin] Partial move: {result.files_copied} copied, "
+                    f"{result.files_failed} skipped for {source.name}"
+                )
+                for rel_path, error_msg in result.errors:
+                    logger.warning(f"[Recycle Bin]   Skipped: {rel_path} - {error_msg}")
+            else:
+                logger.info(f"[Recycle Bin] Moved to recycle bin: {source.name}")
+        else:
+            logger.error(f"[Recycle Bin] Failed to move any files for {source.name}")
+            return ""
 
-        logger.info(f"[Recycle Bin] Moved to recycle bin: {source.name}")
+        write_move_metadata(recycle_path, dest.name, str(source.parent), result)
+
         return dest.name
 
     except Exception as e:
