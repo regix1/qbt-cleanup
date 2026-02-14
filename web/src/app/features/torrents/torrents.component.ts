@@ -371,10 +371,15 @@ export class TorrentsComponent implements OnInit {
 
   // Column ordering
   onColumnDrop(event: CdkDragDrop<string[]>): void {
+    // Snapshot current widths before reordering so columns keep their sizes
+    if (!this.hasCustomWidths()) {
+      this.snapshotColumnWidths();
+    }
     const columns = [...this.columnOrder()];
     moveItemInArray(columns, event.previousIndex, event.currentIndex);
     this.columnOrder.set(columns);
     this.saveColumnOrder();
+    this.saveColumnWidths();
   }
 
   resetColumns(): void {
