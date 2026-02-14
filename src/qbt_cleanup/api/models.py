@@ -133,3 +133,24 @@ class ActionResponse(BaseModel):
     success: bool
     message: str
     data: Optional[Dict[str, str]] = None
+
+
+class TorrentMoveRequest(BaseModel):
+    """Request model for moving a torrent to a new location."""
+
+    hash: str = Field(min_length=1)
+    category: str = ""
+    location: str = ""
+
+
+class CategoryInfo(BaseModel):
+    """Model for a single qBittorrent category."""
+
+    name: str
+    save_path: str
+
+
+class CategoriesResponse(BaseModel):
+    """Response model for the categories endpoint."""
+
+    categories: List[CategoryInfo]

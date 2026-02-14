@@ -1,11 +1,19 @@
 import { Injectable, signal } from '@angular/core';
 
+export interface SelectOption {
+  readonly label: string;
+  readonly value: string;
+  readonly description?: string;
+}
+
 export interface ConfirmState {
   readonly header: string;
   readonly message: string;
   readonly accept: (inputValue?: string) => void;
   readonly inputPlaceholder?: string;
   readonly inputDefault?: string;
+  readonly selectOptions?: SelectOption[];
+  readonly selectPlaceholder?: string;
 }
 
 @Injectable({ providedIn: 'root' })

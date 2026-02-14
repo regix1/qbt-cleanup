@@ -12,20 +12,41 @@ export class ConfirmDialogComponent {
 
   readonly state = this.confirmService.state;
   readonly inputValue = signal('');
+  readonly selectValue = signal('');
+
+  readonly resolvedValue = computed<string>(() => {
+    const select = this.selectValue();
+    const input = this.inputValue();
+    return select || input;
+  });
+
+  readonly hasValue = computed<boolean>(() => this.resolvedValue().length > 0);
 
   constructor() {
     effect(() => {
       const s = this.state();
       this.inputValue.set(s?.inputDefault ?? '');
+      this.selectValue.set('');
     });
   }
 
   onInputChange(event: Event): void {
     this.inputValue.set((event.target as HTMLInputElement).value);
+    if ((event.target as HTMLInputElement).value) {
+      this.selectValue.set('');
+    }
+  }
+
+  onSelectChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.selectValue.set(value);
+    if (value) {
+      this.inputValue.set('');
+    }
   }
 
   accept(): void {
-    this.confirmService.accept(this.inputValue());
+    this.confirmService.accept(this.resolvedValue());
   }
 
   reject(): void {

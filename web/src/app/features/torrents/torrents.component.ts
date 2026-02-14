@@ -5,7 +5,8 @@ import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveI
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
-import { ActionResponse, Torrent } from '../../shared/models';
+import { ActionResponse, CategoriesResponse, Torrent } from '../../shared/models';
+import { SelectOption } from '../../core/services/confirm.service';
 import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 
 interface ActiveFilter {
@@ -674,6 +675,51 @@ export class TorrentsComponent implements OnInit {
         },
       });
     }
+  }
+
+  moveTorrent(torrent: Torrent): void {
+    this.actionMenuHash.set('');
+    this.api.getCategories()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response: CategoriesResponse) => {
+          const selectOptions: SelectOption[] = response.categories.map(
+            (cat: { name: string; save_path: string }) => ({
+              label: cat.name,
+              value: `category:${cat.name}`,
+              description: cat.save_path,
+            }),
+          );
+          this.confirmService.confirm({
+            header: 'Move Torrent',
+            message: `Move "${torrent.name}"\nCurrent path: ${torrent.save_path}`,
+            selectOptions,
+            selectPlaceholder: 'Select a category...',
+            inputPlaceholder: 'Or enter a custom path...',
+            accept: (inputValue?: string) => {
+              if (!inputValue) return;
+              const isCategory = inputValue.startsWith('category:');
+              const request = isCategory
+                ? { hash: torrent.hash, category: inputValue.replace('category:', '') }
+                : { hash: torrent.hash, location: inputValue };
+              this.api.moveTorrent(request)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                  next: (moveResponse: ActionResponse) => {
+                    if (moveResponse.success) {
+                      this.notifications.success(moveResponse.message);
+                      this.loadTorrents();
+                    } else {
+                      this.notifications.error(moveResponse.message);
+                    }
+                  },
+                  error: () => this.notifications.error('Failed to move torrent'),
+                });
+            },
+          });
+        },
+        error: () => this.notifications.error('Failed to load categories'),
+      });
   }
 
   recycleTorrent(torrent: Torrent): void {

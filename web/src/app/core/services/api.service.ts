@@ -13,6 +13,8 @@ import {
   FileFlowsStatus,
   NotificationTestResponse,
   RecycleBinResponse,
+  CategoriesResponse,
+  TorrentMoveRequest,
 } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
@@ -96,5 +98,13 @@ export class ApiService {
 
   emptyRecycleBin(): Observable<ActionResponse> {
     return this.http.delete<ActionResponse>(`${this.baseUrl}/recycle-bin`);
+  }
+
+  getCategories(): Observable<CategoriesResponse> {
+    return this.http.get<CategoriesResponse>(`${this.baseUrl}/torrents/categories`);
+  }
+
+  moveTorrent(request: TorrentMoveRequest): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/torrents/move`, request);
   }
 }

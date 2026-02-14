@@ -7,6 +7,18 @@
       </div>
       <div class="confirm-body">
         <p>{{ dialog.message }}</p>
+        @if (dialog.selectOptions?.length) {
+          <select class="form-input confirm-select"
+                  [value]="selectValue()"
+                  (change)="onSelectChange($event)">
+            <option value="">{{ dialog.selectPlaceholder ?? 'Select an option...' }}</option>
+            @for (option of dialog.selectOptions; track option.value) {
+              <option [value]="option.value">
+                {{ option.label }}@if (option.description) { — {{ option.description }}}
+              </option>
+            }
+          </select>
+        }
         @if (dialog.inputPlaceholder) {
           <input class="form-input confirm-input"
                  type="text"
@@ -18,7 +30,7 @@
       <div class="confirm-footer">
         <button class="btn btn-secondary" (click)="reject()" type="button">Cancel</button>
         <button class="btn btn-danger" (click)="accept()" type="button"
-                [disabled]="dialog.inputPlaceholder && !inputValue()">Confirm</button>
+                [disabled]="(dialog.inputPlaceholder || dialog.selectOptions?.length) && !hasValue()">Confirm</button>
       </div>
     </div>
   </div>

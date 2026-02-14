@@ -17,7 +17,14 @@ from ...config_overrides import ConfigOverrideManager
 from ...resilient_move import resilient_move, write_move_metadata
 from ...state import StateManager
 from ..app_state import AppState
-from ..models import ActionResponse, TorrentDeleteRequest, TorrentResponse
+from ..models import (
+    ActionResponse,
+    CategoriesResponse,
+    CategoryInfo,
+    TorrentDeleteRequest,
+    TorrentMoveRequest,
+    TorrentResponse,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +107,93 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
     finally:
         if state_mgr is not None:
             state_mgr.close()
+        if qbt_client is not None:
+            qbt_client.disconnect()
+
+
+
+@router.get("/torrents/categories", response_model=CategoriesResponse)
+def list_categories(request: Request) -> CategoriesResponse:
+    """List all qBittorrent categories with their save paths."""
+    app_state = get_app_state(request)
+    config = app_state.config
+
+    qbt_client: QBittorrentClient | None = None
+
+    try:
+        qbt_client = QBittorrentClient(config.connection)
+
+        if not qbt_client.connect(quiet=True):
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to connect to qBittorrent",
+            )
+
+        raw_categories = qbt_client.client.torrents.categories()
+        categories = [
+            CategoryInfo(name=name, save_path=info.get("savePath", ""))
+            for name, info in raw_categories.items()
+        ]
+        categories.sort(key=lambda c: c.name)
+
+        return CategoriesResponse(categories=categories)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Error listing categories: {exc}")
+        raise HTTPException(status_code=500, detail=str(exc))
+    finally:
+        if qbt_client is not None:
+            qbt_client.disconnect()
+
+
+@router.post("/torrents/move", response_model=ActionResponse)
+def move_torrent(body: TorrentMoveRequest, request: Request) -> ActionResponse:
+    """Move a torrent by changing its category or setting a new location."""
+    app_state = get_app_state(request)
+    config = app_state.config
+
+    if not body.category and not body.location:
+        return ActionResponse(success=False, message="Either category or location must be provided")
+
+    qbt_client: QBittorrentClient | None = None
+
+    try:
+        qbt_client = QBittorrentClient(config.connection)
+
+        if not qbt_client.connect(quiet=True):
+            raise HTTPException(
+                status_code=503,
+                detail="Unable to connect to qBittorrent",
+            )
+
+        if body.category:
+            qbt_client.client.torrents.set_category(
+                category=body.category, torrent_hashes=body.hash,
+            )
+            qbt_client.client.torrents.set_auto_management(
+                enable=True, torrent_hashes=body.hash,
+            )
+            logger.info(f"Moved torrent {body.hash[:8]} to category '{body.category}'")
+            return ActionResponse(
+                success=True,
+                message=f"Torrent moved to category '{body.category}'",
+            )
+        else:
+            qbt_client.client.torrents.set_location(
+                location=body.location, torrent_hashes=body.hash,
+            )
+            logger.info(f"Moved torrent {body.hash[:8]} to '{body.location}'")
+            return ActionResponse(
+                success=True,
+                message=f"Torrent moved to '{body.location}'",
+            )
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Error moving torrent: {exc}")
+        raise HTTPException(status_code=500, detail=str(exc))
+    finally:
         if qbt_client is not None:
             qbt_client.disconnect()
 

@@ -129,3 +129,18 @@ export interface RecycleBinResponse {
   total_size: number;
   purge_after_days: number;
 }
+
+export interface CategoryInfo {
+  name: string;
+  save_path: string;
+}
+
+export interface CategoriesResponse {
+  categories: CategoryInfo[];
+}
+
+export interface TorrentMoveRequest {
+  hash: string;
+  category?: string;
+  location?: string;
+}
