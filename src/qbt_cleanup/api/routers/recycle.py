@@ -11,13 +11,20 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 
+from ...client import QBittorrentClient
 from ...config_overrides import ConfigOverrideManager
 from ...resilient_move import resilient_move
+from ..app_state import AppState
 from ..models import ActionResponse
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _get_app_state(request: Request) -> AppState:
+    """Retrieve the shared AppState from the application."""
+    return request.app.state.app_state
 
 
 class RecycleBinItem(BaseModel):
@@ -62,8 +69,8 @@ def list_recycle_bin() -> RecycleBinResponse:
 
     if recycle_path.exists():
         for item in sorted(recycle_path.iterdir(), key=lambda p: p.stat().st_mtime, reverse=True):
-            # Skip sidecar metadata files
-            if item.name.endswith(".meta.json"):
+            # Skip sidecar metadata files and staging directory
+            if item.name.endswith(".meta.json") or item.name.endswith(".torrent") or item.name == ".staging":
                 continue
             try:
                 stat = item.stat()
@@ -130,6 +137,10 @@ def delete_recycle_item(item_name: str) -> ActionResponse:
         meta_file = recycle_path / f"{item_name}.meta.json"
         if meta_file.exists():
             meta_file.unlink()
+        # Clean up .torrent sidecar
+        torrent_sidecar = recycle_path / f"{item_name}.torrent"
+        if torrent_sidecar.exists():
+            torrent_sidecar.unlink()
         logger.info(f"[Recycle Bin] Permanently deleted: {item_name}")
         return ActionResponse(success=True, message=f"Deleted {item_name}")
     except Exception as e:
@@ -143,7 +154,7 @@ class RestoreRequest(BaseModel):
 
 
 @router.post("/recycle-bin/{item_name}/restore", response_model=ActionResponse)
-def restore_recycle_item(item_name: str, body: RestoreRequest | None = None) -> ActionResponse:
+def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest | None = None) -> ActionResponse:
     """Restore an item from the recycle bin to its original location."""
     config = ConfigOverrideManager.get_effective_config()
     recycle_path = Path(config.recycle_bin.path)
@@ -206,12 +217,47 @@ def restore_recycle_item(item_name: str, body: RestoreRequest | None = None) -> 
                 f"{result.files_failed} failed for {item_name}"
             )
 
-        # Clean up sidecar metadata if it exists
+        # Read metadata for torrent hash before cleanup
+        torrent_hash = ""
         meta_file = recycle_path / f"{item_name}.meta.json"
         if meta_file.exists():
+            try:
+                meta_content = json.loads(meta_file.read_text())
+                torrent_hash = meta_content.get("torrent_hash", "")
+            except (json.JSONDecodeError, OSError):
+                pass
             meta_file.unlink()
 
+        # Re-add torrent to qBittorrent if .torrent sidecar exists
+        torrent_sidecar = recycle_path / f"{item_name}.torrent"
+        torrent_readded = False
+        if torrent_sidecar.exists():
+            try:
+                app_state = _get_app_state(request)
+                qbt_client = QBittorrentClient(app_state.config.connection)
+                if qbt_client.connect(quiet=True):
+                    try:
+                        torrent_data = torrent_sidecar.read_bytes()
+                        qbt_client.client.torrents.add(
+                            torrent_files=torrent_data,
+                            save_path=str(dest_dir),
+                            is_paused=True,
+                        )
+                        if torrent_hash:
+                            time.sleep(1)
+                            qbt_client.client.torrents.recheck(torrent_hashes=torrent_hash)
+                            qbt_client.client.torrents.resume(torrent_hashes=torrent_hash)
+                        torrent_readded = True
+                        logger.info(f"[Recycle Bin] Re-added torrent to qBittorrent")
+                    finally:
+                        qbt_client.disconnect()
+                torrent_sidecar.unlink()
+            except Exception as e:
+                logger.warning(f"[Recycle Bin] Could not re-add torrent: {e}")
+
         message = f"Restored to {dest}"
+        if torrent_readded:
+            message += " and re-added to qBittorrent"
         if result.partial:
             message += f" (partial: {result.files_failed} files could not be restored)"
 
@@ -234,6 +280,9 @@ def empty_recycle_bin() -> ActionResponse:
     deleted = 0
     errors = 0
     for item in recycle_path.iterdir():
+        if item.name == ".staging":
+            shutil.rmtree(item, ignore_errors=True)
+            continue
         try:
             if item.is_dir():
                 shutil.rmtree(item)

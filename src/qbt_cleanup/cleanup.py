@@ -496,12 +496,14 @@ class QbtCleanup:
         Args:
             candidates: List of DeletionCandidate objects
         """
+        import os
         from pathlib import Path
         from datetime import datetime
         from .resilient_move import resilient_move, write_move_metadata
 
         recycle_path = Path(self.config.recycle_bin.path)
-        recycle_path.mkdir(parents=True, exist_ok=True)
+        staging_path = recycle_path / ".staging"
+        staging_path.mkdir(parents=True, exist_ok=True)
 
         for candidate in candidates:
             torrent = candidate.info.torrent
@@ -516,17 +518,23 @@ class QbtCleanup:
 
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             safe_name = "".join(c if c.isalnum() or c in "._-" else "_" for c in candidate.info.name[:50])
-            dest = recycle_path / f"{timestamp}_{safe_name}"
+            item_name = f"{timestamp}_{safe_name}"
+            staging_dest = staging_path / item_name
+            final_dest = recycle_path / item_name
 
-            result = resilient_move(source, dest, remove_source=False)
+            result = resilient_move(source, staging_dest, remove_source=False)
             if result.success:
                 if result.partial:
                     logger.warning(
                         f"[Recycle Bin] Partial save: {result.files_copied}/{result.files_copied + result.files_failed} "
                         f"files for {candidate.info.name}"
                     )
-                else:
+                try:
+                    os.rename(str(staging_dest), str(final_dest))
                     logger.debug(f"[Recycle Bin] Saved: {candidate.info.name}")
-                write_move_metadata(recycle_path, dest.name, str(source.parent), result)
+                    write_move_metadata(recycle_path, item_name, str(source.parent), result)
+                except OSError as e:
+                    logger.warning(f"[Recycle Bin] Failed to move from staging: {e}")
             else:
                 logger.warning(f"[Recycle Bin] Failed to save {candidate.info.name}")
+                shutil.rmtree(str(staging_dest), ignore_errors=True)

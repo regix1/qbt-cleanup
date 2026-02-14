@@ -153,6 +153,8 @@ def write_move_metadata(
     dest_name: str,
     original_parent: str,
     move_result: MoveResult,
+    *,
+    torrent_hash: str = "",
 ) -> None:
     """Write sidecar .meta.json for a recycled item.
 
@@ -161,6 +163,7 @@ def write_move_metadata(
         dest_name: The timestamped name of the recycled item.
         original_parent: The original parent directory path.
         move_result: The MoveResult from the move operation.
+        torrent_hash: Optional torrent hash to include in metadata.
     """
     try:
         meta = {
@@ -168,6 +171,8 @@ def write_move_metadata(
             "files_copied": move_result.files_copied,
             "files_failed": move_result.files_failed,
         }
+        if torrent_hash:
+            meta["torrent_hash"] = torrent_hash
         if move_result.errors:
             meta["skipped_files"] = [
                 {"path": rel, "reason": err} for rel, err in move_result.errors

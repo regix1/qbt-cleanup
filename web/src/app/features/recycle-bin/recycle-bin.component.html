@@ -84,10 +84,17 @@
                 <td class="col-actions">
                   <button class="btn btn-icon"
                           [title]="item.original_path ? 'Restore to ' + item.original_path : 'Restore (no metadata)'"
+                          [disabled]="restoringItem() === item.name"
                           (click)="restoreItem(item)">
-                    <i class="fa-solid fa-rotate-left"></i>
+                    @if (restoringItem() === item.name) {
+                      <i class="fa-solid fa-spinner fa-spin"></i>
+                    } @else {
+                      <i class="fa-solid fa-rotate-left"></i>
+                    }
                   </button>
-                  <button class="btn btn-icon" title="Delete permanently" (click)="deleteItem(item)">
+                  <button class="btn btn-icon" title="Delete permanently"
+                          [disabled]="restoringItem() === item.name"
+                          (click)="deleteItem(item)">
                     <i class="fa-solid fa-trash-can"></i>
                   </button>
                 </td>

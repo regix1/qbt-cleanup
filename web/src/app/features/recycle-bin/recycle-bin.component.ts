@@ -22,6 +22,7 @@ export class RecycleBinComponent implements OnInit {
 
   readonly data = signal<RecycleBinResponse | null>(null);
   readonly loading = signal(true);
+  readonly restoringItem = signal<string>('');
 
   readonly isEmpty = computed(() => {
     const d = this.data();
@@ -77,6 +78,7 @@ export class RecycleBinComponent implements OnInit {
       inputDefault: item.original_path || '',
       accept: (inputValue?: string) => {
         const targetPath = hasMetadata ? undefined : inputValue;
+        this.restoringItem.set(item.name);
         this.api.restoreRecycleBinItem(item.name, targetPath)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
@@ -87,8 +89,12 @@ export class RecycleBinComponent implements OnInit {
                 this.notify.error(response.message);
               }
               this.loadRecycleBin();
+              this.restoringItem.set('');
             },
-            error: () => this.notify.error('Failed to restore item'),
+            error: () => {
+              this.notify.error('Failed to restore item');
+              this.restoringItem.set('');
+            },
           });
       },
     });

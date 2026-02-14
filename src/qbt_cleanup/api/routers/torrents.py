@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -138,12 +140,24 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
         except Exception as e:
             logger.warning(f"[Recycle Bin] Could not pause torrent: {e}")
 
-        recycle_path = Path(recycle_config.path)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        dest = recycle_path / f"{timestamp}_{source.name}"
-        recycle_path.mkdir(parents=True, exist_ok=True)
+        # Export .torrent file for re-adding on restore
+        torrent_file_data = None
+        try:
+            torrent_file_data = qbt_client.client.torrents.export(torrent_hash=torrent_hash)
+        except Exception as e:
+            logger.warning(f"[Recycle Bin] Could not export .torrent file: {e}")
 
-        result = resilient_move(source, dest)
+        recycle_path = Path(recycle_config.path)
+        staging_path = recycle_path / ".staging"
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        item_name = f"{timestamp}_{source.name}"
+        staging_dest = staging_path / item_name
+        final_dest = recycle_path / item_name
+        staging_path.mkdir(parents=True, exist_ok=True)
+
+        # Copy to staging first so the item doesn't appear in the recycle bin
+        # until the copy is fully complete
+        result = resilient_move(source, staging_dest)
 
         if result.success:
             if result.partial:
@@ -153,15 +167,33 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
                 )
                 for rel_path, error_msg in result.errors:
                     logger.warning(f"[Recycle Bin]   Skipped: {rel_path} - {error_msg}")
-            else:
-                logger.info(f"[Recycle Bin] Moved to recycle bin: {source.name}")
+            # Atomically move from staging to recycle bin (same filesystem)
+            try:
+                os.rename(str(staging_dest), str(final_dest))
+            except OSError as e:
+                logger.error(f"[Recycle Bin] Failed to move from staging: {e}")
+                return ""
+            logger.info(f"[Recycle Bin] Moved to recycle bin: {source.name}")
         else:
             logger.error(f"[Recycle Bin] Failed to move any files for {source.name}")
+            # Clean up empty staging dir
+            try:
+                shutil.rmtree(str(staging_dest), ignore_errors=True)
+            except Exception:
+                pass
             return ""
 
-        write_move_metadata(recycle_path, dest.name, str(source.parent), result)
+        write_move_metadata(recycle_path, item_name, str(source.parent), result, torrent_hash=torrent_hash)
 
-        return dest.name
+        # Save .torrent file for re-adding on restore
+        if torrent_file_data:
+            try:
+                torrent_sidecar = recycle_path / f"{item_name}.torrent"
+                torrent_sidecar.write_bytes(torrent_file_data)
+            except OSError as e:
+                logger.warning(f"[Recycle Bin] Failed to save .torrent file: {e}")
+
+        return item_name
 
     except Exception as e:
         logger.error(f"[Recycle Bin] Error moving files: {e}")
