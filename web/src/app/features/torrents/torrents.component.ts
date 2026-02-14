@@ -101,6 +101,7 @@ export class TorrentsComponent implements OnInit {
   readonly openDropdown = signal<string>('');
   readonly actionMenuHash = signal<string>('');
   readonly actionMenuPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
+  readonly recyclingHash = signal<string>('');
 
   // Sorting & pagination
   readonly sortField = signal<keyof Torrent>('name');
@@ -681,10 +682,12 @@ export class TorrentsComponent implements OnInit {
       header: 'Recycle Torrent',
       message: `Recycle "${torrent.name}"? Files will be moved to the recycle bin and the torrent removed from qBittorrent.`,
       accept: () => {
+        this.recyclingHash.set(torrent.hash);
         this.api.deleteTorrent(torrent.hash, true, true)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (response: ActionResponse) => {
+              this.recyclingHash.set('');
               if (response.success) {
                 const recycledName = response.data?.['recycled_name'];
                 this.notifications.success(
@@ -701,7 +704,10 @@ export class TorrentsComponent implements OnInit {
                 this.notifications.error(response.message);
               }
             },
-            error: () => this.notifications.error('Failed to recycle torrent'),
+            error: () => {
+              this.recyclingHash.set('');
+              this.notifications.error('Failed to recycle torrent');
+            },
           });
       },
     });

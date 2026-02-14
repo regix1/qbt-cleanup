@@ -244,8 +244,18 @@ def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest 
                             is_paused=True,
                         )
                         if torrent_hash:
-                            time.sleep(1)
+                            time.sleep(2)
                             qbt_client.client.torrents.recheck(torrent_hashes=torrent_hash)
+                            # Wait for recheck to complete before resuming
+                            checking_states = {"checkingUP", "checkingDL", "checkingResumeData"}
+                            for _ in range(30):
+                                time.sleep(1)
+                                try:
+                                    info = qbt_client.client.torrents.info(torrent_hashes=torrent_hash)
+                                    if info and info[0].state not in checking_states:
+                                        break
+                                except Exception:
+                                    break
                             qbt_client.client.torrents.resume(torrent_hashes=torrent_hash)
                         torrent_readded = True
                         logger.info(f"[Recycle Bin] Re-added torrent to qBittorrent")

@@ -643,3 +643,21 @@ thead th .resize-handle:hover {
     }
   }
 }
+
+.recycling-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: var(--accent-yellow);
+}
+
+.state-recycling {
+  background: rgba(245, 197, 24, 0.15);
+  color: var(--accent-yellow);
+
+  i {
+    margin-right: 4px;
+  }
+}

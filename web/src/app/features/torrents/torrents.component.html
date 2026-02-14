@@ -191,11 +191,17 @@
                   }
                   @case ('state') {
                     <td class="col-state">
-                      <span class="state-badge" [ngClass]="getStateColor(torrent.state, torrent.progress)">
-                        {{ getStateLabel(torrent.state, torrent.progress) }}
-                      </span>
-                      @if (torrent.is_unregistered) {
-                        <span class="state-badge unregistered-badge">Unreg</span>
+                      @if (recyclingHash() === torrent.hash) {
+                        <span class="state-badge state-recycling">
+                          <i class="fa-solid fa-spinner fa-spin"></i> Recycling
+                        </span>
+                      } @else {
+                        <span class="state-badge" [ngClass]="getStateColor(torrent.state, torrent.progress)">
+                          {{ getStateLabel(torrent.state, torrent.progress) }}
+                        </span>
+                        @if (torrent.is_unregistered) {
+                          <span class="state-badge unregistered-badge">Unreg</span>
+                        }
                       }
                     </td>
                   }
@@ -229,9 +235,15 @@
                   }
                   @case ('actions') {
                     <td class="col-actions">
-                      <button class="btn btn-icon" title="Actions" (click)="openActionMenu($event, torrent.hash)">
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                      </button>
+                      @if (recyclingHash() === torrent.hash) {
+                        <span class="recycling-indicator" title="Recycling...">
+                          <i class="fa-solid fa-spinner fa-spin"></i>
+                        </span>
+                      } @else {
+                        <button class="btn btn-icon" title="Actions" (click)="openActionMenu($event, torrent.hash)">
+                          <i class="fa-solid fa-ellipsis-vertical"></i>
+                        </button>
+                      }
                     </td>
                   }
                 }
