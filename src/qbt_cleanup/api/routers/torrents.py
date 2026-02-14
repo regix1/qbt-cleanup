@@ -101,35 +101,35 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
             qbt_client.disconnect()
 
 
-def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: str) -> bool:
+def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: str) -> str:
     """Move torrent files to the recycle bin.
 
-    Returns True if files were successfully moved (or recycle bin is disabled).
+    Returns the recycled item name if files were successfully moved, or empty string on failure.
     """
     config = ConfigOverrideManager.get_effective_config()
     recycle_config = config.recycle_bin
 
     if not recycle_config.enabled:
         logger.warning("[Recycle Bin] Recycle bin is not enabled, skipping")
-        return False
+        return ""
 
     try:
         # Get torrent info to find content path
         torrents = qbt_client.client.torrents.info(torrent_hashes=torrent_hash)
         if not torrents:
             logger.warning(f"[Recycle Bin] Could not find torrent {torrent_hash[:8]}")
-            return False
+            return ""
 
         torrent = torrents[0]
         content_path = getattr(torrent, "content_path", None) or getattr(torrent, "save_path", None)
         if not content_path:
             logger.warning(f"[Recycle Bin] No content path for torrent {torrent_hash[:8]}")
-            return False
+            return ""
 
         source = Path(content_path)
         if not source.exists():
             logger.warning(f"[Recycle Bin] Source path does not exist: {source}")
-            return False
+            return ""
 
         recycle_path = Path(recycle_config.path)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -144,11 +144,11 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
         meta_file.write_text(json.dumps(meta))
 
         logger.info(f"[Recycle Bin] Moved to recycle bin: {source.name}")
-        return True
+        return dest.name
 
     except Exception as e:
         logger.error(f"[Recycle Bin] Error moving files: {e}")
-        return False
+        return ""
 
 
 @router.delete("/torrents", response_model=ActionResponse)
@@ -172,9 +172,10 @@ def delete_torrent(body: TorrentDeleteRequest, request: Request) -> ActionRespon
             )
 
         # If recycle requested, move files to recycle bin first
+        recycled_name = ""
         if body.recycle:
-            recycled = _move_torrent_to_recycle_bin(qbt_client, body.hash)
-            if not recycled:
+            recycled_name = _move_torrent_to_recycle_bin(qbt_client, body.hash)
+            if not recycled_name:
                 return ActionResponse(
                     success=False,
                     message="Failed to move files to recycle bin. Torrent was not deleted.",
@@ -192,9 +193,11 @@ def delete_torrent(body: TorrentDeleteRequest, request: Request) -> ActionRespon
             else:
                 action = "Removed (torrent only)"
             logger.info(f"{action}: {body.hash[:8]}")
+            data = {"recycled_name": recycled_name} if recycled_name else None
             return ActionResponse(
                 success=True,
                 message=f"Torrent {'moved to recycle bin' if body.recycle else 'deleted with files' if body.delete_files else 'removed'}",
+                data=data,
             )
         else:
             return ActionResponse(success=False, message="Failed to delete torrent")

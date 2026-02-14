@@ -67,6 +67,10 @@ export class RecycleBinComponent implements OnInit {
   }
 
   restoreItem(item: RecycleBinItem): void {
+    if (!item.original_path) {
+      this.notify.error('Cannot restore: no original path metadata available for this item');
+      return;
+    }
     this.confirmService.confirm({
       header: 'Restore Item',
       message: `Restore "${item.name}" to its original location?\n\n${item.original_path}`,

@@ -61,8 +61,16 @@
             @for (item of d.items; track item.name) {
               <tr>
                 <td class="col-name name-cell" [title]="item.name">
-                  <i class="fa-solid" [class.fa-folder]="item.is_dir" [class.fa-file]="!item.is_dir" style="margin-right: 8px; color: var(--text-secondary)"></i>
-                  {{ item.name }}
+                  <div class="name-main">
+                    <i class="fa-solid" [class.fa-folder]="item.is_dir" [class.fa-file]="!item.is_dir" style="margin-right: 8px; color: var(--text-secondary)"></i>
+                    {{ item.name }}
+                  </div>
+                  @if (item.original_path) {
+                    <div class="name-meta">
+                      <i class="fa-solid fa-arrow-turn-up fa-rotate-180" style="margin-right: 4px; font-size: 10px;"></i>
+                      {{ item.original_path }}
+                    </div>
+                  }
                 </td>
                 <td class="col-type">
                   @if (item.is_dir) {
@@ -74,11 +82,11 @@
                 <td class="col-size">{{ formatSize(item.size) }}</td>
                 <td class="col-age">{{ formatAge(item.age_days) }}</td>
                 <td class="col-actions">
-                  @if (item.original_path) {
-                    <button class="btn btn-icon" title="Restore to original location" (click)="restoreItem(item)">
-                      <i class="fa-solid fa-rotate-left"></i>
-                    </button>
-                  }
+                  <button class="btn btn-icon"
+                          [title]="item.original_path ? 'Restore to ' + item.original_path : 'Restore (no metadata)'"
+                          (click)="restoreItem(item)">
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>
                   <button class="btn btn-icon" title="Delete permanently" (click)="deleteItem(item)">
                     <i class="fa-solid fa-trash-can"></i>
                   </button>

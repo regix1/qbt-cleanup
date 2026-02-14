@@ -1,10 +1,16 @@
 import { Injectable, signal } from '@angular/core';
 
+export interface ToastAction {
+  readonly label: string;
+  readonly callback: () => void;
+}
+
 export interface ToastMessage {
   readonly id: number;
   readonly severity: 'success' | 'error' | 'info' | 'warn';
   readonly summary: string;
   readonly detail: string;
+  readonly action?: ToastAction;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -13,8 +19,8 @@ export class NotificationService {
   readonly toasts = this._toasts.asReadonly();
   private nextId = 0;
 
-  success(message: string): void {
-    this.add('success', 'Success', message, 3000);
+  success(message: string, action?: ToastAction): void {
+    this.add('success', 'Success', message, action ? 8000 : 3000, action);
   }
 
   error(message: string): void {
@@ -33,9 +39,9 @@ export class NotificationService {
     this._toasts.update((toasts: ToastMessage[]) => toasts.filter((toast: ToastMessage) => toast.id !== id));
   }
 
-  private add(severity: ToastMessage['severity'], summary: string, detail: string, life: number): void {
+  private add(severity: ToastMessage['severity'], summary: string, detail: string, life: number, action?: ToastAction): void {
     const id = this.nextId++;
-    this._toasts.update((toasts: ToastMessage[]) => [...toasts, { id, severity, summary, detail }]);
+    this._toasts.update((toasts: ToastMessage[]) => [...toasts, { id, severity, summary, detail, action }]);
     setTimeout(() => this.remove(id), life);
   }
 }

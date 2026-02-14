@@ -686,7 +686,16 @@ export class TorrentsComponent implements OnInit {
           .subscribe({
             next: (response: ActionResponse) => {
               if (response.success) {
-                this.notifications.success('Torrent recycled');
+                const recycledName = response.data?.['recycled_name'];
+                this.notifications.success(
+                  'Torrent recycled',
+                  recycledName
+                    ? {
+                        label: 'Undo',
+                        callback: () => this.undoRecycle(recycledName),
+                      }
+                    : undefined,
+                );
                 this.loadTorrents();
               } else {
                 this.notifications.error(response.message);
@@ -696,6 +705,21 @@ export class TorrentsComponent implements OnInit {
           });
       },
     });
+  }
+
+  private undoRecycle(recycledName: string): void {
+    this.api.restoreRecycleBinItem(recycledName)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response: ActionResponse) => {
+          if (response.success) {
+            this.notifications.success('Torrent restored from recycle bin');
+          } else {
+            this.notifications.error(response.message);
+          }
+        },
+        error: () => this.notifications.error('Failed to restore torrent'),
+      });
   }
 
   deleteTorrent(torrent: Torrent): void {

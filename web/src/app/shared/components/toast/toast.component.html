@@ -6,6 +6,11 @@
         <div class="toast-summary">{{ toast.summary }}</div>
         <div class="toast-detail">{{ toast.detail }}</div>
       </div>
+      @if (toast.action) {
+        <button class="toast-action" (click)="onAction(toast)" type="button">
+          {{ toast.action.label }}
+        </button>
+      }
       <button class="toast-close" (click)="dismiss(toast.id)" type="button" aria-label="Close">
         <i class="fa-solid fa-xmark"></i>
       </button>

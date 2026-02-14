@@ -140,7 +140,7 @@ class NotificationConfig:
 class RecycleBinConfig:
     """Recycle bin configuration."""
     enabled: bool = field(default_factory=lambda: parse_bool("RECYCLE_ENABLED", False))
-    path: str = field(default_factory=lambda: os.environ.get("RECYCLE_DIR", "/data/recycle"))
+    path: str = field(default_factory=lambda: os.environ.get("RECYCLE_DIR", "/config/recycle"))
     purge_after_days: int = field(default_factory=lambda: parse_int("RECYCLE_PURGE_DAYS", 7, 1))
 
 

@@ -25,6 +25,13 @@ export class ToastComponent {
     }
   }
 
+  onAction(toast: ToastMessage): void {
+    if (toast.action) {
+      toast.action.callback();
+    }
+    this.notificationService.remove(toast.id);
+  }
+
   dismiss(id: number): void {
     this.notificationService.remove(id);
   }

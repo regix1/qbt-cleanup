@@ -131,3 +131,4 @@ class ActionResponse(BaseModel):
 
     success: bool
     message: str
+    data: Optional[Dict[str, str]] = None

@@ -69,6 +69,7 @@ export interface BlacklistAddRequest {
 export interface ActionResponse {
   success: boolean;
   message: string;
+  data?: Record<string, string>;
 }
 
 export type ConfigSectionValues = Record<string, string | number | boolean>;
