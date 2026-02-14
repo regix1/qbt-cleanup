@@ -483,6 +483,10 @@ select.form-input {
   border-collapse: collapse;
   font-size: 14px;
 
+  th, td {
+    box-sizing: border-box;
+  }
+
   thead {
     th {
       background: var(--bg-surface);
