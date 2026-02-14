@@ -1,6 +1,7 @@
 import { Component, computed, DestroyRef, HostListener, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
@@ -13,6 +14,27 @@ interface ActiveFilter {
   label: string;
 }
 
+export interface ColumnDef {
+  id: string;
+  label: string;
+  sortField?: keyof Torrent;
+  cssClass: string;
+}
+
+const COLUMN_ORDER_KEY = 'qbt-torrents-column-order';
+
+const DEFAULT_COLUMNS: ColumnDef[] = [
+  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name' },
+  { id: 'state', label: 'State', sortField: 'state', cssClass: 'col-state' },
+  { id: 'ratio', label: 'Ratio', sortField: 'ratio', cssClass: 'col-ratio' },
+  { id: 'seedTime', label: 'Seeding Time', sortField: 'seeding_time', cssClass: 'col-seed-time' },
+  { id: 'type', label: 'Type', sortField: 'is_private', cssClass: 'col-type' },
+  { id: 'size', label: 'Size', sortField: 'size', cssClass: 'col-size' },
+  { id: 'progress', label: 'Progress', sortField: 'progress', cssClass: 'col-progress' },
+  { id: 'blacklist', label: 'Blacklisted', sortField: 'is_blacklisted', cssClass: 'col-blacklist' },
+  { id: 'actions', label: 'Actions', cssClass: 'col-actions' },
+];
+
 @Component({
   selector: 'app-torrents',
   standalone: true,
@@ -20,6 +42,10 @@ interface ActiveFilter {
     DecimalPipe,
     NgClass,
     LoadingContainerComponent,
+    CdkDropList,
+    CdkDrag,
+    CdkDragHandle,
+    CdkDragPreview,
   ],
   templateUrl: './torrents.component.html',
   styleUrl: './torrents.component.scss',
@@ -32,6 +58,15 @@ export class TorrentsComponent implements OnInit {
 
   readonly torrents = signal<Torrent[]>([]);
   readonly loading = signal<boolean>(true);
+
+  // Column ordering
+  readonly columnOrder = signal<ColumnDef[]>(this.loadColumnOrder());
+
+  readonly isColumnOrderCustom = computed<boolean>(() => {
+    const current = this.columnOrder();
+    if (current.length !== DEFAULT_COLUMNS.length) return true;
+    return current.some((col: ColumnDef, index: number) => col.id !== DEFAULT_COLUMNS[index].id);
+  });
 
   // Filter signals
   readonly searchText = signal<string>('');
@@ -319,6 +354,25 @@ export class TorrentsComponent implements OnInit {
       });
   }
 
+  // Column ordering
+  onColumnDrop(event: CdkDragDrop<string[]>): void {
+    const columns = [...this.columnOrder()];
+    moveItemInArray(columns, event.previousIndex, event.currentIndex);
+    this.columnOrder.set(columns);
+    this.saveColumnOrder();
+  }
+
+  resetColumnOrder(): void {
+    this.columnOrder.set([...DEFAULT_COLUMNS]);
+    localStorage.removeItem(COLUMN_ORDER_KEY);
+  }
+
+  onHeaderClick(col: ColumnDef): void {
+    if (col.sortField) {
+      this.sort(col.sortField);
+    }
+  }
+
   toggleDropdown(name: string): void {
     if (this.openDropdown() === name) {
       this.openDropdown.set('');
@@ -548,5 +602,32 @@ export class TorrentsComponent implements OnInit {
           });
       },
     });
+  }
+
+  private loadColumnOrder(): ColumnDef[] {
+    try {
+      const stored = localStorage.getItem(COLUMN_ORDER_KEY);
+      if (stored) {
+        const ids: string[] = JSON.parse(stored);
+        const colMap = new Map<string, ColumnDef>(DEFAULT_COLUMNS.map((c: ColumnDef) => [c.id, c]));
+        const ordered = ids
+          .map((id: string) => colMap.get(id))
+          .filter((c: ColumnDef | undefined): c is ColumnDef => c !== undefined);
+        for (const col of DEFAULT_COLUMNS) {
+          if (!ordered.some((o: ColumnDef) => o.id === col.id)) {
+            ordered.push(col);
+          }
+        }
+        return ordered;
+      }
+    } catch {
+      // Ignore parse errors
+    }
+    return [...DEFAULT_COLUMNS];
+  }
+
+  private saveColumnOrder(): void {
+    const ids = this.columnOrder().map((c: ColumnDef) => c.id);
+    localStorage.setItem(COLUMN_ORDER_KEY, JSON.stringify(ids));
   }
 }

@@ -2,6 +2,13 @@
   <div class="page-header">
     <h2>Torrents</h2>
     <div class="header-actions">
+      @if (isColumnOrderCustom()) {
+        <button class="btn btn-secondary"
+                (click)="resetColumnOrder()"
+                title="Reset column order">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+        </button>
+      }
       <button class="btn btn-secondary"
               [class.active]="compactMode()"
               (click)="toggleCompactMode()"
@@ -143,103 +150,92 @@
     <div class="table-container" [class.compact-mode]="compactMode()">
       <table class="data-table">
         <thead>
-          <tr>
-            <th class="col-name sortable" (click)="sort('name')">
-              Name
-              <i class="fa-solid"
-                 [class.fa-sort-up]="sortField() === 'name' && sortDirection() === 'asc'"
-                 [class.fa-sort-down]="sortField() === 'name' && sortDirection() === 'desc'"
-                 [class.fa-sort]="sortField() !== 'name'"></i>
-            </th>
-            <th class="col-state sortable" (click)="sort('state')">
-              State
-              <i class="fa-solid"
-                 [class.fa-sort-up]="sortField() === 'state' && sortDirection() === 'asc'"
-                 [class.fa-sort-down]="sortField() === 'state' && sortDirection() === 'desc'"
-                 [class.fa-sort]="sortField() !== 'state'"></i>
-            </th>
-            <th class="col-ratio sortable" (click)="sort('ratio')">
-              Ratio
-              <i class="fa-solid"
-                 [class.fa-sort-up]="sortField() === 'ratio' && sortDirection() === 'asc'"
-                 [class.fa-sort-down]="sortField() === 'ratio' && sortDirection() === 'desc'"
-                 [class.fa-sort]="sortField() !== 'ratio'"></i>
-            </th>
-            <th class="col-seed-time sortable" (click)="sort('seeding_time')">
-              Seeding Time
-              <i class="fa-solid"
-                 [class.fa-sort-up]="sortField() === 'seeding_time' && sortDirection() === 'asc'"
-                 [class.fa-sort-down]="sortField() === 'seeding_time' && sortDirection() === 'desc'"
-                 [class.fa-sort]="sortField() !== 'seeding_time'"></i>
-            </th>
-            <th class="col-type sortable" (click)="sort('is_private')">
-              Type
-              <i class="fa-solid"
-                 [class.fa-sort-up]="sortField() === 'is_private' && sortDirection() === 'asc'"
-                 [class.fa-sort-down]="sortField() === 'is_private' && sortDirection() === 'desc'"
-                 [class.fa-sort]="sortField() !== 'is_private'"></i>
-            </th>
-            <th class="col-size sortable" (click)="sort('size')">
-              Size
-              <i class="fa-solid"
-                 [class.fa-sort-up]="sortField() === 'size' && sortDirection() === 'asc'"
-                 [class.fa-sort-down]="sortField() === 'size' && sortDirection() === 'desc'"
-                 [class.fa-sort]="sortField() !== 'size'"></i>
-            </th>
-            <th class="col-progress sortable" (click)="sort('progress')">
-              Progress
-              <i class="fa-solid"
-                 [class.fa-sort-up]="sortField() === 'progress' && sortDirection() === 'asc'"
-                 [class.fa-sort-down]="sortField() === 'progress' && sortDirection() === 'desc'"
-                 [class.fa-sort]="sortField() !== 'progress'"></i>
-            </th>
-            <th class="col-blacklist sortable" (click)="sort('is_blacklisted')">
-              Blacklisted
-              <i class="fa-solid"
-                 [class.fa-sort-up]="sortField() === 'is_blacklisted' && sortDirection() === 'asc'"
-                 [class.fa-sort-down]="sortField() === 'is_blacklisted' && sortDirection() === 'desc'"
-                 [class.fa-sort]="sortField() !== 'is_blacklisted'"></i>
-            </th>
-            <th class="col-actions">Actions</th>
+          <tr cdkDropList
+              cdkDropListOrientation="horizontal"
+              (cdkDropListDropped)="onColumnDrop($event)">
+            @for (col of columnOrder(); track col.id) {
+              <th [class]="col.cssClass"
+                  [class.sortable]="!!col.sortField"
+                  cdkDrag>
+                <i class="fa-solid fa-grip-vertical drag-handle" cdkDragHandle></i>
+                <span class="th-sort-trigger" (click)="onHeaderClick(col)">
+                  {{ col.label }}
+                  @if (col.sortField) {
+                    <i class="fa-solid"
+                       [class.fa-sort-up]="sortField() === col.sortField && sortDirection() === 'asc'"
+                       [class.fa-sort-down]="sortField() === col.sortField && sortDirection() === 'desc'"
+                       [class.fa-sort]="sortField() !== col.sortField"></i>
+                  }
+                </span>
+                <ng-template cdkDragPreview>
+                  <div class="column-drag-preview">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                    {{ col.label }}
+                  </div>
+                </ng-template>
+              </th>
+            }
           </tr>
         </thead>
         <tbody>
           @for (torrent of paginatedTorrents(); track torrent.hash) {
             <tr [class.blacklisted-row]="torrent.is_blacklisted">
-              <td class="col-name name-cell" [title]="torrent.name">{{ torrent.name }}</td>
-              <td class="col-state">
-                <span class="state-badge" [ngClass]="getStateColor(torrent.state, torrent.progress)">
-                  {{ getStateLabel(torrent.state, torrent.progress) }}
-                </span>
-                @if (torrent.is_unregistered) {
-                  <span class="state-badge unregistered-badge">Unreg</span>
+              @for (col of columnOrder(); track col.id) {
+                @switch (col.id) {
+                  @case ('name') {
+                    <td class="col-name name-cell" [title]="torrent.name">{{ torrent.name }}</td>
+                  }
+                  @case ('state') {
+                    <td class="col-state">
+                      <span class="state-badge" [ngClass]="getStateColor(torrent.state, torrent.progress)">
+                        {{ getStateLabel(torrent.state, torrent.progress) }}
+                      </span>
+                      @if (torrent.is_unregistered) {
+                        <span class="state-badge unregistered-badge">Unreg</span>
+                      }
+                    </td>
+                  }
+                  @case ('ratio') {
+                    <td class="col-ratio">{{ torrent.ratio | number:'1.2-2' }}</td>
+                  }
+                  @case ('seedTime') {
+                    <td class="col-seed-time">{{ formatSeedingTime(torrent.seeding_time) }}</td>
+                  }
+                  @case ('type') {
+                    <td class="col-type">
+                      @if (torrent.is_private) {
+                        <span class="type-badge private">Private</span>
+                      } @else {
+                        <span class="type-badge public">Public</span>
+                      }
+                    </td>
+                  }
+                  @case ('size') {
+                    <td class="col-size">{{ formatSize(torrent.size) }}</td>
+                  }
+                  @case ('progress') {
+                    <td class="col-progress">{{ formatProgress(torrent.progress) }}</td>
+                  }
+                  @case ('blacklist') {
+                    <td class="col-blacklist">
+                      @if (torrent.is_blacklisted) {
+                        <i class="fa-solid fa-shield blacklisted-icon"></i>
+                      }
+                    </td>
+                  }
+                  @case ('actions') {
+                    <td class="col-actions">
+                      <button class="btn btn-icon" title="Actions" (click)="openActionMenu($event, torrent.hash)">
+                        <i class="fa-solid fa-ellipsis-vertical"></i>
+                      </button>
+                    </td>
+                  }
                 }
-              </td>
-              <td class="col-ratio">{{ torrent.ratio | number:'1.2-2' }}</td>
-              <td class="col-seed-time">{{ formatSeedingTime(torrent.seeding_time) }}</td>
-              <td class="col-type">
-                @if (torrent.is_private) {
-                  <span class="type-badge private">Private</span>
-                } @else {
-                  <span class="type-badge public">Public</span>
-                }
-              </td>
-              <td class="col-size">{{ formatSize(torrent.size) }}</td>
-              <td class="col-progress">{{ formatProgress(torrent.progress) }}</td>
-              <td class="col-blacklist">
-                @if (torrent.is_blacklisted) {
-                  <i class="fa-solid fa-shield blacklisted-icon"></i>
-                }
-              </td>
-              <td class="col-actions">
-                <button class="btn btn-icon" title="Actions" (click)="openActionMenu($event, torrent.hash)">
-                  <i class="fa-solid fa-ellipsis-vertical"></i>
-                </button>
-              </td>
+              }
             </tr>
           } @empty {
             <tr>
-              <td colspan="9" class="no-data-cell">No torrents found</td>
+              <td [attr.colspan]="columnOrder().length" class="no-data-cell">No torrents found</td>
             </tr>
           }
         </tbody>
