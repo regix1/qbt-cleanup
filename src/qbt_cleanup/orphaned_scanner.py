@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Orphaned files scanner and cleanup functionality."""
 
+import fnmatch
 import logging
 import os
 import time
@@ -91,6 +92,7 @@ class OrphanedFilesScanner:
         """
         self.client = client
         self._path_index: ActivePathIndex | None = None
+        self._exclude_patterns: list[str] = []
 
     def _add_parent_paths(self, path: Path, stop_at: Path, paths_set: Set[Path]) -> None:
         """
@@ -232,6 +234,14 @@ class OrphanedFilesScanner:
         if self._path_index and self._path_index.is_active(item_path):
             return
 
+        # Check against exclusion patterns
+        if self._exclude_patterns:
+            file_name = item_path.name
+            rel_path = str(item_path)
+            for pattern in self._exclude_patterns:
+                if fnmatch.fnmatch(file_name, pattern) or fnmatch.fnmatch(rel_path, pattern):
+                    return
+
         # Check file modification time
         try:
             mtime = item_path.stat().st_mtime
@@ -333,7 +343,8 @@ class OrphanedFilesScanner:
     def cleanup_orphaned_files(self, scan_dirs: List[str],
                                min_age_hours: float = 1.0,
                                dry_run: bool = False,
-                               log_dir: str = "/config") -> Tuple[int, int]:
+                               log_dir: str = "/config",
+                               exclude_patterns: list[str] | None = None) -> Tuple[int, int]:
         """
         Main orchestration method for orphaned file cleanup.
 
@@ -342,6 +353,7 @@ class OrphanedFilesScanner:
             min_age_hours: Minimum age in hours for a file to be considered orphaned
             dry_run: If True, don't actually delete anything
             log_dir: Directory to write orphaned cleanup logs
+            exclude_patterns: Optional list of glob patterns to exclude from cleanup
 
         Returns:
             Tuple of (files_removed, dirs_removed)
@@ -354,6 +366,10 @@ class OrphanedFilesScanner:
         logger.info(f"Scan directories: {scan_dirs}")
         logger.info(f"Minimum file age: {min_age_hours} hours")
         logger.info(f"Dry run: {dry_run}")
+
+        self._exclude_patterns = exclude_patterns or []
+        if self._exclude_patterns:
+            logger.info(f"Exclude patterns: {', '.join(self._exclude_patterns)}")
 
         # Get all active torrent paths
         active_paths = self.get_active_torrent_paths()

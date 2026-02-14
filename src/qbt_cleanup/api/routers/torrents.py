@@ -56,6 +56,7 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
         for torrent in raw_torrents:
             info = qbt_client.process_torrent(torrent)
             is_blacklisted = state_mgr.is_blacklisted(info.hash)
+            is_unregistered = state_mgr.get_unregistered_hours(info.hash) is not None
 
             tracker_url = getattr(torrent, "tracker", "") or ""
 
@@ -71,6 +72,7 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
                     is_downloading=info.is_downloading,
                     is_stalled=info.is_stalled,
                     is_blacklisted=is_blacklisted,
+                    is_unregistered=is_unregistered,
                     size=getattr(torrent, "size", 0) or 0,
                     progress=getattr(torrent, "progress", 0.0) or 0.0,
                     category=getattr(torrent, "category", "") or "",

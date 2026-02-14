@@ -56,6 +56,8 @@ def get_config(request: Request) -> ConfigResponse:
         schedule=dataclasses.asdict(config.schedule),
         fileflows=dataclasses.asdict(config.fileflows),
         orphaned=dataclasses.asdict(config.orphaned),
+        notifications=dataclasses.asdict(config.notifications),
+        recycle_bin=dataclasses.asdict(config.recycle_bin),
         web=dataclasses.asdict(config.web),
     )
 

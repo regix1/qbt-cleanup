@@ -106,6 +106,20 @@
               </div>
             }
           </div>
+
+          <div class="custom-dropdown" (click)="$event.stopPropagation()">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'unregistered'" (click)="toggleDropdown('unregistered')">
+              <span>{{ unregisteredFilterLabel() }}</span>
+              <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+            </button>
+            @if (openDropdown() === 'unregistered') {
+              <div class="dropdown-panel">
+                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'all'" (click)="onUnregisteredFilterChange('all')">All Unregistered</div>
+                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'yes'" (click)="onUnregisteredFilterChange('yes')">Unregistered</div>
+                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'no'" (click)="onUnregisteredFilterChange('no')">Registered</div>
+              </div>
+            }
+          </div>
         </div>
       </div>
 
@@ -197,6 +211,9 @@
                 <span class="state-badge" [ngClass]="getStateColor(torrent.state, torrent.progress)">
                   {{ getStateLabel(torrent.state, torrent.progress) }}
                 </span>
+                @if (torrent.is_unregistered) {
+                  <span class="state-badge unregistered-badge">Unreg</span>
+                }
               </td>
               <td class="col-ratio">{{ torrent.ratio | number:'1.2-2' }}</td>
               <td class="col-seed-time">{{ formatSeedingTime(torrent.seeding_time) }}</td>

@@ -50,6 +50,7 @@ def status(request: Request) -> StatusResponse:
 
     torrent_count = 0
     stalled_count = 0
+    unregistered_count = 0
     private_count = 0
     public_count = 0
     blacklist_count = 0
@@ -95,6 +96,17 @@ def status(request: Request) -> StatusResponse:
         if qbt_client is not None:
             qbt_client.disconnect()
 
+    # Get unregistered count from state database
+    try:
+        state_mgr = StateManager()
+        unregistered_count = state_mgr.count_unregistered()
+    except Exception as exc:
+        logger.warning(f"Could not count unregistered torrents: {exc}")
+    finally:
+        if state_mgr is not None:
+            state_mgr.close()
+            state_mgr = None
+
     # Merge scheduler status - this should always succeed
     run_status = app_state.get_status()
 
@@ -105,6 +117,7 @@ def status(request: Request) -> StatusResponse:
         torrent_count=torrent_count,
         blacklist_count=blacklist_count,
         stalled_count=stalled_count,
+        unregistered_count=unregistered_count,
         private_count=private_count,
         public_count=public_count,
         last_run_time=run_status["last_run_time"],

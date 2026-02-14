@@ -42,6 +42,7 @@ export class AppComponent {
     { path: '/torrents', label: 'Torrents', icon: 'fa-solid fa-download' },
     { path: '/blacklist', label: 'Blacklist', icon: 'fa-solid fa-ban' },
     { path: '/config', label: 'Config', icon: 'fa-solid fa-gear' },
+    { path: '/recycle-bin', label: 'Recycle Bin', icon: 'fa-solid fa-trash-can-arrow-up' },
     { path: '/fileflows', label: 'FileFlows', icon: 'fa-solid fa-rotate' },
   ] as const;
 

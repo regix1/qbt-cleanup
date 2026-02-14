@@ -11,6 +11,7 @@ export interface StatusResponse {
   torrent_count: number;
   blacklist_count: number;
   stalled_count: number;
+  unregistered_count: number;
   private_count: number;
   public_count: number;
   last_run_time: string | null;
@@ -43,6 +44,7 @@ export interface Torrent {
   is_downloading: boolean;
   is_stalled: boolean;
   is_blacklisted: boolean;
+  is_unregistered: boolean;
   size: number;
   progress: number;
   category: string;
@@ -78,6 +80,8 @@ export interface ConfigResponse {
   schedule: ConfigSectionValues;
   fileflows: ConfigSectionValues;
   orphaned: ConfigSectionValues;
+  notifications: ConfigSectionValues;
+  recycle_bin: ConfigSectionValues;
   web: ConfigSectionValues;
   [section: string]: ConfigSectionValues;
 }
@@ -97,4 +101,27 @@ export interface FileFlowsStatus {
   processing: number;
   queue: number;
   processing_files: FileFlowsProcessingFile[];
+}
+
+export interface NotificationTestResponse {
+  success: boolean;
+  message: string;
+  services_notified: number;
+}
+
+export interface RecycleBinItem {
+  name: string;
+  path: string;
+  size: number;
+  is_dir: boolean;
+  modified_time: number;
+  age_days: number;
+}
+
+export interface RecycleBinResponse {
+  enabled: boolean;
+  path: string;
+  items: RecycleBinItem[];
+  total_size: number;
+  purge_after_days: number;
 }

@@ -1,0 +1,88 @@
+<div class="page-container">
+  <div class="page-header">
+    <h2>Recycle Bin</h2>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="loadRecycleBin()">
+        <i class="fa-solid fa-arrows-rotate"></i>
+        <span>Refresh</span>
+      </button>
+      @if (!isEmpty()) {
+        <button class="btn btn-danger" (click)="emptyBin()">
+          <i class="fa-solid fa-trash-can"></i>
+          <span>Empty Bin</span>
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <app-loading-container />
+  } @else if (data(); as d) {
+    @if (!d.enabled) {
+      <div class="empty-state-global">
+        <i class="fa-solid fa-trash-can-arrow-up"></i>
+        <h3>Recycle Bin Disabled</h3>
+        <p>Enable the recycle bin in Configuration to move deleted files here instead of permanently deleting them.</p>
+      </div>
+    } @else if (d.items.length === 0) {
+      <div class="empty-state-global">
+        <i class="fa-solid fa-trash-can-arrow-up"></i>
+        <h3>Recycle Bin Empty</h3>
+        <p>No items in the recycle bin. Deleted torrent files will appear here when recycle bin is active.</p>
+      </div>
+    } @else {
+      <div class="recycle-summary">
+        <div class="summary-stat">
+          <span class="summary-value">{{ d.items.length }}</span>
+          <span class="summary-label">Items</span>
+        </div>
+        <div class="summary-stat">
+          <span class="summary-value">{{ formatSize(d.total_size) }}</span>
+          <span class="summary-label">Total Size</span>
+        </div>
+        <div class="summary-stat">
+          <span class="summary-value">{{ d.purge_after_days }}d</span>
+          <span class="summary-label">Auto-purge</span>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th class="col-name">Name</th>
+              <th class="col-type">Type</th>
+              <th class="col-size">Size</th>
+              <th class="col-age">Age</th>
+              <th class="col-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of d.items; track item.name) {
+              <tr>
+                <td class="col-name name-cell" [title]="item.name">
+                  <i class="fa-solid" [class.fa-folder]="item.is_dir" [class.fa-file]="!item.is_dir" style="margin-right: 8px; color: var(--text-secondary)"></i>
+                  {{ item.name }}
+                </td>
+                <td class="col-type">
+                  @if (item.is_dir) {
+                    <span class="type-badge folder">Folder</span>
+                  } @else {
+                    <span class="type-badge file">File</span>
+                  }
+                </td>
+                <td class="col-size">{{ formatSize(item.size) }}</td>
+                <td class="col-age">{{ formatAge(item.age_days) }}</td>
+                <td class="col-actions">
+                  <button class="btn btn-icon" title="Delete permanently" (click)="deleteItem(item)">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</div>

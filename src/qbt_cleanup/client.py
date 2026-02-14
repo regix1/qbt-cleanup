@@ -335,6 +335,109 @@ class QBittorrentClient:
             logger.error(f"Unexpected error deleting torrents: {e}")
             return False
 
+    def recheck_torrents(self, torrent_hashes: List[str]) -> bool:
+        """Recheck torrents to verify their data integrity.
+
+        Works with both qBittorrent v4 and v5 via the qbittorrentapi library.
+
+        Args:
+            torrent_hashes: List of torrent hashes to recheck
+
+        Returns:
+            True if successful
+        """
+        if not torrent_hashes:
+            return True
+
+        try:
+            self.client.torrents.recheck(torrent_hashes=torrent_hashes)
+            return True
+        except Exception as e:
+            logger.error(f"Error rechecking torrents: {e}")
+            return False
+
+    def resume_torrents(self, torrent_hashes: List[str]) -> bool:
+        """Resume paused torrents.
+
+        Works with both qBittorrent v4 (resume) and v5 (start) via the
+        qbittorrentapi library which handles the API version differences.
+
+        Args:
+            torrent_hashes: List of torrent hashes to resume
+
+        Returns:
+            True if successful
+        """
+        if not torrent_hashes:
+            return True
+
+        try:
+            self.client.torrents.resume(torrent_hashes=torrent_hashes)
+            return True
+        except Exception as e:
+            logger.error(f"Error resuming torrents: {e}")
+            return False
+
+    def get_tracker_messages(self, torrent_hash: str) -> List[str]:
+        """Get status messages from all trackers for a torrent.
+
+        Args:
+            torrent_hash: The torrent hash to query
+
+        Returns:
+            List of tracker status messages (empty strings filtered out)
+        """
+        try:
+            trackers = self.client.torrents.trackers(torrent_hash=torrent_hash)
+            messages: List[str] = []
+            for tracker in trackers:
+                # Skip DHT, PeX, and LSD entries (url starts with ** in qBT)
+                if hasattr(tracker, 'url') and tracker.url.startswith("**"):
+                    continue
+                if tracker.msg:
+                    messages.append(tracker.msg)
+            return messages
+        except Exception as e:
+            logger.warning(f"Could not get tracker messages for {torrent_hash}: {e}")
+            return []
+
+    def is_torrent_unregistered(self, torrent_hash: str) -> bool:
+        """Check if a torrent is unregistered at all its trackers.
+
+        A torrent is considered unregistered if ALL of its real trackers
+        (excluding DHT/PeX/LSD) report an error message containing
+        unregistered-type keywords.
+
+        Args:
+            torrent_hash: The torrent hash to check
+
+        Returns:
+            True if unregistered at all trackers
+        """
+        from .constants import UNREGISTERED_TRACKER_MESSAGES
+
+        try:
+            trackers = self.client.torrents.trackers(torrent_hash=torrent_hash)
+            real_trackers = [
+                t for t in trackers
+                if hasattr(t, 'url') and not t.url.startswith("**")
+            ]
+
+            if not real_trackers:
+                return False
+
+            for tracker in real_trackers:
+                msg = (tracker.msg or "").lower()
+                if not msg:
+                    return False  # Tracker with no message = possibly working
+                if not any(keyword in msg for keyword in UNREGISTERED_TRACKER_MESSAGES):
+                    return False  # This tracker doesn't report unregistered
+
+            return True
+        except Exception as e:
+            logger.warning(f"Could not check unregistered status for {torrent_hash}: {e}")
+            return False
+
     def process_torrent(self, torrent: Any, fetch_files: bool = False) -> TorrentInfo:
         """
         Process raw torrent into TorrentInfo.

@@ -2,7 +2,7 @@ import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, O
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../core/services/api.service';
-import { ConfigResponse, ConfigSectionValues } from '../../shared/models';
+import { ConfigResponse, ConfigSectionValues, NotificationTestResponse } from '../../shared/models';
 import { NotificationService } from '../../core/services/notification.service';
 import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 import { ToggleSwitchComponent } from '../../shared/ui/toggle-switch/toggle-switch.component';
@@ -54,6 +54,7 @@ export class ConfigComponent implements OnInit {
   readonly sections = signal<ConfigSection[]>([]);
   readonly loading = signal(true);
   readonly saving = signal(false);
+  readonly testingNotification = signal(false);
   readonly hasModifications = computed(() =>
     this.sections().some((section: ConfigSection) =>
       section.fields.some((field: ConfigField) => field.modified)
@@ -109,12 +110,28 @@ export class ConfigComponent implements OnInit {
       max_stalled_days: 'Max days a download can be stalled before removal',
       max_stalled_private_days: 'Max stalled days for private torrents',
       max_stalled_public_days: 'Max stalled days for public torrents',
+      recheck_paused: 'Auto-recheck paused torrents with errors',
+      cleanup_unregistered: 'Remove torrents unregistered at all trackers',
+      unregistered_grace_hours: 'Hours to wait before removing unregistered torrents',
     },
     orphaned: {
       enabled: 'Enable orphaned file cleanup',
       scan_dirs: 'Directories to scan for orphaned files (comma-separated)',
       min_age_hours: 'Minimum file age in hours before removal',
       schedule_days: 'Days between orphaned cleanup runs',
+      exclude_patterns: 'Glob patterns to exclude from orphaned cleanup (comma-separated)',
+    },
+    notifications: {
+      enabled: 'Enable notifications via Apprise',
+      urls: 'Apprise notification URLs (comma-separated)',
+      on_delete: 'Send notification when torrents are deleted',
+      on_error: 'Send notification when scan errors occur',
+      on_orphaned: 'Send notification on orphaned file cleanup',
+    },
+    recycle_bin: {
+      enabled: 'Move deleted files to recycle bin instead of permanent deletion',
+      path: 'Path to recycle bin directory',
+      purge_after_days: 'Auto-purge recycled files after this many days',
     },
     fileflows: {
       enabled: 'Enable FileFlows processing protection',
@@ -131,6 +148,8 @@ export class ConfigComponent implements OnInit {
     schedule: { name: 'Schedule', icon: 'fa-solid fa-clock' },
     fileflows: { name: 'FileFlows', icon: 'fa-solid fa-arrows-rotate' },
     orphaned: { name: 'Orphaned', icon: 'fa-solid fa-folder' },
+    notifications: { name: 'Notifications', icon: 'fa-solid fa-bell' },
+    recycle_bin: { name: 'Recycle Bin', icon: 'fa-solid fa-trash-can-arrow-up' },
     web: { name: 'Web', icon: 'fa-solid fa-globe' },
   };
 
@@ -179,6 +198,24 @@ export class ConfigComponent implements OnInit {
       });
   }
 
+  testNotification(): void {
+    this.testingNotification.set(true);
+    this.api.testNotification()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (result: NotificationTestResponse) => {
+          this.testingNotification.set(false);
+          result.success
+            ? this.notify.success(result.message)
+            : this.notify.error(result.message);
+        },
+        error: () => {
+          this.testingNotification.set(false);
+          this.notify.error('Failed to send test notification');
+        },
+      });
+  }
+
   toggleSection(section: ConfigSection): void {
     section.expanded = !section.expanded;
   }
@@ -207,6 +244,34 @@ export class ConfigComponent implements OnInit {
 
   isScanDirsField(sectionKey: string, fieldKey: string): boolean {
     return sectionKey === 'orphaned' && fieldKey === 'scan_dirs';
+  }
+
+  isNotifyUrlsField(sectionKey: string, fieldKey: string): boolean {
+    return sectionKey === 'notifications' && fieldKey === 'urls';
+  }
+
+  isExcludePatternsField(sectionKey: string, fieldKey: string): boolean {
+    return sectionKey === 'orphaned' && fieldKey === 'exclude_patterns';
+  }
+
+  isCommaSeparatedListField(sectionKey: string, fieldKey: string): boolean {
+    return this.isScanDirsField(sectionKey, fieldKey)
+      || this.isNotifyUrlsField(sectionKey, fieldKey)
+      || this.isExcludePatternsField(sectionKey, fieldKey);
+  }
+
+  getListPlaceholder(sectionKey: string, fieldKey: string): string {
+    if (this.isScanDirsField(sectionKey, fieldKey)) return '/path/to/directory';
+    if (this.isNotifyUrlsField(sectionKey, fieldKey)) return 'discord://webhook_id/webhook_token';
+    if (this.isExcludePatternsField(sectionKey, fieldKey)) return '*.srt';
+    return '';
+  }
+
+  getListAddLabel(sectionKey: string, fieldKey: string): string {
+    if (this.isScanDirsField(sectionKey, fieldKey)) return 'Add Directory';
+    if (this.isNotifyUrlsField(sectionKey, fieldKey)) return 'Add URL';
+    if (this.isExcludePatternsField(sectionKey, fieldKey)) return 'Add Pattern';
+    return 'Add Item';
   }
 
   getScanDirs(field: ConfigField): string[] {
@@ -292,7 +357,7 @@ export class ConfigComponent implements OnInit {
             overrides[section.key] = {};
           }
           let value = field.editValue;
-          if (this.isScanDirsField(section.key, field.key)) {
+          if (this.isCommaSeparatedListField(section.key, field.key)) {
             value = String(value).split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0).join(',');
           }
           overrides[section.key][field.key] = value;

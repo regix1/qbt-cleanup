@@ -348,6 +348,14 @@
   color: var(--text-secondary);
 }
 
+.unregistered-badge {
+  background: rgba(200, 90, 40, 0.2);
+  color: var(--accent-copper);
+  margin-left: 4px;
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
 .type-badge {
   display: inline-block;
   padding: 3px 10px;

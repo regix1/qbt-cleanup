@@ -143,6 +143,14 @@ class StateManager:
                 )
             """)
 
+            # Create unregistered torrents table
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS unregistered_torrents (
+                    hash TEXT PRIMARY KEY,
+                    first_seen TEXT NOT NULL
+                )
+            """)
+
             conn.commit()
             logger.debug("SQLite database initialized")
         except Exception as e:
@@ -595,6 +603,94 @@ class StateManager:
         except Exception as e:
             logger.error(f"Failed to get metadata {key}: {e}")
             return default
+
+    def mark_unregistered(self, torrent_hash: str) -> None:
+        """Record when a torrent was first seen as unregistered.
+
+        Args:
+            torrent_hash: The torrent hash
+        """
+        now = datetime.now(timezone.utc).isoformat()
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT OR IGNORE INTO unregistered_torrents (hash, first_seen) VALUES (?, ?)",
+            (torrent_hash, now),
+        )
+        if not self._in_batch:
+            conn.commit()
+
+    def get_unregistered_hours(self, torrent_hash: str) -> float | None:
+        """Get how many hours a torrent has been seen as unregistered.
+
+        Args:
+            torrent_hash: The torrent hash
+
+        Returns:
+            Hours since first seen as unregistered, or None if not tracked
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT first_seen FROM unregistered_torrents WHERE hash = ?",
+            (torrent_hash,),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+        first_seen = datetime.fromisoformat(row[0])
+        now = datetime.now(timezone.utc)
+        return (now - first_seen).total_seconds() / 3600
+
+    def clear_unregistered(self, torrent_hash: str) -> None:
+        """Remove a torrent from unregistered tracking (it recovered).
+
+        Args:
+            torrent_hash: The torrent hash
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM unregistered_torrents WHERE hash = ?",
+            (torrent_hash,),
+        )
+        if not self._in_batch:
+            conn.commit()
+
+    def cleanup_unregistered(self, active_hashes: List[str]) -> None:
+        """Remove unregistered entries for torrents that no longer exist.
+
+        Args:
+            active_hashes: List of currently active torrent hashes
+        """
+        conn = self._get_connection()
+        cursor = conn.cursor()
+        if not active_hashes:
+            cursor.execute("DELETE FROM unregistered_torrents")
+        else:
+            placeholders = ",".join("?" for _ in active_hashes)
+            cursor.execute(
+                f"DELETE FROM unregistered_torrents WHERE hash NOT IN ({placeholders})",
+                active_hashes,
+            )
+        if not self._in_batch:
+            conn.commit()
+
+    def count_unregistered(self) -> int:
+        """Count the number of torrents currently tracked as unregistered.
+
+        Returns:
+            Number of unregistered torrents in the state database
+        """
+        try:
+            conn = self._get_connection()
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM unregistered_torrents")
+            row = cursor.fetchone()
+            return row[0] if row else 0
+        except Exception as e:
+            logger.error(f"Failed to count unregistered torrents: {e}")
+            return 0
 
     def close(self) -> None:
         """Close the database connection."""

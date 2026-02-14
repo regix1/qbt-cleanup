@@ -52,17 +52,17 @@
                       @if (field.type === 'boolean') {
                         <app-toggle-switch [(checked)]="$any(field).editValue"
                                            (checkedChange)="onFieldChange(section, field)" />
-                      } @else if (isScanDirsField(section.key, field.key)) {
+                      } @else if (isCommaSeparatedListField(section.key, field.key)) {
                         <div class="scan-dirs-list">
                           @for (dir of getScanDirs(field); track $index) {
                             <div class="scan-dir-item">
                               <input class="form-input" type="text"
                                      [value]="dir"
                                      (input)="updateScanDir(section, field, $index, $any($event.target).value)"
-                                     placeholder="/path/to/directory">
+                                     [placeholder]="getListPlaceholder(section.key, field.key)">
                               <button class="btn-icon remove-dir-btn" type="button"
                                       (click)="removeScanDir(section, field, $index)"
-                                      title="Remove directory">
+                                      title="Remove">
                                 <i class="fa-solid fa-xmark"></i>
                               </button>
                             </div>
@@ -70,7 +70,7 @@
                           <button class="btn btn-secondary btn-sm add-dir-btn" type="button"
                                   (click)="addScanDir(section, field)">
                             <i class="fa-solid fa-plus"></i>
-                            <span>Add Directory</span>
+                            <span>{{ getListAddLabel(section.key, field.key) }}</span>
                           </button>
                         </div>
                       } @else if (field.type === 'number') {
@@ -96,6 +96,20 @@
                   </div>
                 }
               </div>
+              @if (section.key === 'notifications') {
+                <div class="section-actions">
+                  <button class="btn btn-secondary"
+                          (click)="testNotification()"
+                          [disabled]="testingNotification()">
+                    @if (testingNotification()) {
+                      <i class="fa-solid fa-spinner fa-spin"></i>
+                    } @else {
+                      <i class="fa-solid fa-bell"></i>
+                    }
+                    <span>Test Notification</span>
+                  </button>
+                </div>
+              }
             </div>
           }
         </div>

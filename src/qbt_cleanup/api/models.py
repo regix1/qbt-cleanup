@@ -22,6 +22,7 @@ class StatusResponse(BaseModel):
     torrent_count: int
     blacklist_count: int
     stalled_count: int
+    unregistered_count: int = 0
     private_count: int
     public_count: int
     last_run_time: Optional[str] = None
@@ -46,6 +47,7 @@ class TorrentResponse(BaseModel):
     is_downloading: bool
     is_stalled: bool
     is_blacklisted: bool
+    is_unregistered: bool = False
     size: int = 0
     progress: float = 0.0
     category: str = ""
@@ -87,6 +89,8 @@ class ConfigResponse(BaseModel):
     schedule: Dict[str, Any]
     fileflows: Dict[str, Any]
     orphaned: Dict[str, Any]
+    notifications: Dict[str, Any]
+    recycle_bin: Dict[str, Any]
     web: Dict[str, Any]
 
 
@@ -104,6 +108,14 @@ class FileFlowsStatusResponse(BaseModel):
     processing: int = 0
     queue: int = 0
     processing_files: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class NotificationTestResponse(BaseModel):
+    """Response model for notification test endpoint."""
+
+    success: bool
+    message: str
+    services_notified: int = 0
 
 
 class ActionResponse(BaseModel):

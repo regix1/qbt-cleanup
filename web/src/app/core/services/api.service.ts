@@ -11,6 +11,8 @@ import {
   ConfigResponse,
   ConfigUpdateRequest,
   FileFlowsStatus,
+  NotificationTestResponse,
+  RecycleBinResponse,
 } from '../../shared/models';
 
 @Injectable({ providedIn: 'root' })
@@ -70,5 +72,21 @@ export class ApiService {
 
   getFileFlowsStatus(): Observable<FileFlowsStatus> {
     return this.http.get<FileFlowsStatus>(`${this.baseUrl}/fileflows/status`);
+  }
+
+  testNotification(): Observable<NotificationTestResponse> {
+    return this.http.post<NotificationTestResponse>(`${this.baseUrl}/actions/test-notification`, {});
+  }
+
+  getRecycleBin(): Observable<RecycleBinResponse> {
+    return this.http.get<RecycleBinResponse>(`${this.baseUrl}/recycle-bin`);
+  }
+
+  deleteRecycleBinItem(itemName: string): Observable<ActionResponse> {
+    return this.http.delete<ActionResponse>(`${this.baseUrl}/recycle-bin/${encodeURIComponent(itemName)}`);
+  }
+
+  emptyRecycleBin(): Observable<ActionResponse> {
+    return this.http.delete<ActionResponse>(`${this.baseUrl}/recycle-bin`);
   }
 }

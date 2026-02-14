@@ -8,7 +8,7 @@ import { Torrent } from '../../shared/models';
 import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 
 interface ActiveFilter {
-  type: 'state' | 'category' | 'type' | 'blacklist' | 'tracker';
+  type: 'state' | 'category' | 'type' | 'blacklist' | 'tracker' | 'unregistered';
   value: string;
   label: string;
 }
@@ -39,6 +39,7 @@ export class TorrentsComponent implements OnInit {
   readonly categoryFilter = signal<string>('');
   readonly typeFilter = signal<'all' | 'private' | 'public'>('all');
   readonly blacklistFilter = signal<'all' | 'yes' | 'no'>('all');
+  readonly unregisteredFilter = signal<'all' | 'yes' | 'no'>('all');
   readonly trackerFilter = signal<string>('');
 
   // Layout
@@ -101,6 +102,10 @@ export class TorrentsComponent implements OnInit {
     if (blacklist !== 'all') {
       filters.push({ type: 'blacklist', value: blacklist, label: `Blacklisted: ${blacklist === 'yes' ? 'Yes' : 'No'}` });
     }
+    const unreg = this.unregisteredFilter();
+    if (unreg !== 'all') {
+      filters.push({ type: 'unregistered', value: unreg, label: `Unregistered: ${unreg === 'yes' ? 'Yes' : 'No'}` });
+    }
     const tracker = this.trackerFilter();
     if (tracker) {
       filters.push({ type: 'tracker', value: tracker, label: `Tracker: ${tracker}` });
@@ -127,6 +132,11 @@ export class TorrentsComponent implements OnInit {
   readonly blacklistFilterLabel = computed<string>(() => {
     const v = this.blacklistFilter();
     return v === 'all' ? 'All Blacklist' : v === 'yes' ? 'Blacklisted' : 'Not Blacklisted';
+  });
+
+  readonly unregisteredFilterLabel = computed<string>(() => {
+    const v = this.unregisteredFilter();
+    return v === 'all' ? 'All Unregistered' : v === 'yes' ? 'Unregistered' : 'Registered';
   });
 
   readonly trackerFilterLabel = computed<string>(() =>
@@ -168,6 +178,14 @@ export class TorrentsComponent implements OnInit {
       result = result.filter((t: Torrent) => t.is_blacklisted);
     } else if (blacklist === 'no') {
       result = result.filter((t: Torrent) => !t.is_blacklisted);
+    }
+
+    // Unregistered filter
+    const unreg = this.unregisteredFilter();
+    if (unreg === 'yes') {
+      result = result.filter((t: Torrent) => t.is_unregistered);
+    } else if (unreg === 'no') {
+      result = result.filter((t: Torrent) => !t.is_unregistered);
     }
 
     // Tracker filter
@@ -353,6 +371,12 @@ export class TorrentsComponent implements OnInit {
     this.closeDropdowns();
   }
 
+  onUnregisteredFilterChange(value: 'all' | 'yes' | 'no'): void {
+    this.unregisteredFilter.set(value);
+    this.currentPage.set(0);
+    this.closeDropdowns();
+  }
+
   onTrackerFilterChange(value: string): void {
     this.trackerFilter.set(value);
     this.currentPage.set(0);
@@ -373,6 +397,9 @@ export class TorrentsComponent implements OnInit {
       case 'blacklist':
         this.blacklistFilter.set('all');
         break;
+      case 'unregistered':
+        this.unregisteredFilter.set('all');
+        break;
       case 'tracker':
         this.trackerFilter.set('');
         break;
@@ -386,6 +413,7 @@ export class TorrentsComponent implements OnInit {
     this.categoryFilter.set('');
     this.typeFilter.set('all');
     this.blacklistFilter.set('all');
+    this.unregisteredFilter.set('all');
     this.trackerFilter.set('');
     this.currentPage.set(0);
   }

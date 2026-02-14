@@ -33,7 +33,7 @@ def create_app(app_state: AppState) -> FastAPI:
     )
 
     # Import and include routers
-    from .routers import actions, blacklist, config, fileflows, status, torrents
+    from .routers import actions, blacklist, config, fileflows, notifications, recycle, status, torrents
 
     app.include_router(status.router, prefix="/api", tags=["status"])
     app.include_router(torrents.router, prefix="/api", tags=["torrents"])
@@ -41,6 +41,8 @@ def create_app(app_state: AppState) -> FastAPI:
     app.include_router(config.router, prefix="/api", tags=["config"])
     app.include_router(actions.router, prefix="/api", tags=["actions"])
     app.include_router(fileflows.router, prefix="/api", tags=["fileflows"])
+    app.include_router(notifications.router, prefix="/api", tags=["notifications"])
+    app.include_router(recycle.router, prefix="/api", tags=["recycle-bin"])
 
     # Serve Angular SPA with deep-link support
     static_dir = "/app/web"

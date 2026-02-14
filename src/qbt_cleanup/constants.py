@@ -59,9 +59,23 @@ class DeletionReason(str, Enum):
     FORCE_DELETE = "force_delete"
     STALLED_TOO_LONG = "stalled_too_long"
     BOTH_LIMITS_EXCEEDED = "both_limits_exceeded"
+    UNREGISTERED = "unregistered"
 
 
 class TorrentType(str, Enum):
     """Torrent privacy type."""
     PRIVATE = "private"
     PUBLIC = "public"
+
+
+# Tracker messages indicating unregistered torrents
+UNREGISTERED_TRACKER_MESSAGES: Final[tuple[str, ...]] = (
+    "unregistered",
+    "not registered",
+    "torrent not found",
+    "torrent not exists",
+    "not found",
+    "unknown torrent",
+    "torrent is not known",
+    "info hash not found",
+)

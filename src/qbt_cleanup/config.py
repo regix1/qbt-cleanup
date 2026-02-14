@@ -68,7 +68,14 @@ class BehaviorConfig:
     max_stalled_days: float = field(default_factory=lambda: parse_float("MAX_STALLED_DAYS", 3.0, 0))
     max_stalled_private_days: float = field(init=False)
     max_stalled_public_days: float = field(init=False)
-    
+
+    # Recheck paused torrents
+    recheck_paused: bool = field(default_factory=lambda: parse_bool("RECHECK_PAUSED", False))
+
+    # Unregistered torrent cleanup
+    cleanup_unregistered: bool = field(default_factory=lambda: parse_bool("CLEANUP_UNREGISTERED", False))
+    unregistered_grace_hours: float = field(default_factory=lambda: parse_float("UNREGISTERED_GRACE_HOURS", 24.0, 0))
+
     def __post_init__(self):
         """Initialize derived values after dataclass creation."""
         # Paused-only settings
@@ -112,6 +119,29 @@ class OrphanedFilesConfig:
     ])
     min_age_hours: float = field(default_factory=lambda: parse_float("ORPHANED_MIN_AGE_HOURS", 1.0, 0))
     schedule_days: int = field(default_factory=lambda: parse_int("ORPHANED_SCHEDULE_DAYS", 7, 1))
+    exclude_patterns: list[str] = field(default_factory=lambda: [
+        p.strip() for p in os.environ.get("ORPHANED_EXCLUDE_PATTERNS", "").split(",") if p.strip()
+    ])
+
+
+@dataclass
+class NotificationConfig:
+    """Notification configuration via Apprise."""
+    enabled: bool = field(default_factory=lambda: parse_bool("NOTIFY_ENABLED", False))
+    urls: list[str] = field(default_factory=lambda: [
+        u.strip() for u in os.environ.get("NOTIFY_URLS", "").split(",") if u.strip()
+    ])
+    on_delete: bool = field(default_factory=lambda: parse_bool("NOTIFY_ON_DELETE", True))
+    on_error: bool = field(default_factory=lambda: parse_bool("NOTIFY_ON_ERROR", True))
+    on_orphaned: bool = field(default_factory=lambda: parse_bool("NOTIFY_ON_ORPHANED", True))
+
+
+@dataclass
+class RecycleBinConfig:
+    """Recycle bin configuration."""
+    enabled: bool = field(default_factory=lambda: parse_bool("RECYCLE_ENABLED", False))
+    path: str = field(default_factory=lambda: os.environ.get("RECYCLE_DIR", "/data/recycle"))
+    purge_after_days: int = field(default_factory=lambda: parse_int("RECYCLE_PURGE_DAYS", 7, 1))
 
 
 @dataclass
@@ -131,6 +161,8 @@ class Config:
     schedule: ScheduleConfig = field(default_factory=ScheduleConfig)
     fileflows: FileFlowsConfig = field(default_factory=FileFlowsConfig)
     orphaned: OrphanedFilesConfig = field(default_factory=OrphanedFilesConfig)
+    notifications: NotificationConfig = field(default_factory=NotificationConfig)
+    recycle_bin: RecycleBinConfig = field(default_factory=RecycleBinConfig)
     web: WebConfig = field(default_factory=WebConfig)
 
     @classmethod
