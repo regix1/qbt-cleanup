@@ -225,13 +225,15 @@ def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest 
                 f"{result.files_failed} failed for {item_name}"
             )
 
-        # Read metadata for torrent hash before cleanup
+        # Read metadata for torrent hash and category before cleanup
         torrent_hash = ""
+        torrent_category = ""
         meta_file = recycle_path / f"{item_name}.meta.json"
         if meta_file.exists():
             try:
                 meta_content = json.loads(meta_file.read_text())
                 torrent_hash = meta_content.get("torrent_hash", "")
+                torrent_category = meta_content.get("torrent_category", "")
             except (json.JSONDecodeError, OSError):
                 pass
             meta_file.unlink()
@@ -246,10 +248,19 @@ def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest 
                 if qbt_client.connect(quiet=True):
                     try:
                         torrent_data = torrent_sidecar.read_bytes()
-                        qbt_client.client.torrents.add(
-                            torrent_files=torrent_data,
-                            save_path=str(dest_dir),
-                            is_paused=True,
+                        add_params = {
+                            "torrent_files": torrent_data,
+                            "save_path": str(dest_dir),
+                            "is_paused": True,
+                            "use_auto_tmm": False,
+                        }
+                        if torrent_category:
+                            add_params["category"] = torrent_category
+                        add_result = qbt_client.client.torrents.add(**add_params)
+                        logger.info(
+                            f"[Recycle Bin] torrents.add result={add_result}, "
+                            f"save_path={dest_dir}, category={torrent_category!r}, "
+                            f"stored_hash={torrent_hash[:8] if torrent_hash else 'none'}"
                         )
                         time.sleep(2)
 

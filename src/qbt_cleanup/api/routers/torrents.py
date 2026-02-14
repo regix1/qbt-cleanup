@@ -185,7 +185,11 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
                 pass
             return ""
 
-        write_move_metadata(recycle_path, item_name, str(source.parent), result, torrent_hash=torrent_hash)
+        torrent_category = getattr(torrent, "category", "") or ""
+        write_move_metadata(
+            recycle_path, item_name, str(source.parent), result,
+            torrent_hash=torrent_hash, torrent_category=torrent_category,
+        )
 
         # Save .torrent file for re-adding on restore
         if torrent_file_data:
