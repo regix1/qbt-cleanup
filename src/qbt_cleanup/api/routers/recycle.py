@@ -266,40 +266,56 @@ def restore_recycle_item(item_name: str, request: Request, body: RestoreRequest 
 
                         # Resolve the actual hash — re-added torrents may get
                         # a different hash (v1 vs v2 / hybrid BitTorrent).
-                        actual_hash = torrent_hash
+                        actual_hash = ""
                         if torrent_hash:
                             check = qbt_client.client.torrents.info(torrent_hashes=torrent_hash)
-                            if not check:
+                            if check:
+                                actual_hash = torrent_hash
+                                logger.info(f"[Recycle Bin] Stored hash verified: {actual_hash[:8]}")
+                            else:
                                 logger.info("[Recycle Bin] Stored hash not found, searching by content_path")
-                                resolved_dest = str(dest.resolve())
-                                for t in qbt_client.client.torrents.info():
-                                    content = getattr(t, "content_path", "") or ""
-                                    if content and str(Path(content).resolve()) == resolved_dest:
-                                        actual_hash = t.hash
-                                        logger.info(f"[Recycle Bin] Found torrent with new hash {actual_hash[:8]}")
-                                        break
-                        else:
-                            # No stored hash — find by content_path
+
+                        if not actual_hash:
                             resolved_dest = str(dest.resolve())
                             for t in qbt_client.client.torrents.info():
                                 content = getattr(t, "content_path", "") or ""
                                 if content and str(Path(content).resolve()) == resolved_dest:
                                     actual_hash = t.hash
+                                    logger.info(f"[Recycle Bin] Found torrent by content_path: {actual_hash[:8]}")
                                     break
 
                         if actual_hash:
                             qbt_client.client.torrents.recheck(torrent_hashes=actual_hash)
+                            logger.info(f"[Recycle Bin] Recheck started for {actual_hash[:8]}")
+
                             # Wait for recheck to complete before resuming
                             checking_states = {"checkingUP", "checkingDL", "checkingResumeData"}
+                            final_state = "unknown"
                             for _ in range(30):
                                 time.sleep(1)
                                 try:
                                     info = qbt_client.client.torrents.info(torrent_hashes=actual_hash)
-                                    if info and info[0].state not in checking_states:
-                                        break
+                                    if info:
+                                        final_state = info[0].state
+                                        if final_state not in checking_states:
+                                            break
                                 except Exception:
                                     break
+                            logger.info(f"[Recycle Bin] Post-recheck state: {final_state}")
+
                             qbt_client.client.torrents.resume(torrent_hashes=actual_hash)
+                            time.sleep(1)
+
+                            # Verify resume worked
+                            try:
+                                info = qbt_client.client.torrents.info(torrent_hashes=actual_hash)
+                                if info:
+                                    logger.info(f"[Recycle Bin] Final state after resume: {info[0].state}")
+                            except Exception:
+                                pass
+                        else:
+                            logger.warning("[Recycle Bin] Could not find torrent hash after re-add")
+
                         torrent_readded = True
                         logger.info(f"[Recycle Bin] Re-added torrent to qBittorrent")
                     finally:
