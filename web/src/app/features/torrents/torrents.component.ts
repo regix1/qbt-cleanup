@@ -83,6 +83,7 @@ export class TorrentsComponent implements OnInit {
   private resizeColumnId = '';
   private resizeStartX = 0;
   private resizeStartWidth = 0;
+  private resizeContainerWidth = 0;
 
   // Filter signals
   readonly searchText = signal<string>('');
@@ -416,6 +417,10 @@ export class TorrentsComponent implements OnInit {
       this.resizeStartWidth = th.getBoundingClientRect().width;
     }
 
+    // Capture container width for max constraint
+    const container = (event.target as HTMLElement).closest('.table-container');
+    this.resizeContainerWidth = container ? container.clientWidth : 0;
+
     // If no custom widths yet, snapshot all column widths from DOM
     if (!this.hasCustomWidths()) {
       this.snapshotColumnWidths();
@@ -429,7 +434,21 @@ export class TorrentsComponent implements OnInit {
     const delta = event.clientX - this.resizeStartX;
     const col = this.columnOrder().find((c: ColumnDef) => c.id === this.resizeColumnId);
     const minWidth = col?.minWidth ?? 50;
-    const newWidth = Math.max(minWidth, this.resizeStartWidth + delta);
+
+    // Cap so total columns don't exceed container width
+    let maxWidth = Infinity;
+    if (this.resizeContainerWidth > 0) {
+      const widths = this.columnWidths();
+      let otherColumnsWidth = 0;
+      for (const c of this.columnOrder()) {
+        if (c.id !== this.resizeColumnId) {
+          otherColumnsWidth += widths[c.id] ?? c.minWidth;
+        }
+      }
+      maxWidth = this.resizeContainerWidth - otherColumnsWidth;
+    }
+
+    const newWidth = Math.min(maxWidth, Math.max(minWidth, this.resizeStartWidth + delta));
     this.columnWidths.update((widths: Record<string, number>) => ({
       ...widths,
       [this.resizeColumnId]: newWidth,

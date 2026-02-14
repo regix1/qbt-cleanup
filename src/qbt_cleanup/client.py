@@ -195,7 +195,7 @@ class QBittorrentClient:
                     if tracker.status == TRACKER_STATUS_DISABLED and tracker.msg and "private" in tracker.msg.lower():
                         return True
                 return False
-            except (qbittorrentapi.APIConnectionError, qbittorrentapi.APIError) as e:
+            except Exception as e:
                 if attempt == MAX_RETRY_ATTEMPTS - 1:
                     logger.warning(f"Could not detect privacy for {torrent_hash}: {e}")
                     return False
@@ -215,7 +215,7 @@ class QBittorrentClient:
         try:
             files = self.client.torrents.files(torrent_hash=torrent_hash)
             return [f.name for f in files]
-        except (qbittorrentapi.NotFound404Error, qbittorrentapi.APIConnectionError, qbittorrentapi.APIError) as e:
+        except Exception as e:
             logger.warning(f"Could not get files for torrent {torrent_hash}: {e}")
             return []
 
@@ -389,7 +389,7 @@ class QBittorrentClient:
                     return False  # This tracker doesn't report unregistered
 
             return True
-        except (qbittorrentapi.NotFound404Error, qbittorrentapi.APIConnectionError, qbittorrentapi.APIError) as e:
+        except Exception as e:
             logger.warning(f"Could not check unregistered status for {torrent_hash}: {e}")
             return False
 

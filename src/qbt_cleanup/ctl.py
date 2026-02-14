@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Control utility for qBittorrent cleanup tool."""
 
-import sqlite3
 import sys
 import argparse
 from datetime import datetime
 
-import qbittorrentapi
 
 from .state import StateManager
 from .config import Config
@@ -149,7 +147,7 @@ def cmd_status(args) -> int:
             print(f"Currently stalled: {stalled_count}")
 
         return 0
-    except sqlite3.Error as e:
+    except Exception as e:
         print(f"Error getting status: {e}", file=sys.stderr)
         return 1
 
@@ -201,7 +199,7 @@ def cmd_list_torrents(args) -> int:
             print(f"Blacklisted: {len(blacklisted)} torrents")
 
         return 0
-    except (qbittorrentapi.APIError, qbittorrentapi.APIConnectionError, sqlite3.Error) as e:
+    except Exception as e:
         print(f"Error listing torrents: {e}", file=sys.stderr)
         return 1
 
@@ -289,7 +287,7 @@ def cmd_select_torrents(args) -> int:
             print("\nNo changes made")
             return 0
 
-    except (qbittorrentapi.APIError, qbittorrentapi.APIConnectionError, sqlite3.Error) as e:
+    except Exception as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
 
