@@ -506,7 +506,14 @@ thead th .resize-handle:hover {
   }
 }
 
-.col-blacklist {
+.col-state,
+.col-ratio,
+.col-seed-time,
+.col-type,
+.col-size,
+.col-progress,
+.col-blacklist,
+.col-actions {
   text-align: center;
 }
 
