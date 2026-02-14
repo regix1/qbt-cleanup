@@ -832,7 +832,16 @@ export class TorrentsComponent implements OnInit {
     try {
       const stored = localStorage.getItem(COLUMN_WIDTHS_KEY);
       if (stored) {
-        return JSON.parse(stored);
+        const widths: Record<string, number> = JSON.parse(stored);
+        // Discard stale widths if columns changed (e.g. new column added)
+        const currentIds = new Set(DEFAULT_COLUMNS.map((c: ColumnDef) => c.id));
+        const hasAllColumns = currentIds.size > 0
+          && [...currentIds].every((id: string) => id === 'actions' || id in widths);
+        if (!hasAllColumns) {
+          localStorage.removeItem(COLUMN_WIDTHS_KEY);
+          return {};
+        }
+        return widths;
       }
     } catch {
       // Ignore parse errors

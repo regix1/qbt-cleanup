@@ -283,6 +283,7 @@
 // Fixed layout for custom column widths
 .data-table.fixed-layout {
   table-layout: fixed;
+  min-width: 1200px;
 }
 
 // Column drag-and-drop
