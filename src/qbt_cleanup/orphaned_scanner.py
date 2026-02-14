@@ -3,7 +3,6 @@
 
 import logging
 import os
-import shutil
 import time
 from datetime import datetime
 from pathlib import Path
@@ -161,7 +160,10 @@ class OrphanedFilesScanner:
                                 active_paths: Set[Path],
                                 min_age_hours: float = 1.0) -> List[Path]:
         """
-        Scan directories recursively for orphaned files and folders.
+        Scan directories recursively for orphaned files.
+
+        Only flags files as orphaned - directories are never directly flagged.
+        Empty directories are cleaned up separately after orphaned files are removed.
 
         Args:
             scan_dirs: List of directory paths to scan
@@ -169,9 +171,9 @@ class OrphanedFilesScanner:
             min_age_hours: Minimum age in hours for a file to be considered orphaned
 
         Returns:
-            List of orphaned paths (files or directories)
+            List of orphaned file paths
         """
-        orphaned = []
+        orphaned: List[Path] = []
         current_time = time.time()
         min_age_seconds = min_age_hours * 3600  # Convert hours to seconds
 
@@ -198,14 +200,8 @@ class OrphanedFilesScanner:
                 for root, dirs, files in os.walk(scan_dir):
                     root_path = Path(root).resolve()
 
-                    # Check each directory in this level
-                    for dir_name in dirs:
-                        dir_path = (root_path / dir_name).resolve()
-                        self._check_and_add_orphaned(
-                            dir_path, current_time, min_age_seconds, orphaned
-                        )
-
-                    # Check each file in this level
+                    # Only check files - directories are cleaned up separately
+                    # after orphaned files are removed (empty dir cleanup)
                     for file_name in files:
                         file_path = (root_path / file_name).resolve()
                         self._check_and_add_orphaned(
@@ -252,12 +248,19 @@ class OrphanedFilesScanner:
             logger.warning(f"Error checking modification time for {item_path}: {e}")
 
     def remove_orphaned_files(self, orphaned_paths: List[Path],
+                             scan_dirs: List[str],
                              dry_run: bool = False) -> Tuple[int, int]:
         """
-        Remove orphaned files and directories.
+        Remove orphaned files, then clean up empty directories bottom-up.
+
+        Directories are never removed via shutil.rmtree. Instead, after removing
+        orphaned files, empty directories are cleaned up safely using os.rmdir
+        (which only succeeds on empty directories). Scan directories themselves
+        are never removed.
 
         Args:
-            orphaned_paths: List of orphaned paths to remove
+            orphaned_paths: List of orphaned file paths to remove
+            scan_dirs: List of scan directory paths (protected from removal)
             dry_run: If True, don't actually delete anything
 
         Returns:
@@ -266,6 +269,13 @@ class OrphanedFilesScanner:
         files_removed = 0
         dirs_removed = 0
 
+        # Resolve scan dirs for comparison
+        protected_dirs: Set[str] = {str(Path(d).resolve()) for d in scan_dirs}
+
+        # Track parent directories of removed files for empty dir cleanup
+        affected_parents: Set[Path] = set()
+
+        # Phase 1: Remove orphaned files
         for path in orphaned_paths:
             try:
                 if not path.exists():
@@ -279,18 +289,44 @@ class OrphanedFilesScanner:
                         logger.info(f"Removing orphaned file: {path}")
                         path.unlink()
                     files_removed += 1
-
-                elif path.is_dir():
-                    if dry_run:
-                        logger.info(f"[DRY RUN] Would remove orphaned directory: {path}")
-                    else:
-                        logger.info(f"Removing orphaned directory: {path}")
-                        shutil.rmtree(path)
-                    dirs_removed += 1
+                    affected_parents.add(path.parent)
 
             except Exception as e:
-                logger.error(f"Error removing orphaned path {path}: {e}")
+                logger.error(f"Error removing orphaned file {path}: {e}")
                 continue
+
+        # Phase 2: Clean up empty directories bottom-up
+        # Sort deepest directories first so children are removed before parents
+        dirs_to_check: Set[Path] = set()
+        for parent in affected_parents:
+            current = parent
+            while current.parent != current:
+                if str(current) in protected_dirs:
+                    break
+                dirs_to_check.add(current)
+                current = current.parent
+
+        # Sort by depth (deepest first) for bottom-up removal
+        sorted_dirs = sorted(dirs_to_check, key=lambda p: len(p.parts), reverse=True)
+
+        for dir_path in sorted_dirs:
+            try:
+                if not dir_path.exists() or not dir_path.is_dir():
+                    continue
+
+                # os.rmdir only removes empty directories - safe by design
+                if dry_run:
+                    if not any(dir_path.iterdir()):
+                        logger.info(f"[DRY RUN] Would remove empty directory: {dir_path}")
+                        dirs_removed += 1
+                else:
+                    os.rmdir(dir_path)
+                    logger.info(f"Removed empty directory: {dir_path}")
+                    dirs_removed += 1
+
+            except OSError:
+                # Directory not empty or other OS error - skip safely
+                pass
 
         return files_removed, dirs_removed
 
@@ -332,10 +368,10 @@ class OrphanedFilesScanner:
             logger.error("Set ORPHANED_FORCE_SCAN=true to override (dangerous!)")
             return 0, 0
 
-        # Scan for orphaned files (always recursive)
+        # Scan for orphaned files (always recursive, files only)
         orphaned_paths = self.scan_for_orphaned_files(scan_dirs, active_paths, min_age_hours)
 
-        logger.info(f"Found {len(orphaned_paths)} orphaned items")
+        logger.info(f"Found {len(orphaned_paths)} orphaned files")
 
         # Write orphaned files to log
         if orphaned_paths:
@@ -344,8 +380,8 @@ class OrphanedFilesScanner:
         if not orphaned_paths:
             return 0, 0
 
-        # Remove orphaned files
-        return self.remove_orphaned_files(orphaned_paths, dry_run)
+        # Remove orphaned files and clean up empty directories
+        return self.remove_orphaned_files(orphaned_paths, scan_dirs, dry_run)
 
     def _validate_path_configuration(self, scan_dirs: List[str], active_paths: Set[Path]) -> bool:
         """
@@ -411,7 +447,7 @@ class OrphanedFilesScanner:
         Write orphaned files to a dated log file.
 
         Args:
-            orphaned_paths: List of orphaned paths
+            orphaned_paths: List of orphaned file paths
             dry_run: Whether this is a dry run
             log_dir: Directory to write logs to
         """
@@ -425,42 +461,25 @@ class OrphanedFilesScanner:
             mode_prefix = "orphaned_dryrun" if dry_run else "orphaned_cleanup"
             log_file = log_dir_path / f"{mode_prefix}_{timestamp_file}.log"
 
-            # Categorize files and directories
-            files = [p for p in orphaned_paths if p.is_file()]
-            dirs = [p for p in orphaned_paths if p.is_dir()]
-
             # Write to log file
             with open(log_file, "w", encoding="utf-8") as f:
                 f.write(f"{'='*80}\n")
                 f.write(f"Orphaned File Scan - {timestamp}\n")
                 f.write(f"Mode: {'DRY RUN' if dry_run else 'LIVE DELETION'}\n")
-                f.write(f"Total orphaned items: {len(orphaned_paths)} ({len(files)} files, {len(dirs)} directories)\n")
+                f.write(f"Total orphaned files: {len(orphaned_paths)}\n")
                 f.write(f"{'='*80}\n\n")
 
-                if files:
-                    f.write(f"FILES ({len(files)}):\n")
+                if orphaned_paths:
+                    f.write(f"FILES ({len(orphaned_paths)}):\n")
                     f.write("-" * 80 + "\n")
-                    for file_path in sorted(files):
+                    for file_path in sorted(orphaned_paths):
                         try:
                             size = file_path.stat().st_size / (1024**3)  # GB
                             f.write(f"{file_path}\n  Size: {size:.2f} GB\n\n")
                         except Exception:
                             f.write(f"{file_path}\n  Size: Unknown\n\n")
 
-                if dirs:
-                    f.write(f"\nDIRECTORIES ({len(dirs)}):\n")
-                    f.write("-" * 80 + "\n")
-                    for dir_path in sorted(dirs):
-                        try:
-                            # Calculate directory size
-                            total_size = sum(
-                                f.stat().st_size
-                                for f in dir_path.rglob('*')
-                                if f.is_file()
-                            ) / (1024**3)  # GB
-                            f.write(f"{dir_path}\n  Size: {total_size:.2f} GB\n\n")
-                        except Exception:
-                            f.write(f"{dir_path}\n  Size: Unknown\n\n")
+                f.write(f"\nNote: Empty directories will be cleaned up after file removal.\n")
 
                 if dry_run:
                     f.write(f"\n{'='*80}\n")
