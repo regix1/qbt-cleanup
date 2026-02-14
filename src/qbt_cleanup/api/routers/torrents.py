@@ -131,6 +131,13 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
             logger.warning(f"[Recycle Bin] Source path does not exist: {source}")
             return ""
 
+        # Pause the torrent so qBittorrent releases file handles
+        try:
+            qbt_client.client.torrents.pause(torrent_hashes=torrent_hash)
+            time.sleep(1)  # brief delay for file handles to release
+        except Exception as e:
+            logger.warning(f"[Recycle Bin] Could not pause torrent: {e}")
+
         recycle_path = Path(recycle_config.path)
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         dest = recycle_path / f"{timestamp}_{source.name}"
