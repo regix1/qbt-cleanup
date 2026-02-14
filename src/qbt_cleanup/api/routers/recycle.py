@@ -221,7 +221,8 @@ def empty_recycle_bin() -> ActionResponse:
                 shutil.rmtree(item)
             else:
                 item.unlink()
-            deleted += 1
+            if not item.name.endswith(".meta.json"):
+                deleted += 1
         except Exception as e:
             logger.error(f"[Recycle Bin] Error deleting {item.name}: {e}")
             errors += 1

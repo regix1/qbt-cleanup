@@ -139,9 +139,12 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
         shutil.move(str(source), str(dest))
 
         # Write sidecar metadata for restore support
-        meta = {"original_path": str(source.parent)}
-        meta_file = recycle_path / f"{dest.name}.meta.json"
-        meta_file.write_text(json.dumps(meta))
+        try:
+            meta = {"original_path": str(source.parent)}
+            meta_file = recycle_path / f"{dest.name}.meta.json"
+            meta_file.write_text(json.dumps(meta))
+        except OSError as e:
+            logger.warning(f"[Recycle Bin] Failed to write metadata for {dest.name}: {e}")
 
         logger.info(f"[Recycle Bin] Moved to recycle bin: {source.name}")
         return dest.name

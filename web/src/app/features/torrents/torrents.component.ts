@@ -714,6 +714,7 @@ export class TorrentsComponent implements OnInit {
         next: (response: ActionResponse) => {
           if (response.success) {
             this.notifications.success('Torrent restored from recycle bin');
+            this.loadTorrents();
           } else {
             this.notifications.error(response.message);
           }
