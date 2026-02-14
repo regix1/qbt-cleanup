@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request
 
 from ...fileflows import FileFlowsClient
 from ..app_state import AppState
-from ..models import FileFlowsStatusResponse
+from ..models import FileFlowsProcessingFile, FileFlowsStatusResponse
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +41,19 @@ def fileflows_status(request: Request) -> FileFlowsStatusResponse:
             connected=False,
         )
 
+    raw_files = status.get("processingFiles", [])
+    typed_files = [
+        FileFlowsProcessingFile(
+            name=entry.get("name", ""),
+            relativePath=entry.get("relativePath", ""),
+        )
+        for entry in raw_files
+    ]
+
     return FileFlowsStatusResponse(
         enabled=True,
         connected=True,
         processing=status.get("processing", 0),
         queue=status.get("queue", 0),
-        processing_files=status.get("processingFiles", []),
+        processing_files=typed_files,
     )

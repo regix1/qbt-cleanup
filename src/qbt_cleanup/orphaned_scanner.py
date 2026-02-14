@@ -505,5 +505,5 @@ class OrphanedFilesScanner:
 
             logger.info(f"Orphaned file scan results written to: {log_file}")
 
-        except Exception as e:
+        except OSError as e:
             logger.error(f"Error writing orphaned log: {e}")

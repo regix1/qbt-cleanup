@@ -36,7 +36,7 @@
         </div>
         <div class="filter-dropdowns">
           <div class="custom-dropdown" (click)="$event.stopPropagation()">
-            <button class="dropdown-trigger" [class.open]="openDropdown() === 'state'" (click)="toggleDropdown('state')">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'state'" (click)="toggleDropdown('state')" aria-label="Filter by state">
               <span>{{ stateFilterLabel() }}</span>
               <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
             </button>
@@ -53,7 +53,7 @@
           </div>
 
           <div class="custom-dropdown" (click)="$event.stopPropagation()">
-            <button class="dropdown-trigger" [class.open]="openDropdown() === 'category'" (click)="toggleDropdown('category')">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'category'" (click)="toggleDropdown('category')" aria-label="Filter by category">
               <span>{{ categoryFilterLabel() }}</span>
               <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
             </button>
@@ -70,7 +70,7 @@
           </div>
 
           <div class="custom-dropdown" (click)="$event.stopPropagation()">
-            <button class="dropdown-trigger" [class.open]="openDropdown() === 'type'" (click)="toggleDropdown('type')">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'type'" (click)="toggleDropdown('type')" aria-label="Filter by type">
               <span>{{ typeFilterLabel() }}</span>
               <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
             </button>
@@ -84,7 +84,7 @@
           </div>
 
           <div class="custom-dropdown" (click)="$event.stopPropagation()">
-            <button class="dropdown-trigger" [class.open]="openDropdown() === 'blacklist'" (click)="toggleDropdown('blacklist')">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'blacklist'" (click)="toggleDropdown('blacklist')" aria-label="Filter by blacklist status">
               <span>{{ blacklistFilterLabel() }}</span>
               <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
             </button>
@@ -98,7 +98,7 @@
           </div>
 
           <div class="custom-dropdown" (click)="$event.stopPropagation()">
-            <button class="dropdown-trigger" [class.open]="openDropdown() === 'tracker'" (click)="toggleDropdown('tracker')">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'tracker'" (click)="toggleDropdown('tracker')" aria-label="Filter by tracker">
               <span>{{ trackerFilterLabel() }}</span>
               <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
             </button>
@@ -115,7 +115,7 @@
           </div>
 
           <div class="custom-dropdown" (click)="$event.stopPropagation()">
-            <button class="dropdown-trigger" [class.open]="openDropdown() === 'unregistered'" (click)="toggleDropdown('unregistered')">
+            <button class="dropdown-trigger" [class.open]="openDropdown() === 'unregistered'" (click)="toggleDropdown('unregistered')" aria-label="Filter by registration status">
               <span>{{ unregisteredFilterLabel() }}</span>
               <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
             </button>

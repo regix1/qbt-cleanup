@@ -4,10 +4,10 @@
 <div class="app-container">
   <div class="sidenav-overlay" [class.visible]="sidenavOpen()" (click)="toggleSidenav()"></div>
   <aside class="app-sidenav" [class.open]="sidenavOpen()">
-    <div class="sidenav-header">
+    <a class="sidenav-header" routerLink="/" aria-label="Home" (click)="closeSidenavOnMobile()">
       <img src="bee.svg" alt="logo" class="logo-icon" />
       <span class="logo-text">qbt-cleanup</span>
-    </div>
+    </a>
     <nav class="nav-list">
       @for (item of navItems; track item.path) {
         <a class="nav-item"

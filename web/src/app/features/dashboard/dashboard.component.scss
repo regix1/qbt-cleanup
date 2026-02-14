@@ -79,12 +79,12 @@
   flex-direction: column;
   align-items: center;
   padding: 8px;
-  background: rgba(245, 197, 24, 0.05);
+  background: var(--accent-yellow-bg-light);
   border-radius: 8px;
   transition: background 0.2s ease;
 
   &:hover {
-    background: rgba(245, 197, 24, 0.1);
+    background: var(--accent-yellow-bg);
   }
 }
 
@@ -101,6 +101,13 @@
   letter-spacing: 0.3px;
   margin-top: 2px;
 }
+
+.icon-yellow { color: var(--accent-yellow); }
+.icon-gold { color: var(--accent-gold); }
+.icon-teal { color: var(--accent-teal); }
+.icon-amber { color: var(--accent-amber); }
+.icon-red { color: var(--accent-red, #e74c3c); }
+.icon-copper { color: var(--accent-copper); }
 
 .card-grid {
   grid-template-columns: repeat(6, 1fr);

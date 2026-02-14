@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
@@ -16,6 +16,7 @@ import { LoadingContainerComponent } from '../../shared/ui/loading-container/loa
   ],
   templateUrl: './blacklist.component.html',
   styleUrl: './blacklist.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class BlacklistComponent implements OnInit {
   private readonly api = inject(ApiService);

@@ -1,0 +1,61 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# GitHub
+.github
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.mypy_cache
+.dmypy.json
+dmypy.json
+
+# Node
+web/node_modules
+web/dist
+web/.angular
+npm-debug.log
+yarn-error.log
+.npm
+.yarn
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+*.md
+LICENSE
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Docker
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Misc
+nul
+*.log

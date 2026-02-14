@@ -101,9 +101,9 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
 
 
 def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: str) -> bool:
-    """Copy torrent files to the recycle bin before deletion.
+    """Move torrent files to the recycle bin.
 
-    Returns True if files were successfully copied (or recycle bin is disabled).
+    Returns True if files were successfully moved (or recycle bin is disabled).
     """
     config = ConfigOverrideManager.get_effective_config()
     recycle_config = config.recycle_bin
@@ -135,16 +135,13 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
         dest = recycle_path / f"{timestamp}_{source.name}"
         recycle_path.mkdir(parents=True, exist_ok=True)
 
-        if source.is_dir():
-            shutil.copytree(str(source), str(dest))
-        else:
-            shutil.copy2(str(source), str(dest))
+        shutil.move(str(source), str(dest))
 
-        logger.info(f"[Recycle Bin] Copied to recycle bin: {source.name}")
+        logger.info(f"[Recycle Bin] Moved to recycle bin: {source.name}")
         return True
 
     except Exception as e:
-        logger.error(f"[Recycle Bin] Error copying files: {e}")
+        logger.error(f"[Recycle Bin] Error moving files: {e}")
         return False
 
 
@@ -168,7 +165,7 @@ def delete_torrent(body: TorrentDeleteRequest, request: Request) -> ActionRespon
                 detail="Unable to connect to qBittorrent",
             )
 
-        # If recycle requested, copy files to recycle bin first
+        # If recycle requested, move files to recycle bin first
         if body.recycle:
             recycled = _move_torrent_to_recycle_bin(qbt_client, body.hash)
             if not recycled:
@@ -176,8 +173,8 @@ def delete_torrent(body: TorrentDeleteRequest, request: Request) -> ActionRespon
                     success=False,
                     message="Failed to move files to recycle bin. Torrent was not deleted.",
                 )
-            # After recycling, always delete with files since they're now copied
-            success = qbt_client.delete_torrents([body.hash], True)
+            # Files have been moved to recycle bin, so delete torrent only (no files)
+            success = qbt_client.delete_torrents([body.hash], False)
         else:
             success = qbt_client.delete_torrents([body.hash], body.delete_files)
 
@@ -191,7 +188,7 @@ def delete_torrent(body: TorrentDeleteRequest, request: Request) -> ActionRespon
             logger.info(f"{action}: {body.hash[:8]}")
             return ActionResponse(
                 success=True,
-                message=f"Torrent {'recycled' if body.recycle else 'deleted with files' if body.delete_files else 'removed'}",
+                message=f"Torrent {'moved to recycle bin' if body.recycle else 'deleted with files' if body.delete_files else 'removed'}",
             )
         else:
             return ActionResponse(success=False, message="Failed to delete torrent")

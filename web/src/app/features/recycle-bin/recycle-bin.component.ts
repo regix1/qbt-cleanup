@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -12,6 +12,7 @@ import { LoadingContainerComponent } from '../../shared/ui/loading-container/loa
   imports: [LoadingContainerComponent],
   templateUrl: './recycle-bin.component.html',
   styleUrl: './recycle-bin.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RecycleBinComponent implements OnInit {
   private readonly api = inject(ApiService);

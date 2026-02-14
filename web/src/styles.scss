@@ -13,6 +13,11 @@
   --status-active: #f5c518;
   --status-inactive: #7a756f;
   --border-color: #333333;
+  --accent-yellow-bg-light: rgba(245, 197, 24, 0.05);
+  --accent-yellow-bg: rgba(245, 197, 24, 0.1);
+  --bg-success: rgba(76, 175, 80, 0.15);
+  --bg-error: rgba(244, 67, 54, 0.15);
+  --bg-warning: rgba(255, 152, 0, 0.15);
 }
 
 html, body {
@@ -270,7 +275,7 @@ a {
   border-color: var(--border-color);
 
   &:hover:not(:disabled) {
-    background: rgba(245, 197, 24, 0.1);
+    background: var(--accent-yellow-bg);
     border-color: var(--accent-yellow);
   }
 
@@ -280,7 +285,7 @@ a {
 
   &.active {
     border-color: var(--accent-yellow);
-    background: rgba(245, 197, 24, 0.1);
+    background: var(--accent-yellow-bg);
     color: var(--accent-yellow);
   }
 }
@@ -322,7 +327,7 @@ a {
 
   &:hover:not(:disabled) {
     border-color: var(--accent-yellow);
-    background: rgba(245, 197, 24, 0.1);
+    background: var(--accent-yellow-bg);
     color: var(--accent-yellow);
   }
 }
@@ -498,7 +503,7 @@ select.form-input {
       transition: background 0.15s ease;
 
       &:hover {
-        background: rgba(245, 197, 24, 0.05);
+        background: var(--accent-yellow-bg-light);
       }
 
       td {

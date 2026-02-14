@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
@@ -12,6 +12,7 @@ import { ActionResponse, StatusResponse } from '../../shared/models';
   imports: [LoadingContainerComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(ApiService);

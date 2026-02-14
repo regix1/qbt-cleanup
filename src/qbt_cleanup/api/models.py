@@ -59,7 +59,7 @@ class TorrentResponse(BaseModel):
 class BlacklistEntry(BaseModel):
     """Response model for a blacklisted torrent entry."""
 
-    hash: str
+    hash: str = Field(min_length=1)
     name: str = ""
     added_at: str
     reason: str = ""
@@ -68,7 +68,7 @@ class BlacklistEntry(BaseModel):
 class BlacklistAddRequest(BaseModel):
     """Request model for adding a torrent to the blacklist."""
 
-    hash: str
+    hash: str = Field(min_length=1)
     name: Optional[str] = ""
     reason: Optional[str] = ""
 
@@ -76,7 +76,7 @@ class BlacklistAddRequest(BaseModel):
 class TorrentDeleteRequest(BaseModel):
     """Request model for deleting a torrent."""
 
-    hash: str
+    hash: str = Field(min_length=1)
     delete_files: bool = False
     recycle: bool = False
 
@@ -101,6 +101,13 @@ class ConfigUpdateRequest(BaseModel):
     overrides: Dict[str, Any]
 
 
+class FileFlowsProcessingFile(BaseModel):
+    """Model for a single file being processed by FileFlows."""
+
+    name: str = ""
+    relativePath: str = ""
+
+
 class FileFlowsStatusResponse(BaseModel):
     """Response model for the FileFlows integration status."""
 
@@ -108,7 +115,7 @@ class FileFlowsStatusResponse(BaseModel):
     connected: bool = False
     processing: int = 0
     queue: int = 0
-    processing_files: List[Dict[str, Any]] = Field(default_factory=list)
+    processing_files: List[FileFlowsProcessingFile] = Field(default_factory=list)
 
 
 class NotificationTestResponse(BaseModel):
@@ -124,4 +131,3 @@ class ActionResponse(BaseModel):
 
     success: bool
     message: str
-    details: Optional[Dict[str, Any]] = None

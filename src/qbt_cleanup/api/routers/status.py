@@ -65,6 +65,9 @@ def status(request: Request) -> StatusResponse:
         # Get blacklist count
         blacklist_entries = state_mgr.get_blacklist()
         blacklist_count = len(blacklist_entries)
+
+        # Get unregistered count
+        unregistered_count = state_mgr.count_unregistered()
     except Exception as exc:
         logger.warning(f"Could not connect to state database: {exc}")
     finally:
@@ -95,17 +98,6 @@ def status(request: Request) -> StatusResponse:
     finally:
         if qbt_client is not None:
             qbt_client.disconnect()
-
-    # Get unregistered count from state database
-    try:
-        state_mgr = StateManager()
-        unregistered_count = state_mgr.count_unregistered()
-    except Exception as exc:
-        logger.warning(f"Could not count unregistered torrents: {exc}")
-    finally:
-        if state_mgr is not None:
-            state_mgr.close()
-            state_mgr = None
 
     # Merge scheduler status - this should always succeed
     run_status = app_state.get_status()

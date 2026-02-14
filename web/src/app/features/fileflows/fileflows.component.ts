@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, DestroyRef } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, switchMap } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
@@ -11,6 +11,7 @@ import { FileFlowsStatus, FileFlowsProcessingFile } from '../../shared/models';
   imports: [LoadingContainerComponent],
   templateUrl: './fileflows.component.html',
   styleUrl: './fileflows.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class FileFlowsComponent implements OnInit {
   private readonly api = inject(ApiService);

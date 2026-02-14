@@ -26,25 +26,25 @@
   } @else if (status(); as s) {
     <div class="card-grid">
       <div class="stat-card">
-        <i class="fa-solid fa-power-off stat-icon" [style.color]="s.enabled ? 'var(--accent-yellow)' : 'var(--status-inactive)'"></i>
+        <i class="fa-solid fa-power-off stat-icon" [class.icon-active]="s.enabled" [class.icon-inactive]="!s.enabled"></i>
         <span class="stat-value">{{ s.enabled ? 'Enabled' : 'Disabled' }}</span>
         <span class="stat-label">Integration</span>
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-cloud stat-icon" [style.color]="s.connected ? 'var(--accent-yellow)' : 'var(--status-inactive)'"></i>
+        <i class="fa-solid fa-cloud stat-icon" [class.icon-active]="s.connected" [class.icon-inactive]="!s.connected"></i>
         <span class="stat-value">{{ s.connected ? 'Connected' : 'Disconnected' }}</span>
         <span class="stat-label">Connection</span>
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-wrench stat-icon" style="color: var(--accent-yellow)"></i>
+        <i class="fa-solid fa-wrench stat-icon icon-active"></i>
         <span class="stat-value">{{ s.processing }}</span>
         <span class="stat-label">Processing</span>
       </div>
 
       <div class="stat-card">
-        <i class="fa-solid fa-list stat-icon" style="color: var(--accent-amber)"></i>
+        <i class="fa-solid fa-list stat-icon icon-amber"></i>
         <span class="stat-value">{{ s.queue }}</span>
         <span class="stat-label">Queue</span>
       </div>

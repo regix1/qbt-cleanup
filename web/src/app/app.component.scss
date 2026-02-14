@@ -28,6 +28,8 @@
   padding: 20px 16px;
   gap: 12px;
   border-bottom: 1px solid var(--border-color);
+  text-decoration: none;
+  color: inherit;
 
   .logo-icon {
     width: 28px;
@@ -65,20 +67,20 @@
   }
 
   &:hover:not(.active-link) {
-    background: rgba(245, 197, 24, 0.05);
+    background: var(--accent-yellow-bg-light);
   }
 }
 
-.active-link {
-  background: rgba(245, 197, 24, 0.1) !important;
+.nav-item.active-link {
+  background: var(--accent-yellow-bg);
   border-left: 3px solid var(--accent-yellow);
 
   i {
-    color: var(--accent-yellow) !important;
+    color: var(--accent-yellow);
   }
 
   span {
-    color: var(--accent-yellow) !important;
+    color: var(--accent-yellow);
   }
 }
 
@@ -142,8 +144,8 @@
 }
 
 // ─── Sidenav Overlay ────────────────────────────────────────────────────────
-.sidenav-overlay {
-  display: block !important; // Override global styles.scss display:none
+.app-container .sidenav-overlay {
+  display: block;
   position: fixed;
   top: 0;
   left: 0;
@@ -163,8 +165,8 @@
 
 // On desktop, overlay should never show
 @media (min-width: 769px) {
-  .sidenav-overlay {
-    display: none !important;
+  .app-container .sidenav-overlay {
+    display: none;
   }
 }
 

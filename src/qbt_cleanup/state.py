@@ -240,7 +240,7 @@ class StateManager:
         if self._connection:
             try:
                 self._connection.commit()
-            except Exception:
+            except sqlite3.Error:
                 pass
         return self.state_enabled
     

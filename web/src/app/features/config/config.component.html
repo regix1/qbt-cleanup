@@ -50,15 +50,15 @@
 
                     <div class="field-input">
                       @if (field.type === 'boolean') {
-                        <app-toggle-switch [(checked)]="$any(field).editValue"
-                                           (checkedChange)="onFieldChange(section, field)" />
+                        <app-toggle-switch [checked]="getEditBoolean(field)"
+                                           (checkedChange)="setEditBoolean(section, field, $event)" />
                       } @else if (isCommaSeparatedListField(section.key, field.key)) {
                         <div class="scan-dirs-list">
                           @for (dir of getScanDirs(field); track $index) {
                             <div class="scan-dir-item">
                               <input class="form-input" type="text"
                                      [value]="dir"
-                                     (input)="updateScanDir(section, field, $index, $any($event.target).value)"
+                                     (input)="onInputEvent(section, field, $index, $event)"
                                      [placeholder]="getListPlaceholder(section.key, field.key)">
                               <button class="btn-icon remove-dir-btn" type="button"
                                       (click)="removeScanDir(section, field, $index)"
@@ -74,11 +74,11 @@
                           </button>
                         </div>
                       } @else if (field.type === 'number') {
-                        <app-number-input [(value)]="$any(field).editValue"
-                                          (valueChange)="onFieldChange(section, field)" />
+                        <app-number-input [value]="getEditNumber(field)"
+                                          (valueChange)="setEditNumber(section, field, $event)" />
                       } @else if (isPasswordField(section.key, field.key)) {
-                        <app-password-input [(value)]="$any(field).editValue"
-                                            (valueChange)="onFieldChange(section, field)" />
+                        <app-password-input [value]="getEditString(field)"
+                                            (valueChange)="setEditString(section, field, $event)" />
                       } @else {
                         <input class="form-input" type="text"
                                [(ngModel)]="field.editValue"

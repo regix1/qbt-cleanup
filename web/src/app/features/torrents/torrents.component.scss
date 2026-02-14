@@ -150,7 +150,7 @@
   text-overflow: ellipsis;
 
   &:hover {
-    background: rgba(245, 197, 24, 0.08);
+    background: var(--accent-yellow-bg);
   }
 
   &.selected {
@@ -367,7 +367,7 @@ thead th:hover .drag-handle:hover {
 
 thead th.cdk-drag-placeholder {
   opacity: 0.3;
-  background: rgba(245, 197, 24, 0.08);
+  background: var(--accent-yellow-bg);
 }
 
 // Column resize handle
@@ -398,17 +398,17 @@ thead th:hover .resize-handle::after {
   background: var(--border-color);
 }
 
-.resize-handle:hover {
+thead th .resize-handle:hover {
   &::after {
-    background: var(--accent-yellow) !important;
+    background: var(--accent-yellow);
     top: 0;
     bottom: 0;
   }
 }
 
-.is-resizing .resize-handle {
+.is-resizing thead th .resize-handle {
   &::after {
-    background: var(--accent-yellow) !important;
+    background: var(--accent-yellow);
     top: 0;
     bottom: 0;
   }
@@ -451,7 +451,7 @@ thead th:hover .resize-handle::after {
 }
 
 .state-stalled {
-  background: rgba(224, 144, 16, 0.15);
+  background: var(--bg-warning);
   color: var(--accent-amber);
 }
 
@@ -461,12 +461,12 @@ thead th:hover .resize-handle::after {
 }
 
 .state-queued {
-  background: rgba(212, 160, 23, 0.1);
+  background: var(--accent-yellow-bg);
   color: var(--accent-gold);
 }
 
 .state-checking {
-  background: rgba(245, 197, 24, 0.1);
+  background: var(--accent-yellow-bg);
   color: var(--accent-yellow);
 }
 
@@ -515,13 +515,13 @@ thead th:hover .resize-handle::after {
   font-size: 18px;
 }
 
-.blacklisted-row {
-  background: rgba(224, 144, 16, 0.03) !important;
+.data-table tbody tr.blacklisted-row {
+  background: rgba(224, 144, 16, 0.03);
 }
 
-.no-data-cell {
+.data-table tbody tr td.no-data-cell {
   text-align: center;
-  padding: 40px !important;
+  padding: 40px;
   color: var(--text-secondary);
 }
 
@@ -571,7 +571,7 @@ thead th:hover .resize-handle::after {
   transition: background 0.15s ease;
 
   &:hover {
-    background: rgba(245, 197, 24, 0.1);
+    background: var(--accent-yellow-bg);
   }
 }
 
@@ -617,7 +617,7 @@ thead th:hover .resize-handle::after {
   }
 
   &:hover {
-    background: rgba(245, 197, 24, 0.08);
+    background: var(--accent-yellow-bg);
 
     i {
       color: var(--accent-yellow);

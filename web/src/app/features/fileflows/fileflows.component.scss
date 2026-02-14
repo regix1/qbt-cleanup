@@ -1,3 +1,7 @@
+.icon-active { color: var(--accent-yellow); }
+.icon-inactive { color: var(--status-inactive); }
+.icon-amber { color: var(--accent-amber); }
+
 :host .card-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

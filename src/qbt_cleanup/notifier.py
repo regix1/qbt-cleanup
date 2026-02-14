@@ -20,7 +20,6 @@ class CleanupSummary:
     orphaned_files_removed: int = 0
     orphaned_dirs_removed: int = 0
     rechecked_torrents: int = 0
-    resumed_torrents: int = 0
 
 
 class Notifier:
@@ -111,8 +110,6 @@ class Notifier:
 
         if summary.rechecked_torrents > 0:
             parts.append(f"Rechecked {summary.rechecked_torrents} torrent(s)")
-        if summary.resumed_torrents > 0:
-            parts.append(f"Resumed {summary.resumed_torrents} torrent(s)")
 
         if summary.orphaned_files_removed > 0 and self._on_orphaned:
             parts.append(

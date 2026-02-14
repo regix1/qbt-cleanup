@@ -340,7 +340,7 @@ class QbtCleanup:
 
             return True
 
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             logger.error(f"Orphaned file cleanup failed: {e}", exc_info=True)
             return False
 

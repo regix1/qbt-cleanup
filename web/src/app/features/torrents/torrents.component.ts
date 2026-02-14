@@ -1,4 +1,4 @@
-import { Component, computed, DestroyRef, HostListener, inject, signal, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -51,6 +51,7 @@ const DEFAULT_COLUMNS: ColumnDef[] = [
   ],
   templateUrl: './torrents.component.html',
   styleUrl: './torrents.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TorrentsComponent implements OnInit {
   private readonly api = inject(ApiService);

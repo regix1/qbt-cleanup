@@ -1,4 +1,4 @@
-import { afterNextRender, Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
+import { afterNextRender, ChangeDetectionStrategy, Component, computed, DestroyRef, ElementRef, inject, OnInit, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../core/services/api.service';
@@ -42,6 +42,7 @@ interface SectionMeta {
   ],
   templateUrl: './config.component.html',
   styleUrl: './config.component.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ConfigComponent implements OnInit {
   private readonly api = inject(ApiService);
@@ -302,6 +303,38 @@ export class ConfigComponent implements OnInit {
     dirs[index] = value;
     field.editValue = dirs as unknown as string;
     this.onFieldChange(section, field);
+  }
+
+  getEditBoolean(field: ConfigField): boolean {
+    return field.editValue as boolean;
+  }
+
+  setEditBoolean(section: ConfigSection, field: ConfigField, value: boolean): void {
+    field.editValue = value;
+    this.onFieldChange(section, field);
+  }
+
+  getEditNumber(field: ConfigField): number {
+    return field.editValue as number;
+  }
+
+  setEditNumber(section: ConfigSection, field: ConfigField, value: number): void {
+    field.editValue = value;
+    this.onFieldChange(section, field);
+  }
+
+  getEditString(field: ConfigField): string {
+    return field.editValue as string;
+  }
+
+  setEditString(section: ConfigSection, field: ConfigField, value: string): void {
+    field.editValue = value;
+    this.onFieldChange(section, field);
+  }
+
+  onInputEvent(section: ConfigSection, field: ConfigField, index: number, event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.updateScanDir(section, field, index, value);
   }
 
   formatFieldName(key: string): string {
