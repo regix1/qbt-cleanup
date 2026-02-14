@@ -220,27 +220,30 @@
   border: 1px solid var(--border-color);
   border-top: none;
 
+  .data-table:not(.fixed-layout) {
+    min-width: 1200px;
+  }
+
   &.is-resizing {
     user-select: none;
     cursor: col-resize;
   }
 
   &.compact-mode {
-    overflow-x: hidden;
-
     .data-table:not(.fixed-layout) {
       table-layout: fixed;
       width: 100%;
+      min-width: 1100px;
     }
 
-    .data-table:not(.fixed-layout) .col-name { width: 25%; }
+    .data-table:not(.fixed-layout) .col-name { width: 22%; }
     .data-table:not(.fixed-layout) .col-state { width: 8%; }
     .data-table:not(.fixed-layout) .col-ratio { width: 6%; }
-    .data-table:not(.fixed-layout) .col-seed-time { width: 9%; }
-    .data-table:not(.fixed-layout) .col-type { width: 7%; }
-    .data-table:not(.fixed-layout) .col-size { width: 7%; }
+    .data-table:not(.fixed-layout) .col-seed-time { width: 8%; }
+    .data-table:not(.fixed-layout) .col-type { width: 6%; }
+    .data-table:not(.fixed-layout) .col-size { width: 6%; }
     .data-table:not(.fixed-layout) .col-progress { width: 7%; }
-    .data-table:not(.fixed-layout) .col-location { width: 14%; }
+    .data-table:not(.fixed-layout) .col-location { width: 18%; }
     .data-table:not(.fixed-layout) .col-blacklist { width: 8%; }
     .data-table:not(.fixed-layout) .col-actions { width: 5%; }
 
@@ -683,11 +686,16 @@ thead th .resize-handle:hover {
   display: inline-block;
   font-size: 11px;
   font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(245, 197, 24, 0.12);
   color: var(--accent-yellow);
   margin-right: 6px;
+  vertical-align: middle;
 }
 
 .location-path {
   font-size: 12px;
   color: var(--text-secondary);
+  vertical-align: middle;
 }
