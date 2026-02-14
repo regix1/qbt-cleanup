@@ -114,9 +114,9 @@
             </button>
             @if (openDropdown() === 'unregistered') {
               <div class="dropdown-panel">
-                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'all'" (click)="onUnregisteredFilterChange('all')">All Unregistered</div>
-                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'yes'" (click)="onUnregisteredFilterChange('yes')">Unregistered</div>
-                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'no'" (click)="onUnregisteredFilterChange('no')">Registered</div>
+                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'all'" (click)="onUnregisteredFilterChange('all')">All Tracker Status</div>
+                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'yes'" (click)="onUnregisteredFilterChange('yes')">Unregistered Only</div>
+                <div class="dropdown-option" [class.selected]="unregisteredFilter() === 'no'" (click)="onUnregisteredFilterChange('no')">Registered Only</div>
               </div>
             }
           </div>

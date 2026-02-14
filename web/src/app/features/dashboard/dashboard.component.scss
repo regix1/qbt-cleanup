@@ -103,6 +103,8 @@
 }
 
 .card-grid {
+  grid-template-columns: repeat(6, 1fr);
+
   .stat-card {
     animation: card-fade-in 0.3s ease-out both;
 
@@ -111,6 +113,14 @@
         animation-delay: #{($i - 1) * 0.05}s;
       }
     }
+  }
+
+  @media (max-width: 960px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 600px) {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

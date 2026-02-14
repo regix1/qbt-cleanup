@@ -343,6 +343,11 @@
   color: var(--accent-yellow);
 }
 
+.state-idle {
+  background: rgba(122, 117, 111, 0.12);
+  color: var(--text-secondary);
+}
+
 .state-default {
   background: rgba(224, 224, 224, 0.1);
   color: var(--text-secondary);
@@ -372,6 +377,10 @@
     background: rgba(47, 168, 160, 0.15);
     color: var(--accent-teal);
   }
+}
+
+.col-blacklist {
+  text-align: center;
 }
 
 .blacklisted-icon {

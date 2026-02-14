@@ -136,7 +136,7 @@ export class TorrentsComponent implements OnInit {
 
   readonly unregisteredFilterLabel = computed<string>(() => {
     const v = this.unregisteredFilter();
-    return v === 'all' ? 'All Unregistered' : v === 'yes' ? 'Unregistered' : 'Registered';
+    return v === 'all' ? 'Tracker Status' : v === 'yes' ? 'Unregistered' : 'Registered';
   });
 
   readonly trackerFilterLabel = computed<string>(() =>
@@ -253,7 +253,7 @@ export class TorrentsComponent implements OnInit {
     seeding: 'state-seeding',
     pausedUP: 'state-paused',
     pausedDL: 'state-paused',
-    stalledUP: 'state-seeding',
+    stalledUP: 'state-idle',
     stalledDL: 'state-stalled',
     error: 'state-error',
     queuedUP: 'state-queued',
@@ -273,17 +273,17 @@ export class TorrentsComponent implements OnInit {
     downloading: 'Downloading',
     uploading: 'Seeding',
     seeding: 'Seeding',
-    pausedUP: 'Paused',
-    pausedDL: 'Paused',
-    stalledUP: 'Seeding',
+    pausedUP: 'Paused (S)',
+    pausedDL: 'Paused (D)',
+    stalledUP: 'Idle',
     stalledDL: 'Stalled',
     error: 'Error',
-    queuedUP: 'Queued',
-    queuedDL: 'Queued',
+    queuedUP: 'Queued (S)',
+    queuedDL: 'Queued (D)',
     checkingUP: 'Checking',
     checkingDL: 'Checking',
-    forcedUP: 'Seeding',
-    forcedDL: 'Downloading',
+    forcedUP: 'Forced Seed',
+    forcedDL: 'Forced DL',
     missingFiles: 'Missing Files',
     moving: 'Moving',
     allocating: 'Allocating',

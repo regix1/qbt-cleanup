@@ -275,29 +275,32 @@ export class ConfigComponent implements OnInit {
   }
 
   getScanDirs(field: ConfigField): string[] {
-    const value = String(field.editValue || '');
+    const raw = field.editValue;
+    if (Array.isArray(raw)) {
+      return raw as string[];
+    }
+    const value = String(raw ?? '');
     if (!value) return [];
     return value.split(',').map((s: string) => s.trim());
   }
 
   addScanDir(section: ConfigSection, field: ConfigField): void {
-    const dirs = this.getScanDirs(field);
-    dirs.push('');
-    field.editValue = dirs.join(',');
+    const dirs = [...this.getScanDirs(field), ''];
+    field.editValue = dirs as unknown as string;
     this.onFieldChange(section, field);
   }
 
   removeScanDir(section: ConfigSection, field: ConfigField, index: number): void {
     const dirs = this.getScanDirs(field);
     dirs.splice(index, 1);
-    field.editValue = dirs.join(',');
+    field.editValue = dirs as unknown as string;
     this.onFieldChange(section, field);
   }
 
   updateScanDir(section: ConfigSection, field: ConfigField, index: number, value: string): void {
     const dirs = this.getScanDirs(field);
     dirs[index] = value;
-    field.editValue = dirs.join(',');
+    field.editValue = dirs as unknown as string;
     this.onFieldChange(section, field);
   }
 
@@ -358,7 +361,8 @@ export class ConfigComponent implements OnInit {
           }
           let value = field.editValue;
           if (this.isCommaSeparatedListField(section.key, field.key)) {
-            value = String(value).split(',').map((s: string) => s.trim()).filter((s: string) => s.length > 0).join(',');
+            const items = Array.isArray(value) ? value as string[] : String(value).split(',');
+            value = items.map((s: string) => s.trim()).filter((s: string) => s.length > 0).join(',');
           }
           overrides[section.key][field.key] = value;
         }
