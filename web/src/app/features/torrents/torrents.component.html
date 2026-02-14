@@ -195,6 +195,10 @@
                         <span class="state-badge state-recycling">
                           <i class="fa-solid fa-spinner fa-spin"></i> Recycling
                         </span>
+                      } @else if (movingHash() === torrent.hash || torrent.is_moving) {
+                        <span class="state-badge state-moving">
+                          <i class="fa-solid fa-spinner fa-spin"></i> Moving
+                        </span>
                       } @else {
                         <span class="state-badge" [ngClass]="getStateColor(torrent.state, torrent.progress)">
                           {{ getStateLabel(torrent.state, torrent.progress) }}
@@ -226,6 +230,14 @@
                   @case ('progress') {
                     <td class="col-progress">{{ formatProgress(torrent.progress) }}</td>
                   }
+                  @case ('location') {
+                    <td class="col-location" [title]="torrent.save_path">
+                      @if (torrent.category) {
+                        <span class="location-category">{{ torrent.category }}</span>
+                      }
+                      <span class="location-path">{{ torrent.save_path }}</span>
+                    </td>
+                  }
                   @case ('blacklist') {
                     <td class="col-blacklist">
                       @if (torrent.is_blacklisted) {
@@ -237,6 +249,10 @@
                     <td class="col-actions">
                       @if (recyclingHash() === torrent.hash || torrent.is_recycling) {
                         <span class="recycling-indicator" title="Recycling...">
+                          <i class="fa-solid fa-spinner fa-spin"></i>
+                        </span>
+                      } @else if (movingHash() === torrent.hash || torrent.is_moving) {
+                        <span class="recycling-indicator" title="Moving...">
                           <i class="fa-solid fa-spinner fa-spin"></i>
                         </span>
                       } @else {

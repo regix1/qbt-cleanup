@@ -55,6 +55,7 @@ class TorrentResponse(BaseModel):
     added_on: int = 0
     save_path: str = ""
     is_recycling: bool = False
+    is_moving: bool = False
 
 
 class BlacklistEntry(BaseModel):

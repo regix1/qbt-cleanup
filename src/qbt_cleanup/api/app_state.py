@@ -31,6 +31,7 @@ class AppState:
         self.scheduler_running: bool = False
         self.recycling_hashes: set[str] = set()
         self.restoring_items: set[str] = set()
+        self.moving_hashes: set[str] = set()
         self._lock = threading.Lock()
 
     def update_after_run(self, success: bool, stats: Optional[dict] = None) -> None:
@@ -104,3 +105,18 @@ class AppState:
         """Return a snapshot of currently restoring item names."""
         with self._lock:
             return set(self.restoring_items)
+
+    def add_moving(self, torrent_hash: str) -> None:
+        """Mark a torrent as currently being moved."""
+        with self._lock:
+            self.moving_hashes.add(torrent_hash)
+
+    def remove_moving(self, torrent_hash: str) -> None:
+        """Unmark a torrent from being moved."""
+        with self._lock:
+            self.moving_hashes.discard(torrent_hash)
+
+    def get_moving_hashes(self) -> set[str]:
+        """Return a snapshot of currently moving torrent hashes."""
+        with self._lock:
+            return set(self.moving_hashes)

@@ -233,15 +233,16 @@
       width: 100%;
     }
 
-    .data-table:not(.fixed-layout) .col-name { width: 30%; }
-    .data-table:not(.fixed-layout) .col-state { width: 9%; }
-    .data-table:not(.fixed-layout) .col-ratio { width: 7%; }
-    .data-table:not(.fixed-layout) .col-seed-time { width: 10%; }
-    .data-table:not(.fixed-layout) .col-type { width: 8%; }
-    .data-table:not(.fixed-layout) .col-size { width: 8%; }
-    .data-table:not(.fixed-layout) .col-progress { width: 8%; }
-    .data-table:not(.fixed-layout) .col-blacklist { width: 9%; }
-    .data-table:not(.fixed-layout) .col-actions { width: 6%; }
+    .data-table:not(.fixed-layout) .col-name { width: 25%; }
+    .data-table:not(.fixed-layout) .col-state { width: 8%; }
+    .data-table:not(.fixed-layout) .col-ratio { width: 6%; }
+    .data-table:not(.fixed-layout) .col-seed-time { width: 9%; }
+    .data-table:not(.fixed-layout) .col-type { width: 7%; }
+    .data-table:not(.fixed-layout) .col-size { width: 7%; }
+    .data-table:not(.fixed-layout) .col-progress { width: 7%; }
+    .data-table:not(.fixed-layout) .col-location { width: 14%; }
+    .data-table:not(.fixed-layout) .col-blacklist { width: 8%; }
+    .data-table:not(.fixed-layout) .col-actions { width: 5%; }
 
     .name-cell {
       max-width: 0;
@@ -660,4 +661,33 @@ thead th .resize-handle:hover {
   i {
     margin-right: 4px;
   }
+}
+
+.state-moving {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+
+  i {
+    margin-right: 4px;
+  }
+}
+
+.col-location {
+  max-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.location-category {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--accent-yellow);
+  margin-right: 6px;
+}
+
+.location-path {
+  font-size: 12px;
+  color: var(--text-secondary);
 }

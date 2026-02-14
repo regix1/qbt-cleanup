@@ -34,6 +34,7 @@ const DEFAULT_COLUMNS: ColumnDef[] = [
   { id: 'type', label: 'Type', sortField: 'is_private', cssClass: 'col-type', minWidth: 70 },
   { id: 'size', label: 'Size', sortField: 'size', cssClass: 'col-size', minWidth: 60 },
   { id: 'progress', label: 'Progress', sortField: 'progress', cssClass: 'col-progress', minWidth: 70 },
+  { id: 'location', label: 'Location', sortField: 'save_path', cssClass: 'col-location', minWidth: 100 },
   { id: 'blacklist', label: 'Blacklisted', sortField: 'is_blacklisted', cssClass: 'col-blacklist', minWidth: 60 },
   { id: 'actions', label: 'Actions', cssClass: 'col-actions', minWidth: 50 },
 ];
@@ -103,6 +104,7 @@ export class TorrentsComponent implements OnInit {
   readonly actionMenuHash = signal<string>('');
   readonly actionMenuPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
   readonly recyclingHash = signal<string>('');
+  readonly movingHash = signal<string>('');
 
   // Sorting & pagination
   readonly sortField = signal<keyof Torrent>('name');
@@ -702,10 +704,12 @@ export class TorrentsComponent implements OnInit {
               const request = isCategory
                 ? { hash: torrent.hash, category: inputValue.replace('category:', '') }
                 : { hash: torrent.hash, location: inputValue };
+              this.movingHash.set(torrent.hash);
               this.api.moveTorrent(request)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                   next: (moveResponse: ActionResponse) => {
+                    this.movingHash.set('');
                     if (moveResponse.success) {
                       this.notifications.success(moveResponse.message);
                       this.loadTorrents();
@@ -713,7 +717,10 @@ export class TorrentsComponent implements OnInit {
                       this.notifications.error(moveResponse.message);
                     }
                   },
-                  error: () => this.notifications.error('Failed to move torrent'),
+                  error: () => {
+                    this.movingHash.set('');
+                    this.notifications.error('Failed to move torrent');
+                  },
                 });
             },
           });

@@ -52,6 +52,7 @@ export interface Torrent {
   added_on: number;
   save_path: string;
   is_recycling: boolean;
+  is_moving: boolean;
 }
 
 export interface BlacklistEntry {

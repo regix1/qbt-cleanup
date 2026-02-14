@@ -46,6 +46,7 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
     app_state = get_app_state(request)
     config = app_state.config
     recycling = app_state.get_recycling_hashes()
+    moving = app_state.get_moving_hashes()
 
     state_mgr: StateManager | None = None
     qbt_client: QBittorrentClient | None = None
@@ -95,6 +96,7 @@ def list_torrents(request: Request) -> List[TorrentResponse]:
                     added_on=getattr(torrent, "added_on", 0) or 0,
                     save_path=getattr(torrent, "save_path", "") or "",
                     is_recycling=info.hash in recycling,
+                    is_moving=info.hash in moving,
                 )
             )
 
@@ -156,6 +158,7 @@ def move_torrent(body: TorrentMoveRequest, request: Request) -> ActionResponse:
     if not body.category and not body.location:
         return ActionResponse(success=False, message="Either category or location must be provided")
 
+    app_state.add_moving(body.hash)
     qbt_client: QBittorrentClient | None = None
 
     try:
@@ -194,6 +197,7 @@ def move_torrent(body: TorrentMoveRequest, request: Request) -> ActionResponse:
         logger.error(f"Error moving torrent: {exc}")
         raise HTTPException(status_code=500, detail=str(exc))
     finally:
+        app_state.remove_moving(body.hash)
         if qbt_client is not None:
             qbt_client.disconnect()
 
