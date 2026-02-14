@@ -12,7 +12,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Request
 
 from ...client import QBittorrentClient
-from ...config import ConfigOverrideManager
+from ...config_overrides import ConfigOverrideManager
 from ...state import StateManager
 from ..app_state import AppState
 from ..models import ActionResponse, TorrentDeleteRequest, TorrentResponse
