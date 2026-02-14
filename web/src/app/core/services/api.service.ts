@@ -32,9 +32,9 @@ export class ApiService {
     return this.http.get<Torrent[]>(`${this.baseUrl}/torrents`);
   }
 
-  deleteTorrent(hash: string, deleteFiles: boolean): Observable<ActionResponse> {
+  deleteTorrent(hash: string, deleteFiles: boolean, recycle: boolean = false): Observable<ActionResponse> {
     return this.http.request<ActionResponse>('DELETE', `${this.baseUrl}/torrents`, {
-      body: { hash, delete_files: deleteFiles },
+      body: { hash, delete_files: deleteFiles, recycle },
     });
   }
 

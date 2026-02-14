@@ -272,6 +272,10 @@
           <span>Add to Blacklist</span>
         }
       </button>
+      <button class="action-menu-item" (click)="recycleTorrent(torrent)">
+        <i class="fa-solid fa-recycle"></i>
+        <span>Recycle Torrent</span>
+      </button>
       <button class="action-menu-item danger" (click)="deleteTorrent(torrent)">
         <i class="fa-solid fa-trash-can"></i>
         <span>Delete Torrent</span>

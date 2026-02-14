@@ -5,7 +5,7 @@ import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveI
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
-import { Torrent } from '../../shared/models';
+import { ActionResponse, Torrent } from '../../shared/models';
 import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 
 interface ActiveFilter {
@@ -655,11 +655,34 @@ export class TorrentsComponent implements OnInit {
     }
   }
 
+  recycleTorrent(torrent: Torrent): void {
+    this.actionMenuHash.set('');
+    this.confirmService.confirm({
+      header: 'Recycle Torrent',
+      message: `Recycle "${torrent.name}"? Files will be moved to the recycle bin and the torrent removed from qBittorrent.`,
+      accept: () => {
+        this.api.deleteTorrent(torrent.hash, true, true)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (response: ActionResponse) => {
+              if (response.success) {
+                this.notifications.success('Torrent recycled');
+                this.loadTorrents();
+              } else {
+                this.notifications.error(response.message);
+              }
+            },
+            error: () => this.notifications.error('Failed to recycle torrent'),
+          });
+      },
+    });
+  }
+
   deleteTorrent(torrent: Torrent): void {
     this.actionMenuHash.set('');
     this.confirmService.confirm({
       header: 'Delete Torrent',
-      message: `Delete "${torrent.name}"? This will remove the torrent from qBittorrent and delete its files from disk.`,
+      message: `Permanently delete "${torrent.name}"? This will remove the torrent and delete its files from disk. This cannot be undone.`,
       accept: () => {
         this.api.deleteTorrent(torrent.hash, true)
           .pipe(takeUntilDestroyed(this.destroyRef))

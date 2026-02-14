@@ -78,6 +78,7 @@ class TorrentDeleteRequest(BaseModel):
 
     hash: str
     delete_files: bool = False
+    recycle: bool = False
 
 
 class ConfigResponse(BaseModel):
