@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import shutil
 import time
@@ -136,6 +137,11 @@ def _move_torrent_to_recycle_bin(qbt_client: QBittorrentClient, torrent_hash: st
         recycle_path.mkdir(parents=True, exist_ok=True)
 
         shutil.move(str(source), str(dest))
+
+        # Write sidecar metadata for restore support
+        meta = {"original_path": str(source.parent)}
+        meta_file = recycle_path / f"{dest.name}.meta.json"
+        meta_file.write_text(json.dumps(meta))
 
         logger.info(f"[Recycle Bin] Moved to recycle bin: {source.name}")
         return True

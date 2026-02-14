@@ -86,6 +86,13 @@ export class ApiService {
     return this.http.delete<ActionResponse>(`${this.baseUrl}/recycle-bin/${encodeURIComponent(itemName)}`);
   }
 
+  restoreRecycleBinItem(itemName: string): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(
+      `${this.baseUrl}/recycle-bin/${encodeURIComponent(itemName)}/restore`,
+      {},
+    );
+  }
+
   emptyRecycleBin(): Observable<ActionResponse> {
     return this.http.delete<ActionResponse>(`${this.baseUrl}/recycle-bin`);
   }

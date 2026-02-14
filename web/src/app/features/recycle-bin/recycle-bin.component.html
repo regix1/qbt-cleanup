@@ -74,6 +74,11 @@
                 <td class="col-size">{{ formatSize(item.size) }}</td>
                 <td class="col-age">{{ formatAge(item.age_days) }}</td>
                 <td class="col-actions">
+                  @if (item.original_path) {
+                    <button class="btn btn-icon" title="Restore to original location" (click)="restoreItem(item)">
+                      <i class="fa-solid fa-rotate-left"></i>
+                    </button>
+                  }
                   <button class="btn btn-icon" title="Delete permanently" (click)="deleteItem(item)">
                     <i class="fa-solid fa-trash-can"></i>
                   </button>

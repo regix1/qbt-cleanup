@@ -116,6 +116,7 @@ export interface RecycleBinItem {
   is_dir: boolean;
   modified_time: number;
   age_days: number;
+  original_path: string;
 }
 
 export interface RecycleBinResponse {

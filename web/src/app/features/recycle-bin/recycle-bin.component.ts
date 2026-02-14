@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
-import { RecycleBinItem, RecycleBinResponse } from '../../shared/models';
+import { ActionResponse, RecycleBinItem, RecycleBinResponse } from '../../shared/models';
 import { LoadingContainerComponent } from '../../shared/ui/loading-container/loading-container.component';
 
 @Component({
@@ -61,6 +61,28 @@ export class RecycleBinComponent implements OnInit {
               this.loadRecycleBin();
             },
             error: () => this.notify.error('Failed to delete item'),
+          });
+      },
+    });
+  }
+
+  restoreItem(item: RecycleBinItem): void {
+    this.confirmService.confirm({
+      header: 'Restore Item',
+      message: `Restore "${item.name}" to its original location?\n\n${item.original_path}`,
+      accept: () => {
+        this.api.restoreRecycleBinItem(item.name)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (response: ActionResponse) => {
+              if (response.success) {
+                this.notify.success(`Restored ${item.name}`);
+              } else {
+                this.notify.error(response.message);
+              }
+              this.loadRecycleBin();
+            },
+            error: () => this.notify.error('Failed to restore item'),
           });
       },
     });
