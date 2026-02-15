@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { interval, switchMap } from 'rxjs';
 import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -323,7 +324,9 @@ export class TorrentsComponent implements OnInit {
     seeding: 'state-seeding',
     pausedUP: 'state-paused',
     pausedDL: 'state-paused',
-    stalledUP: 'state-idle',
+    stoppedUP: 'state-paused',
+    stoppedDL: 'state-paused',
+    stalledUP: 'state-seeding',
     stalledDL: 'state-stalled',
     error: 'state-error',
     queuedUP: 'state-queued',
@@ -332,9 +335,11 @@ export class TorrentsComponent implements OnInit {
     checkingDL: 'state-checking',
     forcedUP: 'state-seeding',
     forcedDL: 'state-downloading',
+    forcedMetaDL: 'state-downloading',
     missingFiles: 'state-error',
     moving: 'state-checking',
     allocating: 'state-checking',
+    metaDL: 'state-downloading',
     checkingResumeData: 'state-checking',
     unknown: 'state-default',
   };
@@ -345,7 +350,9 @@ export class TorrentsComponent implements OnInit {
     seeding: 'Seeding',
     pausedUP: 'Paused (S)',
     pausedDL: 'Paused (D)',
-    stalledUP: 'Idle',
+    stoppedUP: 'Completed',
+    stoppedDL: 'Stopped',
+    stalledUP: 'Seeding',
     stalledDL: 'Stalled',
     error: 'Error',
     queuedUP: 'Queued (S)',
@@ -354,6 +361,8 @@ export class TorrentsComponent implements OnInit {
     checkingDL: 'Checking',
     forcedUP: 'Forced Seed',
     forcedDL: 'Forced DL',
+    forcedMetaDL: 'Fetching Metadata',
+    metaDL: 'Fetching Metadata',
     missingFiles: 'Missing Files',
     moving: 'Moving',
     allocating: 'Allocating',
@@ -378,6 +387,7 @@ export class TorrentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTorrents();
+    this.startAutoRefresh();
   }
 
   loadTorrents(): void {
@@ -394,6 +404,13 @@ export class TorrentsComponent implements OnInit {
           this.notifications.error('Failed to load torrents');
         },
       });
+  }
+
+  private startAutoRefresh(): void {
+    interval(10_000).pipe(
+      switchMap(() => this.api.getTorrents()),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((torrents: Torrent[]) => this.torrents.set(torrents));
   }
 
   // Column ordering

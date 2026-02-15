@@ -26,30 +26,43 @@ TRACKER_STATUS_DISABLED: Final[int] = 0
 
 
 class TorrentState(str, Enum):
-    """qBittorrent torrent states."""
-    PAUSED_UP = "pausedUP"
-    PAUSED_DL = "pausedDL"
+    """qBittorrent torrent states (supports v4.x and v5.0+)."""
+    # Common states (v4 + v5)
     DOWNLOADING = "downloading"
+    UPLOADING = "uploading"
     STALLED_DL = "stalledDL"
+    STALLED_UP = "stalledUP"
     QUEUED_DL = "queuedDL"
+    QUEUED_UP = "queuedUP"
+    CHECKING_DL = "checkingDL"
+    CHECKING_UP = "checkingUP"
+    CHECKING_RESUME_DATA = "checkingResumeData"
+    FORCED_DL = "forcedDL"
+    FORCED_UP = "forcedUP"
     ALLOCATING = "allocating"
     META_DL = "metaDL"
-    UPLOADING = "uploading"
-    STALLED_UP = "stalledUP"
-    QUEUED_UP = "queuedUP"
-    CHECKING_UP = "checkingUP"
-    CHECKING_DL = "checkingDL"
-    
+    MOVING = "moving"
+    ERROR = "error"
+    MISSING_FILES = "missingFiles"
+    UNKNOWN = "unknown"
+    # v4 only (renamed in v5)
+    PAUSED_UP = "pausedUP"
+    PAUSED_DL = "pausedDL"
+    # v5 only (replaces paused in v5)
+    STOPPED_UP = "stoppedUP"
+    STOPPED_DL = "stoppedDL"
+    FORCED_META_DL = "forcedMetaDL"
+
     @classmethod
     def paused_states(cls) -> set:
-        """Return set of paused states."""
-        return {cls.PAUSED_UP, cls.PAUSED_DL}
-    
+        """Return set of paused/stopped states (v4 + v5)."""
+        return {cls.PAUSED_UP, cls.PAUSED_DL, cls.STOPPED_UP, cls.STOPPED_DL}
+
     @classmethod
     def downloading_states(cls) -> set:
         """Return set of downloading states."""
-        return {cls.DOWNLOADING, cls.STALLED_DL, cls.QUEUED_DL, 
-                cls.ALLOCATING, cls.META_DL}
+        return {cls.DOWNLOADING, cls.STALLED_DL, cls.QUEUED_DL,
+                cls.ALLOCATING, cls.META_DL, cls.FORCED_META_DL}
 
 
 class DeletionReason(str, Enum):

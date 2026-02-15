@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { interval, switchMap } from 'rxjs';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
@@ -31,6 +32,14 @@ export class RecycleBinComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadRecycleBin();
+    this.startAutoRefresh();
+  }
+
+  private startAutoRefresh(): void {
+    interval(15_000).pipe(
+      switchMap(() => this.api.getRecycleBin()),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((response: RecycleBinResponse) => this.data.set(response));
   }
 
   loadRecycleBin(): void {

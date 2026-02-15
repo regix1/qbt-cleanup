@@ -424,8 +424,8 @@ class QbtCleanup:
         from .constants import TorrentState
         from .utils import truncate_name
 
-        # Find paused torrents with error states
-        error_states = {TorrentState.PAUSED_DL.value}
+        # Find paused/stopped torrents with error states (v4: pausedDL, v5: stoppedDL)
+        error_states = {TorrentState.PAUSED_DL.value, TorrentState.STOPPED_DL.value}
         paused_with_errors = [
             t for t in torrents
             if t.state in error_states and hasattr(t.torrent, 'size') and t.torrent.size > 0

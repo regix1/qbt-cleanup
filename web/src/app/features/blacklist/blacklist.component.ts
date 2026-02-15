@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { interval, switchMap } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../core/services/api.service';
 import { ActionResponse, BlacklistEntry, Torrent } from '../../shared/models';
@@ -59,6 +60,14 @@ export class BlacklistComponent implements OnInit {
   ngOnInit(): void {
     this.loadBlacklist();
     this.loadTorrents();
+    this.startAutoRefresh();
+  }
+
+  private startAutoRefresh(): void {
+    interval(30_000).pipe(
+      switchMap(() => this.api.getBlacklist()),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe((entries: BlacklistEntry[]) => this.entries.set(entries));
   }
 
   loadBlacklist(): void {
