@@ -30,14 +30,14 @@ const COLUMN_WIDTHS_VERSION_KEY = 'qbt-torrents-column-widths-v';
 const COLUMN_WIDTHS_VERSION = 2;
 
 const DEFAULT_COLUMNS: ColumnDef[] = [
-  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name', defaultWidth: 22, minWidthPct: 10 },
+  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name', defaultWidth: 30, minWidthPct: 10 },
   { id: 'state', label: 'State', sortField: 'state', cssClass: 'col-state', defaultWidth: 10, minWidthPct: 6 },
   { id: 'ratio', label: 'Ratio', sortField: 'ratio', cssClass: 'col-ratio', defaultWidth: 7, minWidthPct: 4 },
   { id: 'seedTime', label: 'Seeding Time', sortField: 'seeding_time', cssClass: 'col-seed-time', defaultWidth: 9, minWidthPct: 5 },
   { id: 'type', label: 'Type', sortField: 'is_private', cssClass: 'col-type', defaultWidth: 7, minWidthPct: 4 },
   { id: 'size', label: 'Size', sortField: 'size', cssClass: 'col-size', defaultWidth: 7, minWidthPct: 4 },
   { id: 'progress', label: 'Progress', sortField: 'progress', cssClass: 'col-progress', defaultWidth: 8, minWidthPct: 5 },
-  { id: 'location', label: 'Location', sortField: 'save_path', cssClass: 'col-location', defaultWidth: 18, minWidthPct: 8 },
+  { id: 'location', label: 'Location', sortField: 'save_path', cssClass: 'col-location', defaultWidth: 10, minWidthPct: 5 },
   { id: 'blacklist', label: 'Blacklisted', sortField: 'is_blacklisted', cssClass: 'col-blacklist', defaultWidth: 7, minWidthPct: 4 },
   { id: 'actions', label: 'Actions', cssClass: 'col-actions', defaultWidth: 5, minWidthPct: 3 },
 ];
