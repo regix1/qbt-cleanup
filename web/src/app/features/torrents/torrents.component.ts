@@ -686,7 +686,18 @@ export class TorrentsComponent implements OnInit {
 
   togglePause(torrent: Torrent): void {
     this.actionMenuHash.set('');
-    const action$ = torrent.is_paused
+    const wasPaused = torrent.is_paused;
+    const newState = wasPaused ? 'uploading' : 'pausedUP';
+
+    // Optimistic update
+    this.torrents.update((list: Torrent[]) =>
+      list.map((t: Torrent) => t.hash === torrent.hash
+        ? { ...t, is_paused: !wasPaused, state: newState }
+        : t
+      ),
+    );
+
+    const action$ = wasPaused
       ? this.api.resumeTorrent(torrent.hash)
       : this.api.pauseTorrent(torrent.hash);
 
@@ -695,31 +706,39 @@ export class TorrentsComponent implements OnInit {
       .subscribe({
         next: (response: ActionResponse) => {
           if (response.success) {
-            this.notifications.success(torrent.is_paused ? 'Torrent resumed' : 'Torrent paused');
-            this.loadTorrents();
+            this.notifications.success(wasPaused ? 'Torrent resumed' : 'Torrent paused');
           } else {
             this.notifications.error(response.message);
+            this.loadTorrents();
           }
         },
-        error: () => this.notifications.error(`Failed to ${torrent.is_paused ? 'resume' : 'pause'} torrent`),
+        error: () => {
+          this.notifications.error(`Failed to ${wasPaused ? 'resume' : 'pause'} torrent`);
+          this.loadTorrents();
+        },
       });
   }
 
   toggleBlacklist(torrent: Torrent): void {
     this.actionMenuHash.set('');
-    if (torrent.is_blacklisted) {
+    const wasBlacklisted = torrent.is_blacklisted;
+
+    if (wasBlacklisted) {
       this.confirmService.confirm({
         header: 'Remove from Blacklist',
         message: `Remove "${torrent.name}" from the blacklist?`,
         accept: () => {
+          this.torrents.update((list: Torrent[]) =>
+            list.map((t: Torrent) => t.hash === torrent.hash ? { ...t, is_blacklisted: false } : t),
+          );
           this.api.removeFromBlacklist(torrent.hash)
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-              next: () => {
-                this.notifications.success('Removed from blacklist');
+              next: () => this.notifications.success('Removed from blacklist'),
+              error: () => {
+                this.notifications.error('Failed to remove from blacklist');
                 this.loadTorrents();
               },
-              error: () => this.notifications.error('Failed to remove from blacklist'),
             });
         },
       });
@@ -728,14 +747,17 @@ export class TorrentsComponent implements OnInit {
         header: 'Add to Blacklist',
         message: `Add "${torrent.name}" to the blacklist? It will be protected from cleanup.`,
         accept: () => {
+          this.torrents.update((list: Torrent[]) =>
+            list.map((t: Torrent) => t.hash === torrent.hash ? { ...t, is_blacklisted: true } : t),
+          );
           this.api.addToBlacklist({ hash: torrent.hash, name: torrent.name, reason: 'Added from web UI' })
             .pipe(takeUntilDestroyed(this.destroyRef))
             .subscribe({
-              next: () => {
-                this.notifications.success('Added to blacklist');
+              next: () => this.notifications.success('Added to blacklist'),
+              error: () => {
+                this.notifications.error('Failed to add to blacklist');
                 this.loadTorrents();
               },
-              error: () => this.notifications.error('Failed to add to blacklist'),
             });
         },
       });
@@ -764,10 +786,21 @@ export class TorrentsComponent implements OnInit {
             accept: (inputValue?: string) => {
               if (!inputValue) return;
               const isCategory = inputValue.startsWith('category:');
+              const newCategory = isCategory ? inputValue.replace('category:', '') : torrent.category;
+              const newPath = !isCategory ? inputValue : torrent.save_path;
               const request = isCategory
-                ? { hash: torrent.hash, category: inputValue.replace('category:', '') }
+                ? { hash: torrent.hash, category: newCategory }
                 : { hash: torrent.hash, location: inputValue };
+
+              // Optimistic update
               this.movingHash.set(torrent.hash);
+              this.torrents.update((list: Torrent[]) =>
+                list.map((t: Torrent) => t.hash === torrent.hash
+                  ? { ...t, category: newCategory, save_path: newPath, is_moving: true }
+                  : t
+                ),
+              );
+
               this.api.moveTorrent(request)
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
@@ -775,14 +808,18 @@ export class TorrentsComponent implements OnInit {
                     this.movingHash.set('');
                     if (moveResponse.success) {
                       this.notifications.success(moveResponse.message);
-                      this.loadTorrents();
+                      this.torrents.update((list: Torrent[]) =>
+                        list.map((t: Torrent) => t.hash === torrent.hash ? { ...t, is_moving: false } : t),
+                      );
                     } else {
                       this.notifications.error(moveResponse.message);
+                      this.loadTorrents();
                     }
                   },
                   error: () => {
                     this.movingHash.set('');
                     this.notifications.error('Failed to move torrent');
+                    this.loadTorrents();
                   },
                 });
             },
@@ -799,6 +836,10 @@ export class TorrentsComponent implements OnInit {
       message: `Recycle "${torrent.name}"? Files will be moved to the recycle bin and the torrent removed from qBittorrent.`,
       accept: () => {
         this.recyclingHash.set(torrent.hash);
+
+        // Optimistic remove
+        this.torrents.update((list: Torrent[]) => list.filter((t: Torrent) => t.hash !== torrent.hash));
+
         this.api.deleteTorrent(torrent.hash, true, true)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
@@ -815,14 +856,15 @@ export class TorrentsComponent implements OnInit {
                       }
                     : undefined,
                 );
-                this.loadTorrents();
               } else {
                 this.notifications.error(response.message);
+                this.loadTorrents();
               }
             },
             error: () => {
               this.recyclingHash.set('');
               this.notifications.error('Failed to recycle torrent');
+              this.loadTorrents();
             },
           });
       },
@@ -855,14 +897,17 @@ export class TorrentsComponent implements OnInit {
       header: 'Delete Torrent',
       message: `Permanently delete "${torrent.name}"? This will remove the torrent and delete its files from disk. This cannot be undone.`,
       accept: () => {
+        // Optimistic remove
+        this.torrents.update((list: Torrent[]) => list.filter((t: Torrent) => t.hash !== torrent.hash));
+
         this.api.deleteTorrent(torrent.hash, true)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
-            next: () => {
-              this.notifications.success('Torrent deleted');
+            next: () => this.notifications.success('Torrent deleted'),
+            error: () => {
+              this.notifications.error('Failed to delete torrent');
               this.loadTorrents();
             },
-            error: () => this.notifications.error('Failed to delete torrent'),
           });
       },
     });
