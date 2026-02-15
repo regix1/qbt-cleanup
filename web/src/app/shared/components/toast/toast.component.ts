@@ -33,13 +33,20 @@ export class ToastComponent {
   onAction(toast: ToastMessage): void {
     if (!toast.action || this.isProcessing(toast.id)) return;
 
+    // Cancel auto-dismiss while processing
+    this.notificationService.cancelAutoDismiss(toast.id);
+
     this.processingIds.update((ids: Set<number>) => {
       const next = new Set(ids);
       next.add(toast.id);
       return next;
     });
 
+    // Safety timeout — force dismiss after 30s if callback never completes
+    const safetyTimer = setTimeout(() => this.dismiss(toast.id), 30_000);
+
     toast.action.callback(() => {
+      clearTimeout(safetyTimer);
       this.processingIds.update((ids: Set<number>) => {
         const next = new Set(ids);
         next.delete(toast.id);

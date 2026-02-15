@@ -11,7 +11,6 @@ export interface ToastMessage {
   readonly summary: string;
   readonly detail: string;
   readonly action?: ToastAction;
-  readonly persistent?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -19,9 +18,10 @@ export class NotificationService {
   private readonly _toasts = signal<ToastMessage[]>([]);
   readonly toasts = this._toasts.asReadonly();
   private nextId = 0;
+  private readonly timers = new Map<number, ReturnType<typeof setTimeout>>();
 
   success(message: string, action?: ToastAction): void {
-    this.add('success', 'Success', message, action ? 0 : 3000, action);
+    this.add('success', 'Success', message, action ? 15_000 : 3000, action);
   }
 
   error(message: string): void {
@@ -37,15 +37,27 @@ export class NotificationService {
   }
 
   remove(id: number): void {
+    this.clearTimer(id);
     this._toasts.update((toasts: ToastMessage[]) => toasts.filter((toast: ToastMessage) => toast.id !== id));
+  }
+
+  cancelAutoDismiss(id: number): void {
+    this.clearTimer(id);
+  }
+
+  private clearTimer(id: number): void {
+    const timer = this.timers.get(id);
+    if (timer) {
+      clearTimeout(timer);
+      this.timers.delete(id);
+    }
   }
 
   private add(severity: ToastMessage['severity'], summary: string, detail: string, life: number, action?: ToastAction): void {
     const id = this.nextId++;
-    const persistent = life === 0;
-    this._toasts.update((toasts: ToastMessage[]) => [...toasts, { id, severity, summary, detail, action, persistent }]);
-    if (!persistent) {
-      setTimeout(() => this.remove(id), life);
+    this._toasts.update((toasts: ToastMessage[]) => [...toasts, { id, severity, summary, detail, action }]);
+    if (life > 0) {
+      this.timers.set(id, setTimeout(() => this.remove(id), life));
     }
   }
 }
