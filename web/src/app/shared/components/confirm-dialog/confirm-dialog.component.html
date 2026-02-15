@@ -8,16 +8,29 @@
       <div class="confirm-body">
         <p>{{ dialog.message }}</p>
         @if (dialog.selectOptions?.length) {
-          <select class="form-input confirm-select"
-                  [value]="selectValue()"
-                  (change)="onSelectChange($event)">
-            <option value="">{{ dialog.selectPlaceholder ?? 'Select an option...' }}</option>
-            @for (option of dialog.selectOptions; track option.value) {
-              <option [value]="option.value">
-                {{ option.label }}@if (option.description) { — {{ option.description }}}
-              </option>
+          <div class="confirm-dropdown" (click)="$event.stopPropagation()">
+            <button class="dropdown-trigger" type="button"
+                    [class.open]="isDropdownOpen()"
+                    [class.has-value]="!!selectValue()"
+                    (click)="toggleDropdown()">
+              <span>{{ selectedOptionLabel() }}</span>
+              <i class="fa-solid fa-chevron-down dropdown-chevron"></i>
+            </button>
+            @if (isDropdownOpen()) {
+              <div class="dropdown-panel">
+                @for (option of dialog.selectOptions; track option.value) {
+                  <div class="dropdown-option"
+                       [class.selected]="selectValue() === option.value"
+                       (click)="selectOption(option)">
+                    <span class="option-label">{{ option.label }}</span>
+                    @if (option.description) {
+                      <span class="option-description">{{ option.description }}</span>
+                    }
+                  </div>
+                }
+              </div>
             }
-          </select>
+          </div>
         }
         @if (dialog.inputPlaceholder) {
           <input class="form-input confirm-input"
