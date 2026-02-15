@@ -684,6 +684,27 @@ export class TorrentsComponent implements OnInit {
     return torrent ? [torrent] : [];
   }
 
+  togglePause(torrent: Torrent): void {
+    this.actionMenuHash.set('');
+    const action$ = torrent.is_paused
+      ? this.api.resumeTorrent(torrent.hash)
+      : this.api.pauseTorrent(torrent.hash);
+
+    action$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response: ActionResponse) => {
+          if (response.success) {
+            this.notifications.success(torrent.is_paused ? 'Torrent resumed' : 'Torrent paused');
+            this.loadTorrents();
+          } else {
+            this.notifications.error(response.message);
+          }
+        },
+        error: () => this.notifications.error(`Failed to ${torrent.is_paused ? 'resume' : 'pause'} torrent`),
+      });
+  }
+
   toggleBlacklist(torrent: Torrent): void {
     this.actionMenuHash.set('');
     if (torrent.is_blacklisted) {

@@ -136,6 +136,12 @@ class ActionResponse(BaseModel):
     data: Optional[Dict[str, str]] = None
 
 
+class TorrentHashRequest(BaseModel):
+    """Request model for actions on a single torrent by hash."""
+
+    hash: str = Field(min_length=1)
+
+
 class TorrentMoveRequest(BaseModel):
     """Request model for moving a torrent to a new location."""
 

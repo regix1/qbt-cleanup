@@ -22,6 +22,7 @@ from ..models import (
     CategoriesResponse,
     CategoryInfo,
     TorrentDeleteRequest,
+    TorrentHashRequest,
     TorrentMoveRequest,
     TorrentResponse,
 )
@@ -144,6 +145,56 @@ def list_categories(request: Request) -> CategoriesResponse:
     except Exception as exc:
         logger.error(f"Error listing categories: {exc}")
         raise HTTPException(status_code=500, detail=str(exc))
+    finally:
+        if qbt_client is not None:
+            qbt_client.disconnect()
+
+
+@router.post("/torrents/pause", response_model=ActionResponse)
+def pause_torrent(body: TorrentHashRequest, request: Request) -> ActionResponse:
+    """Pause/stop a torrent."""
+    app_state = get_app_state(request)
+    config = app_state.config
+    qbt_client: QBittorrentClient | None = None
+
+    try:
+        qbt_client = QBittorrentClient(config.connection)
+        if not qbt_client.connect(quiet=True):
+            raise HTTPException(status_code=503, detail="Unable to connect to qBittorrent")
+
+        qbt_client.client.torrents.pause(torrent_hashes=body.hash)
+        logger.info(f"Paused torrent {body.hash[:8]}")
+        return ActionResponse(success=True, message="Torrent paused")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Error pausing torrent: {exc}")
+        return ActionResponse(success=False, message=str(exc))
+    finally:
+        if qbt_client is not None:
+            qbt_client.disconnect()
+
+
+@router.post("/torrents/resume", response_model=ActionResponse)
+def resume_torrent(body: TorrentHashRequest, request: Request) -> ActionResponse:
+    """Resume/start a torrent."""
+    app_state = get_app_state(request)
+    config = app_state.config
+    qbt_client: QBittorrentClient | None = None
+
+    try:
+        qbt_client = QBittorrentClient(config.connection)
+        if not qbt_client.connect(quiet=True):
+            raise HTTPException(status_code=503, detail="Unable to connect to qBittorrent")
+
+        qbt_client.client.torrents.resume(torrent_hashes=body.hash)
+        logger.info(f"Resumed torrent {body.hash[:8]}")
+        return ActionResponse(success=True, message="Torrent resumed")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.error(f"Error resuming torrent: {exc}")
+        return ActionResponse(success=False, message=str(exc))
     finally:
         if qbt_client is not None:
             qbt_client.disconnect()

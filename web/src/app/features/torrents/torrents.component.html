@@ -292,6 +292,15 @@
   <div class="action-menu-backdrop" (click)="actionMenuHash.set('')"></div>
   <div class="action-menu" [style.top.px]="actionMenuPos().top" [style.left.px]="actionMenuPos().left">
     @for (torrent of getMenuTorrent(hash); track torrent.hash) {
+      <button class="action-menu-item" (click)="togglePause(torrent)">
+        @if (torrent.is_paused) {
+          <i class="fa-solid fa-play"></i>
+          <span>Resume Torrent</span>
+        } @else {
+          <i class="fa-solid fa-pause"></i>
+          <span>Pause Torrent</span>
+        }
+      </button>
       <button class="action-menu-item" (click)="toggleBlacklist(torrent)">
         @if (torrent.is_blacklisted) {
           <i class="fa-solid fa-shield-halved"></i>

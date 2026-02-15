@@ -104,6 +104,14 @@ export class ApiService {
     return this.http.get<CategoriesResponse>(`${this.baseUrl}/torrents/categories`);
   }
 
+  pauseTorrent(hash: string): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/torrents/pause`, { hash });
+  }
+
+  resumeTorrent(hash: string): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/torrents/resume`, { hash });
+  }
+
   moveTorrent(request: TorrentMoveRequest): Observable<ActionResponse> {
     return this.http.post<ActionResponse>(`${this.baseUrl}/torrents/move`, request);
   }
