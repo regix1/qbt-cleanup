@@ -1,3 +1,9 @@
+:host {
+  ::ng-deep .page-container {
+    max-width: 1800px;
+  }
+}
+
 .filter-bar {
   display: flex;
   flex-direction: column;
@@ -225,7 +231,6 @@
   .data-table {
     table-layout: fixed;
     width: 100%;
-    min-width: 1200px;
   }
 
   &.is-resizing {
@@ -234,10 +239,6 @@
   }
 
   &.compact-mode {
-    .data-table {
-      min-width: 900px;
-    }
-
     .name-cell {
       max-width: 0;
     }
