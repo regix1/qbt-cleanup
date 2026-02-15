@@ -216,11 +216,15 @@
 
 .table-container {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 75vh;
   background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-top: none;
 
-  .data-table:not(.fixed-layout) {
+  .data-table {
+    table-layout: fixed;
+    width: 100%;
     min-width: 1200px;
   }
 
@@ -230,22 +234,9 @@
   }
 
   &.compact-mode {
-    .data-table:not(.fixed-layout) {
-      table-layout: fixed;
-      width: 100%;
-      min-width: 1100px;
+    .data-table {
+      min-width: 900px;
     }
-
-    .data-table:not(.fixed-layout) .col-name { width: 22%; }
-    .data-table:not(.fixed-layout) .col-state { width: 8%; }
-    .data-table:not(.fixed-layout) .col-ratio { width: 6%; }
-    .data-table:not(.fixed-layout) .col-seed-time { width: 8%; }
-    .data-table:not(.fixed-layout) .col-type { width: 6%; }
-    .data-table:not(.fixed-layout) .col-size { width: 6%; }
-    .data-table:not(.fixed-layout) .col-progress { width: 7%; }
-    .data-table:not(.fixed-layout) .col-location { width: 18%; }
-    .data-table:not(.fixed-layout) .col-blacklist { width: 8%; }
-    .data-table:not(.fixed-layout) .col-actions { width: 5%; }
 
     .name-cell {
       max-width: 0;
@@ -280,15 +271,12 @@
   }
 }
 
-// Fixed layout for custom column widths
-.data-table.fixed-layout {
-  table-layout: fixed;
-  min-width: 1200px;
-}
-
 // Column drag-and-drop
 thead th {
-  position: relative;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--bg-surface);
 }
 
 .drag-handle {
@@ -361,15 +349,7 @@ thead th:hover .drag-handle:hover {
   }
 }
 
-// CDK drag animations
-.cdk-drag-animating {
-  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-}
-
-.cdk-drop-list-dragging .cdk-drag {
-  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
-}
-
+// CDK drag placeholder (component-scoped)
 thead th.cdk-drag-placeholder {
   opacity: 0.3;
   background: var(--accent-yellow-bg);
@@ -399,6 +379,11 @@ thead th.cdk-drag-placeholder {
   }
 }
 
+// Hide rightmost column resize handle
+thead th:last-child .resize-handle {
+  display: none;
+}
+
 thead th:hover .resize-handle::after {
   background: var(--border-color);
 }
@@ -420,14 +405,10 @@ thead th .resize-handle:hover {
 }
 
 .name-cell {
-  max-width: 300px;
+  max-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-
-  .fixed-layout & {
-    max-width: none;
-  }
 }
 
 .state-badge {

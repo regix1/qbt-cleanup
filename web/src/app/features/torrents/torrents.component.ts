@@ -20,23 +20,26 @@ export interface ColumnDef {
   label: string;
   sortField?: keyof Torrent;
   cssClass: string;
-  minWidth: number;
+  defaultWidth: number;   // percentage (e.g., 22 = 22%)
+  minWidthPct: number;    // minimum percentage (e.g., 8 = 8%)
 }
 
 const COLUMN_ORDER_KEY = 'qbt-torrents-column-order';
 const COLUMN_WIDTHS_KEY = 'qbt-torrents-column-widths';
+const COLUMN_WIDTHS_VERSION_KEY = 'qbt-torrents-column-widths-v';
+const COLUMN_WIDTHS_VERSION = 2;
 
 const DEFAULT_COLUMNS: ColumnDef[] = [
-  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name', minWidth: 120 },
-  { id: 'state', label: 'State', sortField: 'state', cssClass: 'col-state', minWidth: 70 },
-  { id: 'ratio', label: 'Ratio', sortField: 'ratio', cssClass: 'col-ratio', minWidth: 60 },
-  { id: 'seedTime', label: 'Seeding Time', sortField: 'seeding_time', cssClass: 'col-seed-time', minWidth: 80 },
-  { id: 'type', label: 'Type', sortField: 'is_private', cssClass: 'col-type', minWidth: 70 },
-  { id: 'size', label: 'Size', sortField: 'size', cssClass: 'col-size', minWidth: 60 },
-  { id: 'progress', label: 'Progress', sortField: 'progress', cssClass: 'col-progress', minWidth: 70 },
-  { id: 'location', label: 'Location', sortField: 'save_path', cssClass: 'col-location', minWidth: 100 },
-  { id: 'blacklist', label: 'Blacklisted', sortField: 'is_blacklisted', cssClass: 'col-blacklist', minWidth: 60 },
-  { id: 'actions', label: 'Actions', cssClass: 'col-actions', minWidth: 50 },
+  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name', defaultWidth: 22, minWidthPct: 10 },
+  { id: 'state', label: 'State', sortField: 'state', cssClass: 'col-state', defaultWidth: 10, minWidthPct: 6 },
+  { id: 'ratio', label: 'Ratio', sortField: 'ratio', cssClass: 'col-ratio', defaultWidth: 7, minWidthPct: 4 },
+  { id: 'seedTime', label: 'Seeding Time', sortField: 'seeding_time', cssClass: 'col-seed-time', defaultWidth: 9, minWidthPct: 5 },
+  { id: 'type', label: 'Type', sortField: 'is_private', cssClass: 'col-type', defaultWidth: 7, minWidthPct: 4 },
+  { id: 'size', label: 'Size', sortField: 'size', cssClass: 'col-size', defaultWidth: 7, minWidthPct: 4 },
+  { id: 'progress', label: 'Progress', sortField: 'progress', cssClass: 'col-progress', defaultWidth: 8, minWidthPct: 5 },
+  { id: 'location', label: 'Location', sortField: 'save_path', cssClass: 'col-location', defaultWidth: 18, minWidthPct: 8 },
+  { id: 'blacklist', label: 'Blacklisted', sortField: 'is_blacklisted', cssClass: 'col-blacklist', defaultWidth: 7, minWidthPct: 4 },
+  { id: 'actions', label: 'Actions', cssClass: 'col-actions', defaultWidth: 5, minWidthPct: 3 },
 ];
 
 @Component({
@@ -77,14 +80,32 @@ export class TorrentsComponent implements OnInit {
     return orderChanged || widthsChanged;
   });
 
-  readonly hasCustomWidths = computed<boolean>(() =>
-    Object.keys(this.columnWidths()).length > 0,
-  );
+  readonly effectiveWidths = computed<Record<string, number>>(() => {
+    const stored = this.columnWidths();
+    const columns = this.columnOrder();
+    const result: Record<string, number> = {};
+    let total = 0;
+    for (const col of columns) {
+      const width = stored[col.id] ?? col.defaultWidth;
+      result[col.id] = width;
+      total += width;
+    }
+    // Normalize to exactly 100% if drift occurred
+    if (Math.abs(total - 100) > 0.01) {
+      const scale = 100 / total;
+      for (const col of columns) {
+        result[col.id] = result[col.id] * scale;
+      }
+    }
+    return result;
+  });
 
-  // Resize tracking
+  // Resize tracking (neighbor-steal model)
   private resizeColumnId = '';
+  private resizeRightColumnId = '';
   private resizeStartX = 0;
-  private resizeStartWidth = 0;
+  private resizeStartLeftPct = 0;
+  private resizeStartRightPct = 0;
   private resizeContainerWidth = 0;
 
   // Filter signals
@@ -377,10 +398,6 @@ export class TorrentsComponent implements OnInit {
 
   // Column ordering
   onColumnDrop(event: CdkDragDrop<string[]>): void {
-    // Snapshot current widths before reordering so columns keep their sizes
-    if (!this.hasCustomWidths()) {
-      this.snapshotColumnWidths();
-    }
     const columns = [...this.columnOrder()];
     moveItemInArray(columns, event.previousIndex, event.currentIndex);
     this.columnOrder.set(columns);
@@ -393,6 +410,7 @@ export class TorrentsComponent implements OnInit {
     this.columnWidths.set({});
     localStorage.removeItem(COLUMN_ORDER_KEY);
     localStorage.removeItem(COLUMN_WIDTHS_KEY);
+    localStorage.removeItem(COLUMN_WIDTHS_VERSION_KEY);
   }
 
   onHeaderClick(col: ColumnDef): void {
@@ -401,61 +419,67 @@ export class TorrentsComponent implements OnInit {
     }
   }
 
-  // Column resizing
-  getColumnWidth(col: ColumnDef): number | null {
-    const widths = this.columnWidths();
-    return widths[col.id] ?? null;
+  // Column resizing (percentage-based, neighbor-steal model)
+  getColumnWidthPct(col: ColumnDef): number {
+    return this.effectiveWidths()[col.id];
   }
 
   onResizeStart(event: MouseEvent, col: ColumnDef): void {
     event.preventDefault();
     event.stopPropagation();
 
+    const columns = this.columnOrder();
+    const colIndex = columns.findIndex((c: ColumnDef) => c.id === col.id);
+
+    // Rightmost column has no right neighbor - cannot resize
+    if (colIndex >= columns.length - 1) return;
+
+    const rightCol = columns[colIndex + 1];
+    const widths = this.effectiveWidths();
+
     this.resizeColumnId = col.id;
+    this.resizeRightColumnId = rightCol.id;
     this.resizeStartX = event.clientX;
+    this.resizeStartLeftPct = widths[col.id];
+    this.resizeStartRightPct = widths[rightCol.id];
     this.isResizing.set(true);
 
-    // Snapshot current width from DOM
-    const th = (event.target as HTMLElement).closest('th');
-    if (th) {
-      this.resizeStartWidth = th.getBoundingClientRect().width;
-    }
-
-    // Capture container width for max constraint
+    // Capture container width for px-to-% conversion
     const container = (event.target as HTMLElement).closest('.table-container');
     this.resizeContainerWidth = container ? container.clientWidth : 0;
-
-    // If no custom widths yet, snapshot all column widths from DOM
-    if (!this.hasCustomWidths()) {
-      this.snapshotColumnWidths();
-    }
 
     document.addEventListener('mousemove', this.onResizeMove);
     document.addEventListener('mouseup', this.onResizeEnd);
   }
 
   private readonly onResizeMove = (event: MouseEvent): void => {
-    const delta = event.clientX - this.resizeStartX;
-    const col = this.columnOrder().find((c: ColumnDef) => c.id === this.resizeColumnId);
-    const minWidth = col?.minWidth ?? 50;
+    if (!this.resizeContainerWidth) return;
 
-    // Cap so total columns don't exceed container width
-    let maxWidth = Infinity;
-    if (this.resizeContainerWidth > 0) {
-      const widths = this.columnWidths();
-      let otherColumnsWidth = 0;
-      for (const c of this.columnOrder()) {
-        if (c.id !== this.resizeColumnId) {
-          otherColumnsWidth += widths[c.id] ?? c.minWidth;
-        }
-      }
-      maxWidth = this.resizeContainerWidth - otherColumnsWidth;
+    const pxDelta = event.clientX - this.resizeStartX;
+    const pctDelta = (pxDelta / this.resizeContainerWidth) * 100;
+
+    const columns = this.columnOrder();
+    const leftCol = columns.find((c: ColumnDef) => c.id === this.resizeColumnId);
+    const rightCol = columns.find((c: ColumnDef) => c.id === this.resizeRightColumnId);
+    if (!leftCol || !rightCol) return;
+
+    let newLeftPct = this.resizeStartLeftPct + pctDelta;
+    let newRightPct = this.resizeStartRightPct - pctDelta;
+
+    // Enforce minimum widths
+    if (newLeftPct < leftCol.minWidthPct) {
+      newLeftPct = leftCol.minWidthPct;
+      newRightPct = this.resizeStartLeftPct + this.resizeStartRightPct - newLeftPct;
+    }
+    if (newRightPct < rightCol.minWidthPct) {
+      newRightPct = rightCol.minWidthPct;
+      newLeftPct = this.resizeStartLeftPct + this.resizeStartRightPct - newRightPct;
     }
 
-    const newWidth = Math.min(maxWidth, Math.max(minWidth, this.resizeStartWidth + delta));
     this.columnWidths.update((widths: Record<string, number>) => ({
       ...widths,
-      [this.resizeColumnId]: newWidth,
+      [this.resizeColumnId]: newLeftPct,
+      [this.resizeRightColumnId]: newRightPct,
     }));
   };
 
@@ -464,6 +488,7 @@ export class TorrentsComponent implements OnInit {
     document.removeEventListener('mouseup', this.onResizeEnd);
     this.isResizing.set(false);
     this.resizeColumnId = '';
+    this.resizeRightColumnId = '';
     this.saveColumnWidths();
   };
 
@@ -830,17 +855,29 @@ export class TorrentsComponent implements OnInit {
 
   private loadColumnWidths(): Record<string, number> {
     try {
+      const version = localStorage.getItem(COLUMN_WIDTHS_VERSION_KEY);
+
+      // If old version or no version, discard stored widths (they're pixel values)
+      if (!version || parseInt(version, 10) < COLUMN_WIDTHS_VERSION) {
+        localStorage.removeItem(COLUMN_WIDTHS_KEY);
+        localStorage.removeItem(COLUMN_WIDTHS_VERSION_KEY);
+        return {};
+      }
+
       const stored = localStorage.getItem(COLUMN_WIDTHS_KEY);
       if (stored) {
         const widths: Record<string, number> = JSON.parse(stored);
-        // Discard stale widths if columns changed (e.g. new column added)
+
+        // Validate all values are in sane percentage range (1-80)
         const currentIds = new Set(DEFAULT_COLUMNS.map((c: ColumnDef) => c.id));
-        const hasAllColumns = currentIds.size > 0
-          && [...currentIds].every((id: string) => id === 'actions' || id in widths);
-        if (!hasAllColumns) {
-          localStorage.removeItem(COLUMN_WIDTHS_KEY);
-          return {};
+        for (const [id, value] of Object.entries(widths)) {
+          if (!currentIds.has(id) || value < 1 || value > 80) {
+            localStorage.removeItem(COLUMN_WIDTHS_KEY);
+            localStorage.removeItem(COLUMN_WIDTHS_VERSION_KEY);
+            return {};
+          }
         }
+
         return widths;
       }
     } catch {
@@ -853,22 +890,10 @@ export class TorrentsComponent implements OnInit {
     const widths = this.columnWidths();
     if (Object.keys(widths).length > 0) {
       localStorage.setItem(COLUMN_WIDTHS_KEY, JSON.stringify(widths));
+      localStorage.setItem(COLUMN_WIDTHS_VERSION_KEY, String(COLUMN_WIDTHS_VERSION));
     } else {
       localStorage.removeItem(COLUMN_WIDTHS_KEY);
+      localStorage.removeItem(COLUMN_WIDTHS_VERSION_KEY);
     }
-  }
-
-  private snapshotColumnWidths(): void {
-    const headerRow = document.querySelector('.data-table thead tr');
-    if (!headerRow) return;
-    const ths = headerRow.querySelectorAll('th');
-    const widths: Record<string, number> = {};
-    const columns = this.columnOrder();
-    ths.forEach((th: Element, index: number) => {
-      if (index < columns.length) {
-        widths[columns[index].id] = (th as HTMLElement).getBoundingClientRect().width;
-      }
-    });
-    this.columnWidths.set(widths);
   }
 }

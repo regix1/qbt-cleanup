@@ -150,7 +150,7 @@
     <div class="table-container"
          [class.compact-mode]="compactMode()"
          [class.is-resizing]="isResizing()">
-      <table class="data-table" [class.fixed-layout]="hasCustomWidths()">
+      <table class="data-table">
         <thead>
           <tr cdkDropList
               cdkDropListOrientation="horizontal"
@@ -158,7 +158,7 @@
             @for (col of columnOrder(); track col.id) {
               <th [class]="col.cssClass"
                   [class.sortable]="!!col.sortField"
-                  [style.width.px]="getColumnWidth(col)"
+                  [style.width.%]="getColumnWidthPct(col)"
                   cdkDrag>
                 <i class="fa-solid fa-grip-vertical drag-handle" cdkDragHandle></i>
                 <span class="th-sort-trigger" (click)="onHeaderClick(col)">
