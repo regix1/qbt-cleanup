@@ -54,6 +54,10 @@
       color: var(--accent-amber);
     }
   }
+
+  &.processing {
+    animation: none;
+  }
 }
 
 .toast-icon {

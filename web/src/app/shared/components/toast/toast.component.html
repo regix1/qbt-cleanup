@@ -1,7 +1,7 @@
 <div class="toast-container">
   @for (toast of toasts(); track trackById($index, toast)) {
-    <div class="toast-item" [class]="'toast-' + toast.severity" [class.processing]="isProcessing(toast.id)">
-      <i [class]="getIcon(toast.severity)" class="toast-icon"></i>
+    <div [class]="'toast-item toast-' + toast.severity + (isProcessing(toast.id) ? ' processing' : '')">
+      <i [class]="getIcon(toast.severity) + ' toast-icon'"></i>
       <div class="toast-content">
         <div class="toast-summary">{{ toast.summary }}</div>
         <div class="toast-detail">
