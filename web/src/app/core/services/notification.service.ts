@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 
 export interface ToastAction {
   readonly label: string;
-  readonly callback: () => void;
+  readonly callback: (complete: () => void) => void;
 }
 
 export interface ToastMessage {
@@ -11,6 +11,7 @@ export interface ToastMessage {
   readonly summary: string;
   readonly detail: string;
   readonly action?: ToastAction;
+  readonly persistent?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -20,7 +21,7 @@ export class NotificationService {
   private nextId = 0;
 
   success(message: string, action?: ToastAction): void {
-    this.add('success', 'Success', message, action ? 8000 : 3000, action);
+    this.add('success', 'Success', message, action ? 0 : 3000, action);
   }
 
   error(message: string): void {
@@ -41,7 +42,10 @@ export class NotificationService {
 
   private add(severity: ToastMessage['severity'], summary: string, detail: string, life: number, action?: ToastAction): void {
     const id = this.nextId++;
-    this._toasts.update((toasts: ToastMessage[]) => [...toasts, { id, severity, summary, detail, action }]);
-    setTimeout(() => this.remove(id), life);
+    const persistent = life === 0;
+    this._toasts.update((toasts: ToastMessage[]) => [...toasts, { id, severity, summary, detail, action, persistent }]);
+    if (!persistent) {
+      setTimeout(() => this.remove(id), life);
+    }
   }
 }

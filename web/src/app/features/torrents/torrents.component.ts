@@ -773,7 +773,7 @@ export class TorrentsComponent implements OnInit {
                   recycledName
                     ? {
                         label: 'Undo',
-                        callback: () => this.undoRecycle(recycledName),
+                        callback: (complete: () => void) => this.undoRecycle(recycledName, complete),
                       }
                     : undefined,
                 );
@@ -791,11 +791,12 @@ export class TorrentsComponent implements OnInit {
     });
   }
 
-  private undoRecycle(recycledName: string): void {
+  private undoRecycle(recycledName: string, complete: () => void): void {
     this.api.restoreRecycleBinItem(recycledName)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response: ActionResponse) => {
+          complete();
           if (response.success) {
             this.notifications.success('Torrent restored from recycle bin');
             this.loadTorrents();
@@ -803,7 +804,10 @@ export class TorrentsComponent implements OnInit {
             this.notifications.error(response.message);
           }
         },
-        error: () => this.notifications.error('Failed to restore torrent'),
+        error: () => {
+          complete();
+          this.notifications.error('Failed to restore torrent');
+        },
       });
   }
 

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { NotificationService, ToastMessage } from '../../../core/services/notification.service';
 
 @Component({
@@ -11,6 +11,7 @@ export class ToastComponent {
   private readonly notificationService = inject(NotificationService);
 
   readonly toasts = this.notificationService.toasts;
+  readonly processingIds = signal<Set<number>>(new Set());
 
   getIcon(severity: ToastMessage['severity']): string {
     switch (severity) {
@@ -25,14 +26,35 @@ export class ToastComponent {
     }
   }
 
+  isProcessing(id: number): boolean {
+    return this.processingIds().has(id);
+  }
+
   onAction(toast: ToastMessage): void {
-    if (toast.action) {
-      toast.action.callback();
-    }
-    this.notificationService.remove(toast.id);
+    if (!toast.action || this.isProcessing(toast.id)) return;
+
+    this.processingIds.update((ids: Set<number>) => {
+      const next = new Set(ids);
+      next.add(toast.id);
+      return next;
+    });
+
+    toast.action.callback(() => {
+      this.processingIds.update((ids: Set<number>) => {
+        const next = new Set(ids);
+        next.delete(toast.id);
+        return next;
+      });
+      this.notificationService.remove(toast.id);
+    });
   }
 
   dismiss(id: number): void {
+    this.processingIds.update((ids: Set<number>) => {
+      const next = new Set(ids);
+      next.delete(id);
+      return next;
+    });
     this.notificationService.remove(id);
   }
 
