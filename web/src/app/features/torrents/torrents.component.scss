@@ -576,23 +576,10 @@ thead th .resize-handle:hover {
         min-width: 0;
       }
 
-      .btn-universal-actions {
-        min-width: 100px; // keep Actions button visible and tappable
-      }
     }
   }
 }
 
-.btn-universal-actions {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-}
 
 // Custom themed checkbox
 .custom-checkbox {
@@ -709,6 +696,11 @@ tbody tr.row-selected.blacklisted-row {
   z-index: 1000;
   overflow: hidden;
   animation: dropdown-open 150ms ease-out;
+
+  &.universal-action-menu {
+    position: static;
+    z-index: auto;
+  }
 }
 
 .action-menu-item {

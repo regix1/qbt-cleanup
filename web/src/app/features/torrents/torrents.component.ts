@@ -45,9 +45,11 @@ const DEFAULT_COLUMNS: ColumnDef[] = [
   { id: 'actions', label: 'Actions', cssClass: 'col-actions', defaultWidth: 6, minWidthPct: 3 },
 ];
 
-/** CDK overlay positions for universal actions menu: below then above, right-aligned to trigger (matches lancache-manager ActionMenu align right). */
+/** CDK overlay positions for universal actions menu: below-start, below-end, above-start, above-end. */
 const UNIVERSAL_ACTIONS_POSITIONS: ConnectedPosition[] = [
+  { originX: 'start', originY: 'bottom', overlayX: 'start', overlayY: 'top', offsetY: 4 },
   { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+  { originX: 'start', originY: 'top', overlayX: 'start', overlayY: 'bottom', offsetY: -4 },
   { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
 ];
 
@@ -739,7 +741,6 @@ export class TorrentsComponent implements OnInit {
     }
     if (this.selectedCount() === 0) return;
     this.universalActionsOpen.update((v) => !v);
-    // Position is handled by CDK overlay (cdkConnectedOverlay) so no manual pos needed
   }
 
   /** Position dropdown so it stays inside viewport and doesn't cause overflow/scroll. */
