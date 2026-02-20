@@ -21,7 +21,10 @@
                 (click)="toggleUniversalActions($event)"
                 [title]="selectedCount() ? 'Apply action to ' + selectedCount() + ' selected' : 'Select torrents first'">
           <i class="fa-solid fa-bolt"></i>
-          <span>Actions ({{ selectedCount() }})</span>
+          <span>Actions</span>
+          @if (selectedCount() > 0) {
+            <span class="count-badge">{{ selectedCount() }}</span>
+          }
         </button>
         <ng-template
           cdkConnectedOverlay
@@ -72,6 +75,24 @@
       </button>
     </div>
   </div>
+
+  @if (selectedCount() > 0) {
+    <div class="mobile-selection-bar" role="region" aria-label="Selection actions">
+      <span class="selection-label">{{ selectedCount() }} selected</span>
+      <div class="selection-actions">
+        <button class="btn btn-primary btn-sm"
+                (click)="toggleUniversalActions($event)"
+                aria-label="Actions">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Actions</span>
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="clearSelection()" aria-label="Clear selection">
+          <i class="fa-solid fa-xmark"></i>
+          <span>Clear</span>
+        </button>
+      </div>
+    </div>
+  }
 
   @if (loading()) {
     <app-loading-container size="lg" />

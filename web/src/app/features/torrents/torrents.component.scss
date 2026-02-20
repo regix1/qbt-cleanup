@@ -552,11 +552,76 @@ thead th .resize-handle:hover {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .universal-actions-wrap {
   position: relative;
 }
+
+// Mobile: stack page header so title and all actions (including Universal Actions) are visible
+@media (max-width: 768px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+
+    .header-actions {
+      width: 100%;
+      justify-content: flex-start;
+      gap: 10px;
+
+      .btn {
+        flex: 0 1 auto;
+        min-width: 0;
+      }
+
+      .btn-universal-actions {
+        min-width: 100px; // keep Actions button visible and tappable
+      }
+    }
+  }
+}
+
+// Sticky selection bar on mobile: visible when items selected, always shows Actions
+.mobile-selection-bar {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-selection-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    padding: 12px 16px;
+    margin-left: -16px;
+    margin-right: -16px;
+    margin-bottom: 16px;
+    padding-left: 16px;
+    padding-right: 16px;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+    .selection-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .selection-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+}
+
 
 .btn-universal-actions {
   display: inline-flex;
@@ -822,12 +887,8 @@ tbody tr.row-selected.blacklisted-row {
     max-width: none;
   }
 
-  .header-actions {
-    flex-wrap: wrap;
-
-    .btn {
-      flex: 1 1 auto;
-    }
+  .header-actions .btn {
+    flex: 0 1 auto; // keep buttons visible, don't stretch
   }
 }
 
