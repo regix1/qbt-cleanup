@@ -716,7 +716,10 @@ export class TorrentsComponent implements OnInit {
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    let left = triggerRect.left;
+    // Prefer right-align if trigger is past midpoint, else left-align
+    let left = triggerRect.right > w / 2
+      ? triggerRect.right - MENU_WIDTH
+      : triggerRect.left;
     if (left + MENU_WIDTH > w - PADDING) {
       left = w - MENU_WIDTH - PADDING;
     }
@@ -806,7 +809,7 @@ export class TorrentsComponent implements OnInit {
     }
     const btn = (event.target as HTMLElement).closest('button')!;
     const rect = btn.getBoundingClientRect();
-    this.actionMenuPos.set({ top: rect.bottom + 4, left: rect.right - 180 });
+    this.actionMenuPos.set(this.constrainMenuToViewport(rect));
     this.actionMenuHash.set(hash);
   }
 
