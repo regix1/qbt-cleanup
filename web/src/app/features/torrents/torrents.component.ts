@@ -3,6 +3,7 @@ import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, interval, map, switchMap } from 'rxjs';
 import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveItemInArray } from '@angular/cdk/drag-drop';
+import { OverlayModule, type ConnectedPosition } from '@angular/cdk/overlay';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
 import { ConfirmService } from '../../core/services/confirm.service';
@@ -44,6 +45,12 @@ const DEFAULT_COLUMNS: ColumnDef[] = [
   { id: 'actions', label: 'Actions', cssClass: 'col-actions', defaultWidth: 6, minWidthPct: 3 },
 ];
 
+/** CDK overlay positions for universal actions menu: below then above, right-aligned to trigger (matches lancache-manager ActionMenu align right). */
+const UNIVERSAL_ACTIONS_POSITIONS: ConnectedPosition[] = [
+  { originX: 'end', originY: 'bottom', overlayX: 'end', overlayY: 'top', offsetY: 4 },
+  { originX: 'end', originY: 'top', overlayX: 'end', overlayY: 'bottom', offsetY: -4 },
+];
+
 @Component({
   selector: 'app-torrents',
   standalone: true,
@@ -55,6 +62,7 @@ const DEFAULT_COLUMNS: ColumnDef[] = [
     CdkDrag,
     CdkDragHandle,
     CdkDragPreview,
+    OverlayModule,
   ],
   templateUrl: './torrents.component.html',
   styleUrl: './torrents.component.scss',
@@ -65,6 +73,8 @@ export class TorrentsComponent implements OnInit {
   private readonly notifications = inject(NotificationService);
   private readonly confirmService = inject(ConfirmService);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly universalActionsOverlayPositions = UNIVERSAL_ACTIONS_POSITIONS;
 
   readonly torrents = signal<Torrent[]>([]);
   readonly loading = signal<boolean>(true);
@@ -130,7 +140,6 @@ export class TorrentsComponent implements OnInit {
   readonly openDropdown = signal<string>('');
   readonly actionMenuHash = signal<string>('');
   readonly actionMenuPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
-  readonly universalMenuPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
   readonly recyclingHash = signal<string>('');
   readonly movingHash = signal<string>('');
 
@@ -416,7 +425,8 @@ export class TorrentsComponent implements OnInit {
     if (!target.closest('.custom-dropdown')) {
       this.closeDropdowns();
     }
-    if (!target.closest('.universal-actions-wrap')) {
+    // Overlay is portaled to body so also allow clicks inside the overlay pane
+    if (!target.closest('.universal-actions-wrap') && !target.closest('.universal-action-menu-pane')) {
       this.closeUniversalActions();
     }
   }
@@ -699,12 +709,7 @@ export class TorrentsComponent implements OnInit {
     }
     if (this.selectedCount() === 0) return;
     this.universalActionsOpen.update((v) => !v);
-    if (this.universalActionsOpen()) {
-      const btn = (event?.target as HTMLElement)?.closest('button');
-      if (btn) {
-        this.universalMenuPos.set(this.constrainMenuToViewport(btn.getBoundingClientRect()));
-      }
-    }
+    // Position is handled by CDK overlay (cdkConnectedOverlay) so no manual pos needed
   }
 
   /** Position dropdown so it stays inside viewport and doesn't cause overflow/scroll. */

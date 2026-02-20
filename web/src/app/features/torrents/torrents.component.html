@@ -15,7 +15,7 @@
               [title]="compactMode() ? 'Expand table' : 'Compact table'">
         <i class="fa-solid" [class.fa-table-columns]="compactMode()" [class.fa-table]="!compactMode()"></i>
       </button>
-      <div class="universal-actions-wrap">
+      <div class="universal-actions-wrap" cdkOverlayOrigin #universalActionsTrigger="cdkOverlayOrigin">
         <button class="btn btn-primary btn-universal-actions"
                 [disabled]="selectedCount() === 0"
                 (click)="toggleUniversalActions($event)"
@@ -23,10 +23,16 @@
           <i class="fa-solid fa-bolt"></i>
           <span>Actions ({{ selectedCount() }})</span>
         </button>
-        @if (universalActionsOpen()) {
-          <div class="action-menu universal-action-menu"
-               [style.top.px]="universalMenuPos().top"
-               [style.left.px]="universalMenuPos().left">
+        <ng-template
+          cdkConnectedOverlay
+          [cdkConnectedOverlayOrigin]="universalActionsTrigger"
+          [cdkConnectedOverlayOpen]="universalActionsOpen()"
+          [cdkConnectedOverlayPositions]="universalActionsOverlayPositions"
+          [cdkConnectedOverlayWidth]="220"
+          cdkConnectedOverlayPanelClass="universal-action-menu-pane"
+          (overlayOutsideClick)="closeUniversalActions()"
+          (detach)="closeUniversalActions()">
+          <div class="action-menu universal-action-menu">
             <button class="action-menu-item" (click)="bulkTogglePause()">
               @if (selectedAllPaused()) {
                 <i class="fa-solid fa-play"></i>
@@ -58,7 +64,7 @@
               <span>Delete Torrents</span>
             </button>
           </div>
-        }
+        </ng-template>
       </div>
       <button class="btn btn-primary" (click)="loadTorrents()">
         <i class="fa-solid fa-arrows-rotate"></i>
