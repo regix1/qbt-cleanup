@@ -33,6 +33,9 @@
           [cdkConnectedOverlayPositions]="universalActionsOverlayPositions"
           [cdkConnectedOverlayWidth]="220"
           cdkConnectedOverlayPanelClass="universal-action-menu-pane"
+          [cdkConnectedOverlayHasBackdrop]="true"
+          cdkConnectedOverlayBackdropClass="universal-actions-backdrop"
+          (backdropClick)="closeUniversalActions()"
           (overlayOutsideClick)="closeUniversalActions()"
           (detach)="closeUniversalActions()">
           <div class="action-menu universal-action-menu">

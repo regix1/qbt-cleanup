@@ -696,6 +696,53 @@ select.form-input {
   transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
+// ─── CDK Overlay: mobile bottom-sheet for universal actions menu ──────────────
+// CDK sets inline styles on .cdk-overlay-pane; override the pane itself on mobile
+// so the menu slides up from the bottom regardless of trigger position.
+@media (max-width: 768px) {
+  .universal-action-menu-pane {
+    // Override CDK inline positioning on the pane wrapper
+    position: fixed !important;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+
+    .universal-action-menu {
+      width: 100%;
+      max-width: 100%;
+      border-radius: 16px 16px 0 0;
+      padding-bottom: env(safe-area-inset-bottom, 16px);
+      animation: slide-up 0.25s ease-out;
+    }
+  }
+
+  // Dim backdrop behind the bottom sheet
+  .cdk-overlay-backdrop + .cdk-overlay-connected-position-bounding-box .universal-action-menu-pane,
+  .universal-action-menu-pane {
+    z-index: 1001;
+  }
+}
+
+// Backdrop: transparent on desktop, dimmed on mobile
+.universal-actions-backdrop {
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .universal-actions-backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
 // ─── Scrollbar ─────────────────────────────────────────────────────────────────
 
 ::-webkit-scrollbar {

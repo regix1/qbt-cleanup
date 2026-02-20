@@ -919,9 +919,8 @@ tbody tr.row-selected.blacklisted-row {
     flex: 1 1 calc(50% - 4px);
   }
 
-  // Bottom sheet action menus
-  .action-menu,
-  .universal-action-menu {
+  // Bottom sheet for per-row action menus (not in CDK overlay)
+  .action-menu:not(.universal-action-menu) {
     position: fixed;
     left: 0 !important;
     right: 0 !important;
