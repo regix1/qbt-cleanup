@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { forkJoin, interval, switchMap } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { forkJoin, interval, map, switchMap } from 'rxjs';
 import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -131,6 +130,7 @@ export class TorrentsComponent implements OnInit {
   readonly openDropdown = signal<string>('');
   readonly actionMenuHash = signal<string>('');
   readonly actionMenuPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
+  readonly universalMenuPos = signal<{ top: number; left: number }>({ top: 0, left: 0 });
   readonly recyclingHash = signal<string>('');
   readonly movingHash = signal<string>('');
 
@@ -453,6 +453,12 @@ export class TorrentsComponent implements OnInit {
   onColumnDrop(event: CdkDragDrop<string[]>): void {
     const columns = [...this.columnOrder()];
     moveItemInArray(columns, event.previousIndex, event.currentIndex);
+    // Ensure select column stays at index 0
+    const selectIdx = columns.findIndex((c: ColumnDef) => c.id === 'select');
+    if (selectIdx > 0) {
+      const [selectCol] = columns.splice(selectIdx, 1);
+      columns.unshift(selectCol);
+    }
     this.columnOrder.set(columns);
     this.saveColumnOrder();
     this.saveColumnWidths();
@@ -696,7 +702,7 @@ export class TorrentsComponent implements OnInit {
     if (this.universalActionsOpen()) {
       const btn = (event?.target as HTMLElement)?.closest('button');
       if (btn) {
-        this.actionMenuPos.set(this.constrainMenuToViewport(btn.getBoundingClientRect()));
+        this.universalMenuPos.set(this.constrainMenuToViewport(btn.getBoundingClientRect()));
       }
     }
   }
@@ -1162,7 +1168,6 @@ export class TorrentsComponent implements OnInit {
                 .pipe(takeUntilDestroyed(this.destroyRef))
                 .subscribe({
                   next: (responses: ActionResponse[]) => {
-                    this.movingHash.set('');
                     const failed = responses.filter((r: ActionResponse) => !r.success);
                     if (failed.length === 0) {
                       this.notifications.success(`Moved ${list.length} torrent(s)`);
@@ -1174,7 +1179,6 @@ export class TorrentsComponent implements OnInit {
                     this.clearSelection();
                   },
                   error: () => {
-                    this.movingHash.set('');
                     this.notifications.error('Failed to move torrents');
                     this.loadTorrents();
                     this.clearSelection();
@@ -1201,7 +1205,6 @@ export class TorrentsComponent implements OnInit {
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (responses: ActionResponse[]) => {
-              this.recyclingHash.set('');
               const failed = responses.filter((r: ActionResponse) => !r.success);
               if (failed.length === 0) {
                 this.notifications.success(`Recycled ${list.length} torrent(s)`);
@@ -1212,7 +1215,6 @@ export class TorrentsComponent implements OnInit {
               this.clearSelection();
             },
             error: () => {
-              this.recyclingHash.set('');
               this.notifications.error('Failed to recycle torrents');
               this.loadTorrents();
               this.clearSelection();

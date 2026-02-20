@@ -25,8 +25,8 @@
         </button>
         @if (universalActionsOpen()) {
           <div class="action-menu universal-action-menu"
-               [style.top.px]="actionMenuPos().top"
-               [style.left.px]="actionMenuPos().left">
+               [style.top.px]="universalMenuPos().top"
+               [style.left.px]="universalMenuPos().left">
             <button class="action-menu-item" (click)="bulkTogglePause()">
               @if (selectedAllPaused()) {
                 <i class="fa-solid fa-play"></i>
@@ -205,7 +205,8 @@
                   [class.sortable]="!!col.sortField"
                   [class.col-select-header]="col.id === 'select'"
                   [style.width.%]="getColumnWidthPct(col)"
-                  cdkDrag>
+                  cdkDrag
+                  [cdkDragDisabled]="col.id === 'select'">
                 @if (col.id === 'select') {
                   <span class="row-select-header" (click)="toggleSelectAllOnPage($event)">
                     <span class="custom-checkbox"
