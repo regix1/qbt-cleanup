@@ -225,6 +225,7 @@
       <table class="data-table">
         <thead>
           <tr cdkDropList
+              [cdkDropListData]="columnOrder()"
               cdkDropListOrientation="horizontal"
               (cdkDropListDropped)="onColumnDrop($event)">
             @for (col of columnOrder(); track col.id) {
@@ -233,6 +234,7 @@
                   [class.col-select-header]="col.id === 'select'"
                   [style.width.%]="getColumnWidthPct(col)"
                   cdkDrag
+                  [cdkDragData]="col"
                   [cdkDragDisabled]="col.id === 'select'">
                 @if (col.id === 'select') {
                   <span class="row-select-header" (click)="toggleSelectAllOnPage($event)">
@@ -264,7 +266,8 @@
                   </span>
                 }
                 @if (col.id !== 'select') {
-                  <div class="resize-handle" (mousedown)="onResizeStart($event, col)"></div>
+                  <div class="resize-handle"
+                       (mousedown)="$event.stopPropagation(); onResizeStart($event, col)"></div>
                 }
                 <ng-template cdkDragPreview>
                   <div class="column-drag-preview">

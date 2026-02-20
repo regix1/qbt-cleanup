@@ -462,14 +462,41 @@ export class TorrentsComponent implements OnInit {
   // Column ordering: swap — dropped column stays where you put it (swaps with target)
   onColumnDrop(event: CdkDragDrop<ColumnDef[]>): void {
     const columns = [...this.columnOrder()];
-    const selectCol = columns.find((c: ColumnDef) => c.id === 'select');
+    const selectIndex = columns.findIndex((c: ColumnDef) => c.id === 'select');
+    const selectCol = selectIndex >= 0 ? columns[selectIndex] : undefined;
     const movable = columns.filter((c: ColumnDef) => c.id !== 'select');
+    if (movable.length < 2) return;
 
-    const from = Math.max(0, Math.min(event.previousIndex, movable.length - 1));
-    const to = Math.max(0, Math.min(event.currentIndex, movable.length - 1));
-    if (from !== to) {
-      [movable[from], movable[to]] = [movable[to], movable[from]];
+    const draggedCol = event.item?.data as ColumnDef | undefined;
+    if (draggedCol?.id === 'select') return;
+
+    // CDK indices can be reported in either full-list or draggable-only space.
+    // Detect index space using dragged id, then map to movable indices.
+    const usesFullListIndices = !!draggedCol
+      && event.previousIndex >= 0
+      && event.previousIndex < columns.length
+      && columns[event.previousIndex]?.id === draggedCol.id;
+
+    const mapToMovableIndex = (idx: number): number => {
+      let mapped = idx;
+      if (usesFullListIndices && selectIndex >= 0 && idx > selectIndex) {
+        mapped = idx - 1;
+      }
+      return Math.max(0, Math.min(mapped, movable.length - 1));
+    };
+
+    // Use id-based source index for robustness (avoids index-space ambiguity).
+    let from = mapToMovableIndex(event.previousIndex);
+    if (draggedCol) {
+      const byId = movable.findIndex((c: ColumnDef) => c.id === draggedCol.id);
+      if (byId >= 0) {
+        from = byId;
+      }
     }
+    const to = mapToMovableIndex(event.currentIndex);
+
+    if (from === to) return;
+    [movable[from], movable[to]] = [movable[to], movable[from]];
 
     const nextOrder = selectCol ? [selectCol, ...movable] : movable;
     this.columnOrder.set(nextOrder);
