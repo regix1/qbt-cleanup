@@ -461,47 +461,29 @@ export class TorrentsComponent implements OnInit {
     ).subscribe((torrents: Torrent[]) => this.torrents.set(torrents));
   }
 
-  // Column ordering: swap — dropped column stays where you put it (swaps with target)
+  // Column ordering: swap semantics — dropped column lands where you put it
   onColumnDrop(event: CdkDragDrop<ColumnDef[]>): void {
+    const draggedCol = event.item?.data as ColumnDef | undefined;
+    if (!draggedCol || draggedCol.id === 'select') return;
+
     const columns = [...this.columnOrder()];
-    const selectIndex = columns.findIndex((c: ColumnDef) => c.id === 'select');
-    const selectCol = selectIndex >= 0 ? columns[selectIndex] : undefined;
+    const selectCol = columns.find((c: ColumnDef) => c.id === 'select');
     const movable = columns.filter((c: ColumnDef) => c.id !== 'select');
     if (movable.length < 2) return;
 
-    const draggedCol = event.item?.data as ColumnDef | undefined;
-    if (draggedCol?.id === 'select') return;
+    // Source: always resolve by identity (immune to index-space ambiguity)
+    const from = movable.findIndex((c: ColumnDef) => c.id === draggedCol.id);
+    if (from < 0) return;
 
-    // CDK indices can be reported in either full-list or draggable-only space.
-    // Detect index space using dragged id, then map to movable indices.
-    const usesFullListIndices = !!draggedCol
-      && event.previousIndex >= 0
-      && event.previousIndex < columns.length
-      && columns[event.previousIndex]?.id === draggedCol.id;
-
-    const mapToMovableIndex = (idx: number): number => {
-      let mapped = idx;
-      if (usesFullListIndices && selectIndex >= 0 && idx > selectIndex) {
-        mapped = idx - 1;
-      }
-      return Math.max(0, Math.min(mapped, movable.length - 1));
-    };
-
-    // Use id-based source index for robustness (avoids index-space ambiguity).
-    let from = mapToMovableIndex(event.previousIndex);
-    if (draggedCol) {
-      const byId = movable.findIndex((c: ColumnDef) => c.id === draggedCol.id);
-      if (byId >= 0) {
-        from = byId;
-      }
-    }
-    const to = mapToMovableIndex(event.currentIndex);
+    // Target: CDK reports currentIndex in drop-list space.
+    // When select column is disabled (cdkDragDisabled), CDK excludes it
+    // from the sortable items, so currentIndex is already in movable-space.
+    const to = Math.max(0, Math.min(event.currentIndex, movable.length - 1));
 
     if (from === to) return;
     [movable[from], movable[to]] = [movable[to], movable[from]];
 
-    const nextOrder = selectCol ? [selectCol, ...movable] : movable;
-    this.columnOrder.set(nextOrder);
+    this.columnOrder.set(selectCol ? [selectCol, ...movable] : movable);
     this.saveColumnOrder();
     this.saveColumnWidths();
   }

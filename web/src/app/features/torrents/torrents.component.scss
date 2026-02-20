@@ -288,6 +288,8 @@ thead th {
   font-size: 10px;
   transition: opacity 0.15s ease;
   vertical-align: middle;
+  position: relative;
+  z-index: 15;
 
   &:active {
     cursor: grabbing;
@@ -356,13 +358,13 @@ thead th.cdk-drag-placeholder {
   background: var(--accent-yellow-bg);
 }
 
-// Column resize handle
+// Column resize handle — narrower hitbox to avoid overlapping drag handles
 .resize-handle {
   position: absolute;
-  right: -5px;
+  right: -3px;
   top: 0;
   bottom: 0;
-  width: 11px;
+  width: 7px;
   cursor: col-resize;
   background: transparent;
   z-index: 10;
@@ -871,7 +873,7 @@ tbody tr.row-selected.blacklisted-row {
     flex: 1 1 calc(50% - 4px);
   }
 
-  // Bottom sheet for per-row action menus (not in CDK overlay)
+  // Bottom sheet for per-row action menus only (universal actions handled in global styles.scss)
   .action-menu:not(.universal-action-menu) {
     position: fixed;
     left: 0 !important;
@@ -882,21 +884,6 @@ tbody tr.row-selected.blacklisted-row {
     max-width: 100%;
     border-radius: 16px 16px 0 0;
     padding-bottom: env(safe-area-inset-bottom, 16px);
-  }
-
-  // Bottom sheet for universal actions menu (CDK overlay content)
-  .action-menu.universal-action-menu {
-    position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    top: auto !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    margin: 0 !important;
-    border-radius: 16px 16px 0 0;
-    padding-bottom: env(safe-area-inset-bottom, 16px);
-    animation: slide-up 0.25s ease-out;
   }
 
   .action-menu-backdrop {
