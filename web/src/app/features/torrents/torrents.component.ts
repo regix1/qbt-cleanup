@@ -460,8 +460,11 @@ export class TorrentsComponent implements OnInit {
   }
 
   // Column ordering
-  onColumnDrop(event: CdkDragDrop<string[]>): void {
+  onColumnDrop(event: CdkDragDrop<ColumnDef[]>): void {
     const columns = [...this.columnOrder()];
+    const draggedCol = columns[event.previousIndex];
+    // Never allow moving the select (all) checkbox column
+    if (draggedCol?.id === 'select') return;
     moveItemInArray(columns, event.previousIndex, event.currentIndex);
     // Ensure select column stays at index 0
     const selectIdx = columns.findIndex((c: ColumnDef) => c.id === 'select');

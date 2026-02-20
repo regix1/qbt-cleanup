@@ -685,7 +685,7 @@ thead th .resize-handle:hover {
   }
 
   .resize-handle {
-    display: block;
+    display: none; // Keep select column fixed; no resize or move
   }
 }
 
