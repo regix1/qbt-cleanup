@@ -15,6 +15,51 @@
               [title]="compactMode() ? 'Expand table' : 'Compact table'">
         <i class="fa-solid" [class.fa-table-columns]="compactMode()" [class.fa-table]="!compactMode()"></i>
       </button>
+      <div class="universal-actions-wrap">
+        <button class="btn btn-primary btn-universal-actions"
+                [disabled]="selectedCount() === 0"
+                (click)="toggleUniversalActions($event)"
+                [title]="selectedCount() ? 'Apply action to ' + selectedCount() + ' selected' : 'Select torrents first'">
+          <i class="fa-solid fa-bolt"></i>
+          <span>Actions ({{ selectedCount() }})</span>
+        </button>
+        @if (universalActionsOpen()) {
+          <div class="action-menu universal-action-menu"
+               [style.top.px]="actionMenuPos().top"
+               [style.left.px]="actionMenuPos().left">
+            <button class="action-menu-item" (click)="bulkTogglePause()">
+              @if (selectedAllPaused()) {
+                <i class="fa-solid fa-play"></i>
+                <span>Resume All</span>
+              } @else {
+                <i class="fa-solid fa-pause"></i>
+                <span>Pause All</span>
+              }
+            </button>
+            <button class="action-menu-item" (click)="bulkToggleBlacklist()">
+              @if (selectedAllBlacklisted()) {
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>Remove from Blacklist</span>
+              } @else {
+                <i class="fa-solid fa-shield"></i>
+                <span>Add to Blacklist</span>
+              }
+            </button>
+            <button class="action-menu-item" (click)="bulkMove()">
+              <i class="fa-solid fa-folder-open"></i>
+              <span>Move Torrents</span>
+            </button>
+            <button class="action-menu-item" (click)="bulkRecycle()">
+              <i class="fa-solid fa-recycle"></i>
+              <span>Recycle Torrents</span>
+            </button>
+            <button class="action-menu-item danger" (click)="bulkDelete()">
+              <i class="fa-solid fa-trash-can"></i>
+              <span>Delete Torrents</span>
+            </button>
+          </div>
+        }
+      </div>
       <button class="btn btn-primary" (click)="loadTorrents()">
         <i class="fa-solid fa-arrows-rotate"></i>
         <span>Refresh</span>
@@ -158,18 +203,35 @@
             @for (col of columnOrder(); track col.id) {
               <th [class]="col.cssClass"
                   [class.sortable]="!!col.sortField"
+                  [class.col-select-header]="col.id === 'select'"
                   [style.width.%]="getColumnWidthPct(col)"
                   cdkDrag>
-                <i class="fa-solid fa-grip-vertical drag-handle" cdkDragHandle></i>
-                <span class="th-sort-trigger" (click)="onHeaderClick(col)">
-                  {{ col.label }}
-                  @if (col.sortField) {
-                    <i class="fa-solid"
-                       [class.fa-sort-up]="sortField() === col.sortField && sortDirection() === 'asc'"
-                       [class.fa-sort-down]="sortField() === col.sortField && sortDirection() === 'desc'"
-                       [class.fa-sort]="sortField() !== col.sortField"></i>
-                  }
-                </span>
+                @if (col.id === 'select') {
+                  <span class="row-select-header" (click)="toggleSelectAllOnPage($event)">
+                    <span class="custom-checkbox"
+                          [class.checked]="isAllOnPageSelected()"
+                          [class.indeterminate]="isSomeOnPageSelected() && !isAllOnPageSelected()"
+                          role="checkbox"
+                          [attr.aria-checked]="isAllOnPageSelected() ? 'true' : (isSomeOnPageSelected() ? 'mixed' : 'false')">
+                      @if (isAllOnPageSelected()) {
+                        <i class="fa-solid fa-check"></i>
+                      } @else if (isSomeOnPageSelected()) {
+                        <i class="fa-solid fa-minus"></i>
+                      }
+                    </span>
+                  </span>
+                } @else {
+                  <i class="fa-solid fa-grip-vertical drag-handle" cdkDragHandle></i>
+                  <span class="th-sort-trigger" (click)="onHeaderClick(col)">
+                    {{ col.label }}
+                    @if (col.sortField) {
+                      <i class="fa-solid"
+                         [class.fa-sort-up]="sortField() === col.sortField && sortDirection() === 'asc'"
+                         [class.fa-sort-down]="sortField() === col.sortField && sortDirection() === 'desc'"
+                         [class.fa-sort]="sortField() !== col.sortField"></i>
+                    }
+                  </span>
+                }
                 <div class="resize-handle" (mousedown)="onResizeStart($event, col)"></div>
                 <ng-template cdkDragPreview>
                   <div class="column-drag-preview">
@@ -183,9 +245,22 @@
         </thead>
         <tbody>
           @for (torrent of paginatedTorrents(); track torrent.hash) {
-            <tr [class.blacklisted-row]="torrent.is_blacklisted">
+            <tr [class.blacklisted-row]="torrent.is_blacklisted" [class.row-selected]="isSelected(torrent.hash)">
               @for (col of columnOrder(); track col.id) {
                 @switch (col.id) {
+                  @case ('select') {
+                    <td class="col-select">
+                      <span class="custom-checkbox"
+                            [class.checked]="isSelected(torrent.hash)"
+                            (click)="toggleSelect(torrent.hash, $event)"
+                            role="checkbox"
+                            [attr.aria-checked]="isSelected(torrent.hash)">
+                        @if (isSelected(torrent.hash)) {
+                          <i class="fa-solid fa-check"></i>
+                        }
+                      </span>
+                    </td>
+                  }
                   @case ('name') {
                     <td class="col-name name-cell" [title]="torrent.name">{{ torrent.name }}</td>
                   }

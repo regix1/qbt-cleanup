@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener, inject, signal, OnInit } from '@angular/core';
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval, switchMap } from 'rxjs';
+import { forkJoin, interval, switchMap } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveItemInArray } from '@angular/cdk/drag-drop';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -31,7 +32,8 @@ const COLUMN_WIDTHS_VERSION_KEY = 'qbt-torrents-column-widths-v';
 const COLUMN_WIDTHS_VERSION = 2;
 
 const DEFAULT_COLUMNS: ColumnDef[] = [
-  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name', defaultWidth: 28, minWidthPct: 10 },
+  { id: 'select', label: '', cssClass: 'col-select', defaultWidth: 3, minWidthPct: 2 },
+  { id: 'name', label: 'Name', sortField: 'name', cssClass: 'col-name', defaultWidth: 27, minWidthPct: 10 },
   { id: 'state', label: 'State', sortField: 'state', cssClass: 'col-state', defaultWidth: 10, minWidthPct: 6 },
   { id: 'ratio', label: 'Ratio', sortField: 'ratio', cssClass: 'col-ratio', defaultWidth: 7, minWidthPct: 4 },
   { id: 'seedTime', label: 'Seeding Time', sortField: 'seeding_time', cssClass: 'col-seed-time', defaultWidth: 9, minWidthPct: 5 },
@@ -120,6 +122,10 @@ export class TorrentsComponent implements OnInit {
 
   // Layout
   readonly compactMode = signal<boolean>(false);
+
+  // Row selection (for universal actions)
+  readonly selectedHashes = signal<Set<string>>(new Set());
+  readonly universalActionsOpen = signal<boolean>(false);
 
   // Dropdown state
   readonly openDropdown = signal<string>('');
@@ -318,6 +324,33 @@ export class TorrentsComponent implements OnInit {
     return `Showing ${start}-${end} of ${total} torrents`;
   });
 
+  readonly selectedCount = computed<number>(() => this.selectedHashes().size);
+  readonly selectedTorrents = computed<Torrent[]>(() => {
+    const hashes = this.selectedHashes();
+    if (hashes.size === 0) return [];
+    const list = this.torrents();
+    return list.filter((t: Torrent) => hashes.has(t.hash));
+  });
+  readonly isAllOnPageSelected = computed<boolean>(() => {
+    const page = this.paginatedTorrents();
+    if (page.length === 0) return false;
+    const set = this.selectedHashes();
+    return page.every((t: Torrent) => set.has(t.hash));
+  });
+  readonly isSomeOnPageSelected = computed<boolean>(() => {
+    const page = this.paginatedTorrents();
+    const set = this.selectedHashes();
+    return page.some((t: Torrent) => set.has(t.hash));
+  });
+  readonly selectedAllPaused = computed<boolean>(() => {
+    const list = this.selectedTorrents();
+    return list.length > 0 && list.every((t: Torrent) => t.is_paused);
+  });
+  readonly selectedAllBlacklisted = computed<boolean>(() => {
+    const list = this.selectedTorrents();
+    return list.length > 0 && list.every((t: Torrent) => t.is_blacklisted);
+  });
+
   private readonly stateColors: Record<string, string> = {
     downloading: 'state-downloading',
     uploading: 'state-seeding',
@@ -382,6 +415,9 @@ export class TorrentsComponent implements OnInit {
     const target = event.target as HTMLElement;
     if (!target.closest('.custom-dropdown')) {
       this.closeDropdowns();
+    }
+    if (!target.closest('.universal-actions-wrap')) {
+      this.closeUniversalActions();
     }
   }
 
@@ -606,6 +642,68 @@ export class TorrentsComponent implements OnInit {
     this.unregisteredFilter.set('all');
     this.trackerFilter.set('');
     this.currentPage.set(0);
+  }
+
+  isSelected(hash: string): boolean {
+    return this.selectedHashes().has(hash);
+  }
+
+  toggleSelect(hash: string, event?: Event): void {
+    if (event) {
+      (event as MouseEvent).stopPropagation();
+    }
+    this.selectedHashes.update((set) => {
+      const next = new Set(set);
+      if (next.has(hash)) {
+        next.delete(hash);
+      } else {
+        next.add(hash);
+      }
+      return next;
+    });
+  }
+
+  toggleSelectAllOnPage(event?: Event): void {
+    if (event) {
+      (event as MouseEvent).stopPropagation();
+    }
+    const page = this.paginatedTorrents();
+    const set = this.selectedHashes();
+    const allSelected = page.every((t: Torrent) => set.has(t.hash));
+    this.selectedHashes.update((prev) => {
+      const next = new Set(prev);
+      for (const t of page) {
+        if (allSelected) {
+          next.delete(t.hash);
+        } else {
+          next.add(t.hash);
+        }
+      }
+      return next;
+    });
+  }
+
+  clearSelection(): void {
+    this.selectedHashes.set(new Set());
+  }
+
+  toggleUniversalActions(event?: MouseEvent): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    if (this.selectedCount() === 0) return;
+    this.universalActionsOpen.update((v) => !v);
+    if (this.universalActionsOpen()) {
+      const btn = (event?.target as HTMLElement)?.closest('button');
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        this.actionMenuPos.set({ top: rect.bottom + 4, left: rect.left });
+      }
+    }
+  }
+
+  closeUniversalActions(): void {
+    this.universalActionsOpen.set(false);
   }
 
   toggleCompactMode(): void {
@@ -913,19 +1011,235 @@ export class TorrentsComponent implements OnInit {
     });
   }
 
+  // Bulk actions (universal actions for selected torrents)
+  bulkTogglePause(): void {
+    const list = this.selectedTorrents();
+    if (list.length === 0) return;
+    this.closeUniversalActions();
+    const anyRunning = list.some((t: Torrent) => !t.is_paused);
+    const actions = list.map((t: Torrent) =>
+      anyRunning ? this.api.pauseTorrent(t.hash) : this.api.resumeTorrent(t.hash),
+    );
+    forkJoin(actions)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (responses: ActionResponse[]) => {
+          const failed = responses.filter((r: ActionResponse) => !r.success);
+          if (failed.length === 0) {
+            this.torrents.update((torrents: Torrent[]) =>
+              torrents.map((t: Torrent) =>
+                list.some((s: Torrent) => s.hash === t.hash)
+                  ? { ...t, is_paused: !anyRunning, state: anyRunning ? 'pausedUP' : 'uploading' }
+                  : t,
+              ),
+            );
+            this.notifications.success(
+              anyRunning ? `Paused ${list.length} torrent(s)` : `Resumed ${list.length} torrent(s)`,
+            );
+          } else {
+            this.notifications.error(failed[0].message || 'Action failed');
+            this.loadTorrents();
+          }
+          this.clearSelection();
+        },
+        error: () => {
+          this.notifications.error(`Failed to ${anyRunning ? 'pause' : 'resume'} torrents`);
+          this.loadTorrents();
+          this.clearSelection();
+        },
+      });
+  }
+
+  bulkToggleBlacklist(): void {
+    const list = this.selectedTorrents();
+    if (list.length === 0) return;
+    this.closeUniversalActions();
+    const allBlacklisted = list.every((t: Torrent) => t.is_blacklisted);
+    const actionLabel = allBlacklisted ? 'Remove from Blacklist' : 'Add to Blacklist';
+    const message = allBlacklisted
+      ? `Remove ${list.length} torrent(s) from the blacklist?`
+      : `Add ${list.length} torrent(s) to the blacklist? They will be protected from cleanup.`;
+    this.confirmService.confirm({
+      header: actionLabel,
+      message,
+      accept: () => {
+        const actions = list.map((t: Torrent) =>
+          allBlacklisted
+            ? this.api.removeFromBlacklist(t.hash).pipe(map(() => ({ success: true } as ActionResponse)))
+            : this.api.addToBlacklist({ hash: t.hash, name: t.name, reason: 'Bulk add from web UI' }),
+        );
+        forkJoin(actions)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (responses: ActionResponse[]) => {
+              const failed = responses.filter((r: ActionResponse) => !r.success);
+              if (failed.length === 0) {
+                this.torrents.update((torrents: Torrent[]) =>
+                  torrents.map((t: Torrent) =>
+                    list.some((s: Torrent) => s.hash === t.hash)
+                      ? { ...t, is_blacklisted: !allBlacklisted }
+                      : t,
+                  ),
+                );
+                this.notifications.success(
+                  allBlacklisted ? `Removed ${list.length} from blacklist` : `Added ${list.length} to blacklist`,
+                );
+              } else {
+                this.notifications.error(failed[0].message || 'Action failed');
+                this.loadTorrents();
+              }
+              this.clearSelection();
+            },
+            error: () => {
+              this.notifications.error('Failed to update blacklist');
+              this.loadTorrents();
+              this.clearSelection();
+            },
+          });
+      },
+    });
+  }
+
+  bulkMove(): void {
+    const list = this.selectedTorrents();
+    if (list.length === 0) return;
+    this.closeUniversalActions();
+    this.api.getCategories()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (response: CategoriesResponse) => {
+          const selectOptions: SelectOption[] = response.categories.map(
+            (cat: { name: string; save_path: string }) => ({
+              label: cat.name,
+              value: `category:${cat.name}`,
+              description: cat.save_path,
+            }),
+          );
+          const first = list[0];
+          this.confirmService.confirm({
+            header: 'Move Torrents',
+            message: `Move ${list.length} torrent(s)\nExample: "${first.name}"\nCurrent path: ${first.save_path}`,
+            selectOptions,
+            selectPlaceholder: 'Select a category...',
+            inputPlaceholder: 'Or enter a custom path...',
+            accept: (inputValue?: string) => {
+              if (!inputValue) return;
+              const isCategory = inputValue.startsWith('category:');
+              const newCategory = isCategory ? inputValue.replace('category:', '') : first.category;
+              const actions = list.map((t: Torrent) =>
+                this.api.moveTorrent(
+                  isCategory ? { hash: t.hash, category: newCategory } : { hash: t.hash, location: inputValue },
+                ),
+              );
+              forkJoin(actions)
+                .pipe(takeUntilDestroyed(this.destroyRef))
+                .subscribe({
+                  next: (responses: ActionResponse[]) => {
+                    this.movingHash.set('');
+                    const failed = responses.filter((r: ActionResponse) => !r.success);
+                    if (failed.length === 0) {
+                      this.notifications.success(`Moved ${list.length} torrent(s)`);
+                      this.loadTorrents();
+                    } else {
+                      this.notifications.error(failed[0].message || 'Move failed');
+                      this.loadTorrents();
+                    }
+                    this.clearSelection();
+                  },
+                  error: () => {
+                    this.movingHash.set('');
+                    this.notifications.error('Failed to move torrents');
+                    this.loadTorrents();
+                    this.clearSelection();
+                  },
+                });
+            },
+          });
+        },
+        error: () => this.notifications.error('Failed to load categories'),
+      });
+  }
+
+  bulkRecycle(): void {
+    const list = this.selectedTorrents();
+    if (list.length === 0) return;
+    this.closeUniversalActions();
+    this.confirmService.confirm({
+      header: 'Recycle Torrents',
+      message: `Recycle ${list.length} torrent(s)? Files will be moved to the recycle bin and the torrents removed from qBittorrent.`,
+      accept: () => {
+        this.torrents.update((torrents: Torrent[]) => torrents.filter((t: Torrent) => !list.some((s: Torrent) => s.hash === t.hash)));
+        const actions = list.map((t: Torrent) => this.api.deleteTorrent(t.hash, true, true));
+        forkJoin(actions)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: (responses: ActionResponse[]) => {
+              this.recyclingHash.set('');
+              const failed = responses.filter((r: ActionResponse) => !r.success);
+              if (failed.length === 0) {
+                this.notifications.success(`Recycled ${list.length} torrent(s)`);
+              } else {
+                this.notifications.error(failed[0].message || 'Recycle failed');
+                this.loadTorrents();
+              }
+              this.clearSelection();
+            },
+            error: () => {
+              this.recyclingHash.set('');
+              this.notifications.error('Failed to recycle torrents');
+              this.loadTorrents();
+              this.clearSelection();
+            },
+          });
+      },
+    });
+  }
+
+  bulkDelete(): void {
+    const list = this.selectedTorrents();
+    if (list.length === 0) return;
+    this.closeUniversalActions();
+    this.confirmService.confirm({
+      header: 'Delete Torrents',
+      message: `Permanently delete ${list.length} torrent(s)? This will remove the torrents and delete their files from disk. This cannot be undone.`,
+      accept: () => {
+        this.torrents.update((torrents: Torrent[]) => torrents.filter((t: Torrent) => !list.some((s: Torrent) => s.hash === t.hash)));
+        const actions = list.map((t: Torrent) => this.api.deleteTorrent(t.hash, true));
+        forkJoin(actions)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe({
+            next: () => {
+              this.notifications.success(`Deleted ${list.length} torrent(s)`);
+              this.clearSelection();
+            },
+            error: () => {
+              this.notifications.error('Failed to delete torrents');
+              this.loadTorrents();
+              this.clearSelection();
+            },
+          });
+      },
+    });
+  }
+
   private loadColumnOrder(): ColumnDef[] {
     try {
       const stored = localStorage.getItem(COLUMN_ORDER_KEY);
       if (stored) {
         const ids: string[] = JSON.parse(stored);
         const colMap = new Map<string, ColumnDef>(DEFAULT_COLUMNS.map((c: ColumnDef) => [c.id, c]));
-        const ordered = ids
+        let ordered = ids
           .map((id: string) => colMap.get(id))
           .filter((c: ColumnDef | undefined): c is ColumnDef => c !== undefined);
         for (const col of DEFAULT_COLUMNS) {
           if (!ordered.some((o: ColumnDef) => o.id === col.id)) {
             ordered.push(col);
           }
+        }
+        // Ensure select column is always first
+        const selectCol = ordered.find((c: ColumnDef) => c.id === 'select');
+        if (selectCol && ordered[0]?.id !== 'select') {
+          ordered = [selectCol, ...ordered.filter((c: ColumnDef) => c.id !== 'select')];
         }
         return ordered;
       }

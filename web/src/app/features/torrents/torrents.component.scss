@@ -554,6 +554,101 @@ thead th .resize-handle:hover {
   gap: 8px;
 }
 
+.universal-actions-wrap {
+  position: relative;
+}
+
+.btn-universal-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Custom themed checkbox
+.custom-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+
+  i {
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  &:hover {
+    border-color: var(--accent-yellow);
+    background: rgba(245, 197, 24, 0.08);
+  }
+
+  &.checked {
+    border-color: var(--accent-yellow);
+    background: var(--accent-yellow);
+    color: var(--bg-primary);
+  }
+
+  &.indeterminate {
+    border-color: var(--accent-yellow);
+    background: rgba(245, 197, 24, 0.2);
+    color: var(--accent-yellow);
+  }
+
+  &.checked:hover,
+  &.indeterminate:hover {
+    background: var(--accent-yellow);
+    color: var(--bg-primary);
+    border-color: var(--accent-yellow);
+  }
+}
+
+.col-select-header {
+  .drag-handle {
+    display: none;
+  }
+
+  .resize-handle {
+    display: block;
+  }
+}
+
+.row-select-header {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.col-select {
+  text-align: center;
+  vertical-align: middle;
+
+  .custom-checkbox {
+    margin: 0 auto;
+  }
+}
+
+tbody tr.row-selected {
+  background: rgba(245, 197, 24, 0.06);
+}
+
+tbody tr.row-selected.blacklisted-row {
+  background: rgba(245, 197, 24, 0.06);
+}
+
 .btn-ghost {
   background: transparent;
   border: none;
