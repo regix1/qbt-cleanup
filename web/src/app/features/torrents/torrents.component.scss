@@ -780,3 +780,104 @@ tbody tr.row-selected.blacklisted-row {
   color: var(--text-secondary);
   vertical-align: middle;
 }
+
+// ─── Mobile Responsive ────────────────────────────────────────────────────────
+
+@media (max-width: 900px) {
+  .col-type,
+  .col-blacklist,
+  .col-progress {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  thead th.col-name {
+    left: 0;
+    z-index: 21;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.35);
+  }
+
+  tbody td.col-name {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--bg-surface);
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.35);
+  }
+}
+
+@media (max-width: 600px) {
+  .col-seed-time,
+  .col-location,
+  .col-ratio {
+    display: none;
+  }
+
+  .table-container .data-table {
+    table-layout: auto;
+  }
+
+  .name-cell {
+    max-width: none;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+
+    .btn {
+      flex: 1 1 auto;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .col-size,
+  .col-select {
+    display: none;
+  }
+
+  .filter-dropdowns .custom-dropdown {
+    min-width: unset;
+    max-width: unset;
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  // Bottom sheet action menus
+  .action-menu,
+  .universal-action-menu {
+    position: fixed;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+  }
+
+  .action-menu-backdrop {
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  .action-menu-item {
+    padding: 14px 20px;
+  }
+
+  // Pagination stacks vertically
+  .pagination-bar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .pagination-controls {
+    justify-content: center;
+
+    button {
+      min-height: 44px;
+    }
+  }
+}

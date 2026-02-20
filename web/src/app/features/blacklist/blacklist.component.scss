@@ -182,3 +182,29 @@
   font-size: 13px;
 }
 
+// ─── Mobile Responsive ────────────────────────────────────────────────────────
+
+@media (max-width: 768px) {
+  .col-hash {
+    display: none;
+  }
+
+  .name-cell {
+    max-width: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .col-reason {
+    display: none;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+
+    .btn {
+      flex: 1 1 auto;
+    }
+  }
+}
+

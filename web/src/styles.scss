@@ -522,6 +522,37 @@ select.form-input {
   &.striped tbody tr:nth-child(even) {
     background: rgba(255, 255, 255, 0.02);
   }
+
+  // ─── Mobile responsive ─────────────────────────────────────────────────────
+  @media (max-width: 768px) {
+    thead th {
+      padding: 10px 8px;
+    }
+
+    tbody tr td {
+      padding: 10px 8px;
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    thead th {
+      padding: 8px 6px;
+    }
+
+    tbody tr td {
+      padding: 8px 6px;
+      font-size: 12px;
+    }
+  }
+}
+
+// Mobile touch targets
+@media (max-width: 768px) {
+  .btn-icon {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 
 // ─── Loading Spinner ───────────────────────────────────────────────────────────

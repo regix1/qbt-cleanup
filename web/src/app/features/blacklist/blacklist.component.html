@@ -83,23 +83,23 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Name</th>
-            <th>Hash</th>
-            <th>Reason</th>
-            <th>Added</th>
-            <th>Actions</th>
+            <th class="col-name">Name</th>
+            <th class="col-hash">Hash</th>
+            <th class="col-reason">Reason</th>
+            <th class="col-added">Added</th>
+            <th class="col-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
           @for (entry of entries(); track entry.hash) {
             <tr>
-              <td class="name-cell" [title]="entry.name">{{ entry.name || '--' }}</td>
-              <td>
+              <td class="col-name name-cell" [title]="entry.name">{{ entry.name || '--' }}</td>
+              <td class="col-hash">
                 <span class="hash-cell">{{ entry.hash }}</span>
               </td>
-              <td>{{ entry.reason || '--' }}</td>
-              <td>{{ formatDate(entry.added_at) }}</td>
-              <td>
+              <td class="col-reason">{{ entry.reason || '--' }}</td>
+              <td class="col-added">{{ formatDate(entry.added_at) }}</td>
+              <td class="col-actions">
                 <button class="btn btn-icon"
                         title="Remove from blacklist"
                         (click)="removeEntry(entry)">

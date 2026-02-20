@@ -92,4 +92,30 @@
   .recycle-summary {
     flex-direction: column;
   }
+
+  .col-type {
+    display: none;
+  }
+
+  .name-cell {
+    max-width: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .col-age {
+    display: none;
+  }
+
+  .name-meta {
+    display: none;
+  }
+
+  .header-actions {
+    flex-wrap: wrap;
+
+    .btn {
+      flex: 1 1 auto;
+    }
+  }
 }
