@@ -462,17 +462,17 @@ export class TorrentsComponent implements OnInit {
   // Column ordering
   onColumnDrop(event: CdkDragDrop<ColumnDef[]>): void {
     const columns = [...this.columnOrder()];
-    const draggedCol = columns[event.previousIndex];
-    // Never allow moving the select (all) checkbox column
-    if (draggedCol?.id === 'select') return;
-    moveItemInArray(columns, event.previousIndex, event.currentIndex);
-    // Ensure select column stays at index 0
-    const selectIdx = columns.findIndex((c: ColumnDef) => c.id === 'select');
-    if (selectIdx > 0) {
-      const [selectCol] = columns.splice(selectIdx, 1);
-      columns.unshift(selectCol);
-    }
-    this.columnOrder.set(columns);
+    const selectCol = columns.find((c: ColumnDef) => c.id === 'select');
+    const movable = columns.filter((c: ColumnDef) => c.id !== 'select');
+
+    // cdkDragDisabled removes the select column from drag indices, so reorder
+    // only the movable columns and then prepend select back to index 0.
+    const from = Math.max(0, Math.min(event.previousIndex, movable.length - 1));
+    const to = Math.max(0, Math.min(event.currentIndex, movable.length - 1));
+    moveItemInArray(movable, from, to);
+
+    const nextOrder = selectCol ? [selectCol, ...movable] : movable;
+    this.columnOrder.set(nextOrder);
     this.saveColumnOrder();
     this.saveColumnWidths();
   }
