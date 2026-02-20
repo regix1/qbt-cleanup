@@ -709,17 +709,16 @@ export class TorrentsComponent implements OnInit {
 
   /** Position dropdown so it stays inside viewport and doesn't cause overflow/scroll. */
   private constrainMenuToViewport(triggerRect: DOMRect): { top: number; left: number } {
-    const MENU_WIDTH = 180;
+    const MENU_WIDTH = 220;
     const MENU_HEIGHT = 240;
     const GAP = 4;
-    const PADDING = 8;
-    const w = window.innerWidth;
-    const h = window.innerHeight;
+    const PADDING = 12;
+    // clientWidth excludes scrollbar — safer than window.innerWidth on Windows
+    const w = document.documentElement.clientWidth;
+    const h = document.documentElement.clientHeight;
 
-    // Prefer right-align if trigger is past midpoint, else left-align
-    let left = triggerRect.right > w / 2
-      ? triggerRect.right - MENU_WIDTH
-      : triggerRect.left;
+    // Always right-align menu to the trigger button so it doesn't overflow right
+    let left = triggerRect.right - MENU_WIDTH;
     if (left + MENU_WIDTH > w - PADDING) {
       left = w - MENU_WIDTH - PADDING;
     }

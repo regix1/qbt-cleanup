@@ -675,8 +675,8 @@ tbody tr.row-selected.blacklisted-row {
 
 .action-menu {
   position: fixed;
-  width: 180px;
-  max-width: calc(100vw - 16px); /* never extend viewport and cause horizontal scroll */
+  width: 220px;
+  max-width: calc(100vw - 24px);
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
