@@ -249,7 +249,10 @@
                     </span>
                   </span>
                 } @else {
-                  <i class="fa-solid fa-grip-vertical drag-handle" cdkDragHandle></i>
+                  <i class="fa-solid fa-grip-vertical drag-handle"
+                     cdkDragHandle
+                     title="Drag to reorder columns"
+                     aria-label="Drag to reorder columns"></i>
                   <span class="th-sort-trigger" (click)="onHeaderClick(col)">
                     {{ col.label }}
                     @if (col.sortField) {
