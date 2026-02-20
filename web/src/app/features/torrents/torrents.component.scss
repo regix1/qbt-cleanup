@@ -676,6 +676,7 @@ tbody tr.row-selected.blacklisted-row {
 .action-menu {
   position: fixed;
   width: 180px;
+  max-width: calc(100vw - 16px); /* never extend viewport and cause horizontal scroll */
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -684,6 +685,7 @@ tbody tr.row-selected.blacklisted-row {
   overflow: hidden;
   animation: dropdown-open 150ms ease-out;
 }
+
 
 .action-menu-item {
   display: flex;

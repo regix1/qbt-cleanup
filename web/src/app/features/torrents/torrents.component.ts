@@ -696,10 +696,37 @@ export class TorrentsComponent implements OnInit {
     if (this.universalActionsOpen()) {
       const btn = (event?.target as HTMLElement)?.closest('button');
       if (btn) {
-        const rect = btn.getBoundingClientRect();
-        this.actionMenuPos.set({ top: rect.bottom + 4, left: rect.left });
+        this.actionMenuPos.set(this.constrainMenuToViewport(btn.getBoundingClientRect()));
       }
     }
+  }
+
+  /** Position dropdown so it stays inside viewport and doesn't cause overflow/scroll. */
+  private constrainMenuToViewport(triggerRect: DOMRect): { top: number; left: number } {
+    const MENU_WIDTH = 180;
+    const MENU_HEIGHT = 240;
+    const GAP = 4;
+    const PADDING = 8;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    let left = triggerRect.left;
+    if (left + MENU_WIDTH > w - PADDING) {
+      left = w - MENU_WIDTH - PADDING;
+    }
+    if (left < PADDING) {
+      left = PADDING;
+    }
+
+    let top = triggerRect.bottom + GAP;
+    if (top + MENU_HEIGHT > h - PADDING) {
+      top = triggerRect.top - MENU_HEIGHT - GAP;
+    }
+    if (top < PADDING) {
+      top = PADDING;
+    }
+
+    return { top, left };
   }
 
   closeUniversalActions(): void {
