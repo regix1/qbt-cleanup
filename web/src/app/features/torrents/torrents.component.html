@@ -79,24 +79,6 @@
     </div>
   </div>
 
-  @if (selectedCount() > 0) {
-    <div class="mobile-selection-bar" role="region" aria-label="Selection actions">
-      <span class="selection-label">{{ selectedCount() }} selected</span>
-      <div class="selection-actions">
-        <button class="btn btn-primary btn-sm"
-                (click)="toggleUniversalActions($event)"
-                aria-label="Actions">
-          <i class="fa-solid fa-bolt"></i>
-          <span>Actions</span>
-        </button>
-        <button class="btn btn-secondary btn-sm" (click)="clearSelection()" aria-label="Clear selection">
-          <i class="fa-solid fa-xmark"></i>
-          <span>Clear</span>
-        </button>
-      </div>
-    </div>
-  }
-
   @if (loading()) {
     <app-loading-container size="lg" />
   } @else {
