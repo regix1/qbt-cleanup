@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener,
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, interval, map, switchMap } from 'rxjs';
-import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveItemInArray } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview } from '@angular/cdk/drag-drop';
 import { OverlayModule, type ConnectedPosition } from '@angular/cdk/overlay';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -459,17 +459,17 @@ export class TorrentsComponent implements OnInit {
     ).subscribe((torrents: Torrent[]) => this.torrents.set(torrents));
   }
 
-  // Column ordering
+  // Column ordering: swap — dropped column stays where you put it (swaps with target)
   onColumnDrop(event: CdkDragDrop<ColumnDef[]>): void {
     const columns = [...this.columnOrder()];
     const selectCol = columns.find((c: ColumnDef) => c.id === 'select');
     const movable = columns.filter((c: ColumnDef) => c.id !== 'select');
 
-    // cdkDragDisabled removes the select column from drag indices, so reorder
-    // only the movable columns and then prepend select back to index 0.
     const from = Math.max(0, Math.min(event.previousIndex, movable.length - 1));
     const to = Math.max(0, Math.min(event.currentIndex, movable.length - 1));
-    moveItemInArray(movable, from, to);
+    if (from !== to) {
+      [movable[from], movable[to]] = [movable[to], movable[from]];
+    }
 
     const nextOrder = selectCol ? [selectCol, ...movable] : movable;
     this.columnOrder.set(nextOrder);
