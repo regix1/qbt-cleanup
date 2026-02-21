@@ -115,24 +115,35 @@ export class BlacklistComponent implements OnInit {
       return;
     }
 
-    this.api.addToBlacklist({
-      hash: this.newHash().trim(),
-      name: this.newName().trim() || undefined,
-      reason: this.newReason().trim() || undefined,
-    })
+    const hash = this.newHash().trim();
+    const name = this.newName().trim() || undefined;
+    const reason = this.newReason().trim() || undefined;
+
+    // Optimistic: add to list and clear form immediately
+    const optimisticEntry: BlacklistEntry = {
+      hash,
+      name: name || '',
+      reason: reason || '',
+      added_at: new Date().toISOString(),
+    };
+    this.entries.update((list: BlacklistEntry[]) => [optimisticEntry, ...list]);
+    this.newHash.set('');
+    this.newName.set('');
+    this.newReason.set('');
+    this.notify.success('Added to blacklist');
+
+    this.api.addToBlacklist({ hash, name, reason })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result: ActionResponse) => {
-          result.success ? this.notify.success(result.message) : this.notify.error(result.message);
-          if (result.success) {
-            this.newHash.set('');
-            this.newName.set('');
-            this.newReason.set('');
+          if (!result.success) {
+            this.notify.error(result.message);
             this.loadBlacklist();
           }
         },
         error: () => {
           this.notify.error('Failed to add to blacklist');
+          this.loadBlacklist();
         },
       });
   }
@@ -142,14 +153,19 @@ export class BlacklistComponent implements OnInit {
       message: `Remove "${entry.name || entry.hash}" from the blacklist?`,
       header: 'Remove from Blacklist',
       accept: () => {
+        // Optimistic: remove from list immediately
+        this.entries.update((list: BlacklistEntry[]) =>
+          list.filter((e: BlacklistEntry) => e.hash !== entry.hash),
+        );
+        this.notify.success('Removed from blacklist');
+
         this.api.removeFromBlacklist(entry.hash)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
-            next: () => {
-              this.notify.success('Removed from blacklist');
+            error: () => {
+              this.notify.error('Failed to remove from blacklist');
               this.loadBlacklist();
             },
-            error: () => this.notify.error('Failed to remove from blacklist'),
           });
       },
     });
@@ -160,14 +176,24 @@ export class BlacklistComponent implements OnInit {
       message: 'Are you sure you want to remove ALL entries from the blacklist? This cannot be undone.',
       header: 'Clear Entire Blacklist',
       accept: () => {
+        // Optimistic: clear list immediately
+        const previousEntries = this.entries();
+        this.entries.set([]);
+        this.notify.success('Blacklist cleared');
+
         this.api.clearBlacklist()
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (result: ActionResponse) => {
-              result.success ? this.notify.success(result.message) : this.notify.error(result.message);
-              this.loadBlacklist();
+              if (!result.success) {
+                this.notify.error(result.message);
+                this.entries.set(previousEntries);
+              }
             },
-            error: () => this.notify.error('Failed to clear blacklist'),
+            error: () => {
+              this.notify.error('Failed to clear blacklist');
+              this.entries.set(previousEntries);
+            },
           });
       },
     });

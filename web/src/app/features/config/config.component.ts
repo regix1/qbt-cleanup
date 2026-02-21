@@ -181,20 +181,34 @@ export class ConfigComponent implements OnInit {
       return;
     }
 
-    this.saving.set(true);
+    // Optimistic: apply edited values as current and clear modified flags
+    const previousSections = this.sections().map((s: ConfigSection) => ({
+      ...s,
+      fields: s.fields.map((f: ConfigField) => ({ ...f })),
+    }));
+    this.sections.update((sections: ConfigSection[]) =>
+      sections.map((s: ConfigSection) => ({
+        ...s,
+        fields: s.fields.map((f: ConfigField) =>
+          f.modified ? { ...f, value: f.editValue, modified: false } : f,
+        ),
+      })),
+    );
+    this.saving.set(false);
+    this.notify.success('Configuration saved');
+
     this.api.updateConfig({ overrides })
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (result) => {
-          this.saving.set(false);
-          result.success ? this.notify.success(result.message) : this.notify.error(result.message);
-          if (result.success) {
-            this.loadConfig();
+          if (!result.success) {
+            this.notify.error(result.message);
+            this.sections.set(previousSections);
           }
         },
         error: () => {
-          this.saving.set(false);
           this.notify.error('Failed to save configuration');
+          this.sections.set(previousSections);
         },
       });
   }

@@ -998,7 +998,7 @@ export class TorrentsComponent implements OnInit {
                   recycledName
                     ? {
                         label: 'Undo',
-                        callback: (complete: () => void) => this.undoRecycle(recycledName, complete),
+                        callback: (complete: () => void) => this.undoRecycle(recycledName, torrent, complete),
                       }
                     : undefined,
                 );
@@ -1017,22 +1017,24 @@ export class TorrentsComponent implements OnInit {
     });
   }
 
-  private undoRecycle(recycledName: string, complete: () => void): void {
+  private undoRecycle(recycledName: string, originalTorrent: Torrent, complete: () => void): void {
+    // Optimistic: restore the torrent to the list immediately
+    this.torrents.update((list: Torrent[]) => [originalTorrent, ...list]);
+    this.notifications.success('Torrent restored from recycle bin');
+    complete();
+
     this.api.restoreRecycleBinItem(recycledName)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (response: ActionResponse) => {
-          complete();
-          if (response.success) {
-            this.notifications.success('Torrent restored from recycle bin');
-            this.loadTorrents();
-          } else {
+          if (!response.success) {
             this.notifications.error(response.message);
+            this.loadTorrents();
           }
         },
         error: () => {
-          complete();
           this.notifications.error('Failed to restore torrent');
+          this.loadTorrents();
         },
       });
   }
@@ -1065,6 +1067,21 @@ export class TorrentsComponent implements OnInit {
     if (list.length === 0) return;
     this.closeUniversalActions();
     const anyRunning = list.some((t: Torrent) => !t.is_paused);
+    const hashes = new Set(list.map((t: Torrent) => t.hash));
+
+    // Optimistic update — instant UI feedback
+    this.torrents.update((torrents: Torrent[]) =>
+      torrents.map((t: Torrent) =>
+        hashes.has(t.hash)
+          ? { ...t, is_paused: anyRunning, state: anyRunning ? 'pausedUP' : 'uploading' }
+          : t,
+      ),
+    );
+    this.notifications.success(
+      anyRunning ? `Paused ${list.length} torrent(s)` : `Resumed ${list.length} torrent(s)`,
+    );
+    this.clearSelection();
+
     const actions = list.map((t: Torrent) =>
       anyRunning ? this.api.pauseTorrent(t.hash) : this.api.resumeTorrent(t.hash),
     );
@@ -1073,27 +1090,14 @@ export class TorrentsComponent implements OnInit {
       .subscribe({
         next: (responses: ActionResponse[]) => {
           const failed = responses.filter((r: ActionResponse) => !r.success);
-          if (failed.length === 0) {
-            this.torrents.update((torrents: Torrent[]) =>
-              torrents.map((t: Torrent) =>
-                list.some((s: Torrent) => s.hash === t.hash)
-                  ? { ...t, is_paused: !anyRunning, state: anyRunning ? 'pausedUP' : 'uploading' }
-                  : t,
-              ),
-            );
-            this.notifications.success(
-              anyRunning ? `Paused ${list.length} torrent(s)` : `Resumed ${list.length} torrent(s)`,
-            );
-          } else {
+          if (failed.length > 0) {
             this.notifications.error(failed[0].message || 'Action failed');
             this.loadTorrents();
           }
-          this.clearSelection();
         },
         error: () => {
           this.notifications.error(`Failed to ${anyRunning ? 'pause' : 'resume'} torrents`);
           this.loadTorrents();
-          this.clearSelection();
         },
       });
   }
@@ -1111,6 +1115,21 @@ export class TorrentsComponent implements OnInit {
       header: actionLabel,
       message,
       accept: () => {
+        const hashes = new Set(list.map((t: Torrent) => t.hash));
+
+        // Optimistic update — instant UI feedback
+        this.torrents.update((torrents: Torrent[]) =>
+          torrents.map((t: Torrent) =>
+            hashes.has(t.hash)
+              ? { ...t, is_blacklisted: !allBlacklisted }
+              : t,
+          ),
+        );
+        this.notifications.success(
+          allBlacklisted ? `Removed ${list.length} from blacklist` : `Added ${list.length} to blacklist`,
+        );
+        this.clearSelection();
+
         const actions = list.map((t: Torrent) =>
           allBlacklisted
             ? this.api.removeFromBlacklist(t.hash).pipe(map(() => ({ success: true } as ActionResponse)))
@@ -1121,27 +1140,14 @@ export class TorrentsComponent implements OnInit {
           .subscribe({
             next: (responses: ActionResponse[]) => {
               const failed = responses.filter((r: ActionResponse) => !r.success);
-              if (failed.length === 0) {
-                this.torrents.update((torrents: Torrent[]) =>
-                  torrents.map((t: Torrent) =>
-                    list.some((s: Torrent) => s.hash === t.hash)
-                      ? { ...t, is_blacklisted: !allBlacklisted }
-                      : t,
-                  ),
-                );
-                this.notifications.success(
-                  allBlacklisted ? `Removed ${list.length} from blacklist` : `Added ${list.length} to blacklist`,
-                );
-              } else {
+              if (failed.length > 0) {
                 this.notifications.error(failed[0].message || 'Action failed');
                 this.loadTorrents();
               }
-              this.clearSelection();
             },
             error: () => {
               this.notifications.error('Failed to update blacklist');
               this.loadTorrents();
-              this.clearSelection();
             },
           });
       },
@@ -1174,6 +1180,19 @@ export class TorrentsComponent implements OnInit {
               if (!inputValue) return;
               const isCategory = inputValue.startsWith('category:');
               const newCategory = isCategory ? inputValue.replace('category:', '') : first.category;
+              const hashes = new Set(list.map((t: Torrent) => t.hash));
+
+              // Optimistic update — instant UI feedback
+              this.torrents.update((torrents: Torrent[]) =>
+                torrents.map((t: Torrent) =>
+                  hashes.has(t.hash)
+                    ? { ...t, category: newCategory, is_moving: true }
+                    : t,
+                ),
+              );
+              this.notifications.success(`Moving ${list.length} torrent(s)...`);
+              this.clearSelection();
+
               const actions = list.map((t: Torrent) =>
                 this.api.moveTorrent(
                   isCategory ? { hash: t.hash, category: newCategory } : { hash: t.hash, location: inputValue },
@@ -1184,19 +1203,14 @@ export class TorrentsComponent implements OnInit {
                 .subscribe({
                   next: (responses: ActionResponse[]) => {
                     const failed = responses.filter((r: ActionResponse) => !r.success);
-                    if (failed.length === 0) {
-                      this.notifications.success(`Moved ${list.length} torrent(s)`);
-                      this.loadTorrents();
-                    } else {
+                    if (failed.length > 0) {
                       this.notifications.error(failed[0].message || 'Move failed');
-                      this.loadTorrents();
                     }
-                    this.clearSelection();
+                    this.loadTorrents();
                   },
                   error: () => {
                     this.notifications.error('Failed to move torrents');
                     this.loadTorrents();
-                    this.clearSelection();
                   },
                 });
             },

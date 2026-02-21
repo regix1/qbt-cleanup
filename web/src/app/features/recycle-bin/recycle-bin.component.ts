@@ -68,14 +68,17 @@ export class RecycleBinComponent implements OnInit {
       header: 'Delete Permanently',
       message: `Permanently delete "${item.name}"? This cannot be undone.`,
       accept: () => {
+        // Optimistic: remove from list immediately
+        this.removeItemFromData(item.name);
+        this.notify.success(`Deleted ${item.name}`);
+
         this.api.deleteRecycleBinItem(item.name)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
-            next: () => {
-              this.notify.success(`Deleted ${item.name}`);
+            error: () => {
+              this.notify.error('Failed to delete item');
               this.loadRecycleBin();
             },
-            error: () => this.notify.error('Failed to delete item'),
           });
       },
     });
@@ -92,22 +95,24 @@ export class RecycleBinComponent implements OnInit {
       inputDefault: item.original_path || '',
       accept: (inputValue?: string) => {
         const targetPath = hasMetadata ? undefined : inputValue;
-        this.restoringItem.set(item.name);
+
+        // Optimistic: remove from list immediately
+        this.removeItemFromData(item.name);
+        this.restoringItem.set('');
+        this.notify.success(`Restored ${item.name}`);
+
         this.api.restoreRecycleBinItem(item.name, targetPath)
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
             next: (response: ActionResponse) => {
-              if (response.success) {
-                this.notify.success(`Restored ${item.name}`);
-              } else {
+              if (!response.success) {
                 this.notify.error(response.message);
+                this.loadRecycleBin();
               }
-              this.loadRecycleBin();
-              this.restoringItem.set('');
             },
             error: () => {
               this.notify.error('Failed to restore item');
-              this.restoringItem.set('');
+              this.loadRecycleBin();
             },
           });
       },
@@ -119,16 +124,34 @@ export class RecycleBinComponent implements OnInit {
       header: 'Empty Recycle Bin',
       message: 'Permanently delete all items in the recycle bin? This cannot be undone.',
       accept: () => {
+        // Optimistic: clear items immediately
+        const previousData = this.data();
+        if (previousData) {
+          this.data.set({ ...previousData, items: [], total_size: 0 });
+        }
+        this.notify.success('Recycle bin emptied');
+
         this.api.emptyRecycleBin()
           .pipe(takeUntilDestroyed(this.destroyRef))
           .subscribe({
-            next: () => {
-              this.notify.success('Recycle bin emptied');
-              this.loadRecycleBin();
+            error: () => {
+              this.notify.error('Failed to empty recycle bin');
+              if (previousData) this.data.set(previousData);
             },
-            error: () => this.notify.error('Failed to empty recycle bin'),
           });
       },
+    });
+  }
+
+  private removeItemFromData(name: string): void {
+    const current = this.data();
+    if (!current) return;
+    const item = current.items.find((i: RecycleBinItem) => i.name === name);
+    const itemSize = item?.size || 0;
+    this.data.set({
+      ...current,
+      items: current.items.filter((i: RecycleBinItem) => i.name !== name),
+      total_size: Math.max(0, current.total_size - itemSize),
     });
   }
 
