@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, DestroyRef, HostListener,
 import { DecimalPipe, NgClass } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { forkJoin, interval, map, switchMap } from 'rxjs';
-import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview } from '@angular/cdk/drag-drop';
+import { CdkDragDrop, CdkDrag, CdkDropList, CdkDragHandle, CdkDragPreview, moveItemInArray } from '@angular/cdk/drag-drop';
 import { OverlayModule, type ConnectedPosition } from '@angular/cdk/overlay';
 import { ApiService } from '../../core/services/api.service';
 import { NotificationService } from '../../core/services/notification.service';
@@ -461,7 +461,8 @@ export class TorrentsComponent implements OnInit {
     ).subscribe((torrents: Torrent[]) => this.torrents.set(torrents));
   }
 
-  // Column ordering: swap semantics — dropped column lands where you put it.
+  // Column ordering: insert semantics — dragged column lands where you drop it,
+  // columns in between shift to fill the gap.
   // CDK reports previousIndex/currentIndex in FULL list space (disabled items included).
   onColumnDrop(event: CdkDragDrop<ColumnDef[]>): void {
     const draggedCol = event.item?.data as ColumnDef | undefined;
@@ -475,7 +476,7 @@ export class TorrentsComponent implements OnInit {
     if (to < 0 || to >= columns.length) return;
     if (columns[to]?.id === 'select') return;
 
-    [columns[from], columns[to]] = [columns[to], columns[from]];
+    moveItemInArray(columns, from, to);
 
     this.columnOrder.set(columns);
     this.saveColumnOrder();
