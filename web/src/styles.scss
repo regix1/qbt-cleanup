@@ -1,3 +1,20 @@
+// Shared UI transitional imports:
+// Keep legacy class-based templates working while feature templates migrate to <app-*> components.
+@import 'app/shared/ui/button/button.component.scss';
+@import 'app/shared/ui/checkbox/checkbox.component.scss';
+@import 'app/shared/ui/dropdown/dropdown.component.scss';
+@import 'app/shared/ui/action-menu/action-menu.component.scss';
+@import 'app/shared/ui/data-table/data-table.styles.scss';
+@import 'app/shared/ui/empty-state/empty-state.component.scss';
+@import 'app/shared/ui/badge/badge.component.scss';
+@import 'app/shared/ui/search-input/search-input.component.scss';
+@import 'app/shared/ui/pagination/pagination.component.scss';
+@import 'app/shared/ui/filter-chip/filter-chip.component.scss';
+@import 'app/shared/ui/card/section-card.component.scss';
+@import 'app/shared/ui/card/section-card-header.component.scss';
+@import 'app/shared/ui/card/stat-card.component.scss';
+@import 'app/shared/ui/accordion/accordion.component.scss';
+
 :root {
   --bg-primary: #141414;
   --bg-secondary: #1c1c1c;
@@ -9,6 +26,7 @@
   --accent-gold: #d4a017;
   --accent-amber: #e09010;
   --accent-copper: #c85a28;
+  --accent-red: #c62828;
   --accent-teal: #2fa8a0;
   --status-active: #f5c518;
   --status-inactive: #7a756f;
@@ -73,6 +91,13 @@ a {
   flex-wrap: wrap;
   gap: 12px;
 
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
   h2 {
     margin: 0;
     font-weight: 300;
@@ -90,305 +115,40 @@ a {
   margin-bottom: 24px;
 }
 
-.stat-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 20px;
+// stat-card, section-card, card-header-content:
+// Imported from shared/ui/card/*.scss above.
+
+// ─── Icon color utilities ─────────────────────────────────────────────────────
+
+.icon-yellow { color: var(--accent-yellow); }
+.icon-gold { color: var(--accent-gold); }
+.icon-teal { color: var(--accent-teal); }
+.icon-amber { color: var(--accent-amber); }
+.icon-red { color: var(--accent-red); }
+.icon-copper { color: var(--accent-copper); }
+.icon-active { color: var(--status-active); }
+.icon-inactive { color: var(--status-inactive); }
+
+.font-mono {
+  font-family: 'Roboto Mono', monospace;
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+// ─── Form group (label + column layout) ────────────────────────────────────────
+
+.form-group {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  gap: 6px;
 
-  &:hover {
-    border-color: var(--accent-yellow);
-    transform: translateY(-2px);
-  }
-
-  .stat-icon {
-    font-size: 36px;
-    width: 36px;
-    height: 36px;
-    margin-bottom: 8px;
-    opacity: 0.8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .stat-value {
-    font-size: 32px;
-    font-weight: 500;
-    line-height: 1.2;
-  }
-
-  .stat-label {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-top: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-}
-
-// ─── Status Chip ───────────────────────────────────────────────────────────────
-
-.status-chip {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 16px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  &.success {
-    background: rgba(245, 197, 24, 0.15);
-    color: var(--accent-yellow);
-  }
-
-  &.error {
-    background: rgba(200, 90, 40, 0.15);
-    color: var(--accent-copper);
-  }
-
-  &.warning {
-    background: rgba(224, 144, 16, 0.15);
-    color: var(--accent-amber);
-  }
-
-  &.info {
-    background: rgba(212, 160, 23, 0.15);
-    color: var(--accent-gold);
-  }
-
-  &.inactive {
-    background: rgba(122, 117, 111, 0.15);
-    color: var(--status-inactive);
-  }
-}
-
-// ─── Section Card ──────────────────────────────────────────────────────────────
-
-.section-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  margin-bottom: 16px;
-
-  .section-card-header {
-    padding: 16px;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-
-  .section-card-content {
-    padding: 16px;
-  }
-}
-
-// ─── Empty State ───────────────────────────────────────────────────────────────
-
-.empty-state-global {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  text-align: center;
-
-  i {
-    font-size: 64px;
-    color: var(--text-secondary);
-    opacity: 0.5;
-    margin-bottom: 16px;
-  }
-
-  h3 {
-    margin: 0 0 8px 0;
-    font-weight: 400;
-    color: var(--text-primary);
-  }
-
-  p {
-    margin: 0;
-    color: var(--text-secondary);
-    max-width: 400px;
-  }
-}
-
-// ─── Buttons ───────────────────────────────────────────────────────────────────
-
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
-  white-space: nowrap;
-  line-height: 1.4;
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.97);
-  }
-
-  i {
-    font-size: 14px;
-    line-height: inherit;
-  }
-}
-
-// Circular count badge (show only when count > 0). Use across the app for selection/notification counts.
-.count-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  border-radius: 50%;
-  font-size: 11px;
-  font-weight: 600;
-  line-height: 1;
-  flex-shrink: 0;
-  box-sizing: border-box;
-
-  .btn-primary & {
-    background: rgba(0, 0, 0, 0.35);
-    color: #fff;
-  }
-
-  .btn-secondary &,
-  .btn-text &,
-  .btn-icon & {
-    background: var(--accent-yellow);
-    color: #111;
-  }
-}
-
-.btn-primary {
-  background: var(--accent-yellow);
-  color: #111;
-  border-color: var(--accent-yellow);
-
-  &:hover:not(:disabled) {
-    background: #e6b400;
-    border-color: #e6b400;
-  }
-
-  &:active:not(:disabled) {
-    background: #c89e00;
-    border-color: #c89e00;
-  }
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--text-primary);
-  border-color: var(--border-color);
-
-  &:hover:not(:disabled) {
-    background: var(--accent-yellow-bg);
-    border-color: var(--accent-yellow);
-  }
-
-  &:active:not(:disabled) {
-    background: rgba(245, 197, 24, 0.15);
-  }
-
-  &.active {
-    border-color: var(--accent-yellow);
-    background: var(--accent-yellow-bg);
-    color: var(--accent-yellow);
-  }
-}
-
-.btn-danger {
-  background: var(--accent-copper);
-  color: #fff;
-  border-color: var(--accent-copper);
-
-  &:hover:not(:disabled) {
-    background: #b04e20;
-    border-color: #b04e20;
-  }
-
-  &:active:not(:disabled) {
-    background: #9a4218;
-    border-color: #9a4218;
-  }
-}
-
-.btn-text {
-  background: transparent;
-  color: var(--text-primary);
-  border-color: transparent;
-  padding: 8px 12px;
-
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  &:active:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-  }
-}
-
-.btn-text.btn-sm {
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-
-  &:hover:not(:disabled) {
-    border-color: var(--accent-yellow);
-    background: var(--accent-yellow-bg);
-    color: var(--accent-yellow);
-  }
-}
-
-.btn-icon {
-  background: transparent;
-  color: var(--text-primary);
-  border: none;
-  padding: 8px;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-  }
-
-  &:active:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
-    transform: scale(0.92);
-  }
-
-  i {
-    font-size: 18px;
-  }
-}
-
-.btn-sm {
-  padding: 4px 10px;
-  font-size: 12px;
-
-  i {
+  label {
     font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
   }
 }
 
@@ -504,77 +264,6 @@ select.form-input {
   }
 }
 
-// ─── Data Table ────────────────────────────────────────────────────────────────
-
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-
-  th, td {
-    box-sizing: border-box;
-  }
-
-  thead {
-    th {
-      background: var(--bg-surface);
-      color: var(--text-secondary);
-      font-weight: 500;
-      text-align: left;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border-color);
-      white-space: nowrap;
-      text-transform: uppercase;
-      font-size: 12px;
-      letter-spacing: 0.5px;
-    }
-  }
-
-  tbody {
-    tr {
-      transition: background 0.15s ease;
-
-      &:hover {
-        background: var(--accent-yellow-bg-light);
-      }
-
-      td {
-        padding: 12px 16px;
-        border-bottom: 1px solid var(--border-color);
-        color: var(--text-primary);
-        vertical-align: middle;
-      }
-    }
-  }
-
-  &.striped tbody tr:nth-child(even) {
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  // ─── Mobile responsive ─────────────────────────────────────────────────────
-  @media (max-width: 768px) {
-    thead th {
-      padding: 10px 8px;
-    }
-
-    tbody tr td {
-      padding: 10px 8px;
-      font-size: 13px;
-    }
-  }
-
-  @media (max-width: 480px) {
-    thead th {
-      padding: 8px 6px;
-    }
-
-    tbody tr td {
-      padding: 8px 6px;
-      font-size: 12px;
-    }
-  }
-}
-
 // Mobile touch targets
 @media (max-width: 768px) {
   .btn-icon {
@@ -613,29 +302,7 @@ select.form-input {
   }
 }
 
-// ─── Dropdown Animations ──────────────────────────────────────────────────────
-
-@keyframes dropdown-open {
-  from {
-    opacity: 0;
-    transform: translateY(-4px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes accordion-open {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+// ─── Animations ──────────────────────────────────────────────────────────────
 
 @keyframes fade-in {
   from {
@@ -655,6 +322,12 @@ select.form-input {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+// Second slide-up (mobile bottom sheet) renamed to avoid overriding the first
+@keyframes bottom-sheet-enter {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
 }
 
 @keyframes page-enter {
@@ -728,7 +401,7 @@ select.form-input {
     margin: 0 !important;
     border-radius: 16px 16px 0 0;
     padding-bottom: env(safe-area-inset-bottom, 16px);
-    animation: slide-up 0.25s ease-out;
+    animation: bottom-sheet-enter 0.25s ease-out;
   }
 }
 
@@ -741,11 +414,6 @@ select.form-input {
   .universal-actions-backdrop {
     background: rgba(0, 0, 0, 0.5);
   }
-}
-
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
 }
 
 // ─── Scrollbar ─────────────────────────────────────────────────────────────────

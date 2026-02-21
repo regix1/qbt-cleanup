@@ -1,42 +1,7 @@
-.header-actions {
-  display: flex;
-  gap: 12px;
-}
-
-.section-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  overflow: hidden;
-
-  .card-body {
-    padding: 16px;
-  }
-}
-
 .info-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 16px;
-}
-
-.card-header-content {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  border-bottom: 1px solid var(--border-color);
-
-  i {
-    color: var(--accent-yellow);
-    font-size: 20px;
-  }
-
-  span {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
 }
 
 .info-row {
@@ -102,18 +67,11 @@
   margin-top: 2px;
 }
 
-.icon-yellow { color: var(--accent-yellow); }
-.icon-gold { color: var(--accent-gold); }
-.icon-teal { color: var(--accent-teal); }
-.icon-amber { color: var(--accent-amber); }
-.icon-red { color: var(--accent-red, #e74c3c); }
-.icon-copper { color: var(--accent-copper); }
-
 .card-grid {
   grid-template-columns: repeat(6, 1fr);
 
   .stat-card {
-    animation: card-fade-in 0.3s ease-out both;
+    animation: slide-up 0.3s ease-out both;
 
     @for $i from 1 through 6 {
       &:nth-child(#{$i}) {
@@ -128,17 +86,6 @@
 
   @media (max-width: 600px) {
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@keyframes card-fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
   }
 }
 

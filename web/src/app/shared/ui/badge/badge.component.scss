@@ -1,0 +1,234 @@
+// Unified badge/chip — state, type, status, modified, unregistered.
+// Colors match .state-badge, .type-badge, .status-chip, .modified-badge, .unregistered-badge.
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+// ─── State (torrents) ───────────────────────────────────────────────────────
+.badge-state-downloading {
+  background: rgba(245, 197, 24, 0.15);
+  color: var(--accent-yellow);
+}
+
+.badge-state-uploading,
+.badge-state-seeding {
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--accent-gold);
+}
+
+.badge-state-paused {
+  background: rgba(122, 117, 111, 0.15);
+  color: var(--status-inactive);
+}
+
+.badge-state-stalled {
+  background: var(--bg-warning);
+  color: var(--accent-amber);
+}
+
+.badge-state-error {
+  background: rgba(200, 90, 40, 0.2);
+  color: var(--accent-copper);
+}
+
+.badge-state-queued {
+  background: var(--accent-yellow-bg);
+  color: var(--accent-gold);
+}
+
+.badge-state-checking {
+  background: var(--accent-yellow-bg);
+  color: var(--accent-yellow);
+}
+
+.badge-state-idle {
+  background: rgba(122, 117, 111, 0.12);
+  color: var(--text-secondary);
+}
+
+.badge-state-default {
+  background: rgba(224, 224, 224, 0.1);
+  color: var(--text-secondary);
+}
+
+// ─── Type (torrents: private/public; recycle-bin: folder/file) ─────────────────
+.badge-type-private,
+.badge-type-folder {
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--accent-gold);
+}
+
+.badge-type-public,
+.badge-type-file {
+  background: rgba(47, 168, 160, 0.15);
+  color: var(--accent-teal);
+}
+
+// ─── Status (styles.scss status-chip) ────────────────────────────────────────
+.badge-status-success {
+  background: rgba(245, 197, 24, 0.15);
+  color: var(--accent-yellow);
+}
+
+.badge-status-error {
+  background: rgba(200, 90, 40, 0.15);
+  color: var(--accent-copper);
+}
+
+.badge-status-warning {
+  background: rgba(224, 144, 16, 0.15);
+  color: var(--accent-amber);
+}
+
+.badge-status-info {
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--accent-gold);
+}
+
+.badge-status-inactive {
+  background: rgba(122, 117, 111, 0.15);
+  color: var(--status-inactive);
+}
+
+// ─── Config / special ─────────────────────────────────────────────────────────
+.badge-modified {
+  background: rgba(224, 144, 16, 0.15);
+  color: var(--accent-amber);
+}
+
+.badge-unregistered {
+  background: rgba(200, 90, 40, 0.2);
+  color: var(--accent-copper);
+}
+
+// ─── Backward-compatible legacy class aliases ────────────────────────────────
+// These keep existing templates styled while migration to <app-badge> is ongoing.
+
+.state-badge,
+.type-badge,
+.status-chip,
+.modified-badge,
+.unregistered-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.state-badge.state-downloading {
+  background: rgba(245, 197, 24, 0.15);
+  color: var(--accent-yellow);
+}
+
+.state-badge.state-seeding {
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--accent-gold);
+}
+
+.state-badge.state-paused {
+  background: rgba(122, 117, 111, 0.15);
+  color: var(--status-inactive);
+}
+
+.state-badge.state-stalled {
+  background: var(--bg-warning);
+  color: var(--accent-amber);
+}
+
+.state-badge.state-error {
+  background: rgba(200, 90, 40, 0.2);
+  color: var(--accent-copper);
+}
+
+.state-badge.state-queued {
+  background: var(--accent-yellow-bg);
+  color: var(--accent-gold);
+}
+
+.state-badge.state-checking {
+  background: var(--accent-yellow-bg);
+  color: var(--accent-yellow);
+}
+
+.state-badge.state-default {
+  background: rgba(224, 224, 224, 0.1);
+  color: var(--text-secondary);
+}
+
+.state-badge.state-moving {
+  background: rgba(47, 168, 160, 0.15);
+  color: var(--accent-teal);
+}
+
+.state-badge.state-recycling {
+  background: rgba(200, 90, 40, 0.2);
+  color: var(--accent-copper);
+}
+
+.type-badge.private,
+.type-badge.folder {
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--accent-gold);
+}
+
+.type-badge.public,
+.type-badge.file {
+  background: rgba(47, 168, 160, 0.15);
+  color: var(--accent-teal);
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-chip.success {
+  background: rgba(245, 197, 24, 0.15);
+  color: var(--accent-yellow);
+}
+
+.status-chip.error {
+  background: rgba(200, 90, 40, 0.15);
+  color: var(--accent-copper);
+}
+
+.status-chip.warning {
+  background: rgba(224, 144, 16, 0.15);
+  color: var(--accent-amber);
+}
+
+.status-chip.info {
+  background: rgba(212, 160, 23, 0.15);
+  color: var(--accent-gold);
+}
+
+.status-chip.inactive {
+  background: rgba(122, 117, 111, 0.15);
+  color: var(--status-inactive);
+}
+
+.modified-badge {
+  background: rgba(224, 144, 16, 0.15);
+  color: var(--accent-amber);
+}
+
+.unregistered-badge {
+  background: rgba(200, 90, 40, 0.2);
+  color: var(--accent-copper);
+}

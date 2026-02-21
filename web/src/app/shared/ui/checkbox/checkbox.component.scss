@@ -1,0 +1,44 @@
+// Custom themed checkbox (from plan: same as torrents 587-629)
+.custom-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-card);
+  color: transparent;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+
+  i {
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  &:hover {
+    border-color: var(--accent-yellow);
+    background: rgba(245, 197, 24, 0.08);
+  }
+
+  &.checked {
+    border-color: var(--accent-yellow);
+    background: var(--accent-yellow);
+    color: var(--bg-primary);
+  }
+
+  &.indeterminate {
+    border-color: var(--accent-yellow);
+    background: rgba(245, 197, 24, 0.2);
+    color: var(--accent-yellow);
+  }
+
+  &.checked:hover,
+  &.indeterminate:hover {
+    background: var(--accent-yellow);
+    color: var(--bg-primary);
+    border-color: var(--accent-yellow);
+  }
+}

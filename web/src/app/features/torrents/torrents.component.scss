@@ -21,30 +21,6 @@
   flex-wrap: wrap;
 }
 
-.search-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 260px;
-  flex-shrink: 0;
-
-  i {
-    position: absolute;
-    left: 12px;
-    color: var(--text-secondary);
-    font-size: 14px;
-    pointer-events: none;
-  }
-
-  .form-input {
-    padding-left: 36px;
-  }
-
-  @media (max-width: 600px) {
-    width: 100%;
-  }
-}
-
 .filter-dropdowns {
   display: flex;
   flex-wrap: wrap;
@@ -52,180 +28,17 @@
   flex: 1;
 }
 
-// Custom dropdown component
-.custom-dropdown {
-  position: relative;
-  min-width: 130px;
-  max-width: 200px;
-}
-
-.dropdown-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  width: 100%;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-
-  span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    min-width: 0;
-  }
-
-  &:hover {
-    border-color: var(--accent-yellow);
-  }
-
-  &.open {
-    border-color: var(--accent-yellow);
-    box-shadow: 0 0 0 2px rgba(245, 197, 24, 0.15);
-
-    .dropdown-chevron {
-      transform: rotate(180deg);
-    }
-  }
-}
-
-.dropdown-chevron {
-  font-size: 11px;
-  color: var(--text-secondary);
-  transition: transform 0.2s ease;
-  flex-shrink: 0;
-}
-
-.dropdown-panel {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  min-width: 100%;
-  max-height: 240px;
-  overflow-y: auto;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  z-index: 200;
-  animation: dropdown-open 150ms ease-out;
-
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: var(--border-color);
-    border-radius: 3px;
-  }
-}
-
-@keyframes dropdown-open {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.dropdown-option {
-  padding: 8px 12px;
-  font-size: 13px;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: background 0.1s ease;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-
-  &:hover {
-    background: var(--accent-yellow-bg);
-  }
-
-  &.selected {
-    background: rgba(245, 197, 24, 0.12);
-    border-left: 2px solid var(--accent-yellow);
-    padding-left: 10px;
-  }
-
-  &:first-child {
-    border-radius: 8px 8px 0 0;
-  }
-
-  &:last-child {
-    border-radius: 0 0 8px 8px;
-  }
-}
-
-.filter-chips-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  border-top: 1px solid var(--border-color);
-  padding-top: 10px;
-}
-
+// Filter-chips layout: .filter-chips-row from shared/ui/filter-chip
 .filter-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
-  background: rgba(245, 197, 24, 0.12);
-  color: var(--accent-yellow);
-  border: 1px solid rgba(245, 197, 24, 0.3);
-
-  .chip-dismiss {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: none;
-    border: none;
-    color: var(--accent-yellow);
-    cursor: pointer;
-    padding: 0;
-    font-size: 11px;
-    opacity: 0.7;
-    transition: opacity 0.15s ease;
-
-    &:hover {
-      opacity: 1;
-    }
-  }
-}
-
+// Torrent-specific overrides (base in shared data-table.styles.scss)
 .table-container {
-  overflow-x: auto;
   overflow-y: auto;
   max-height: 75vh;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
   border-top: none;
 
   .data-table {
@@ -409,92 +222,9 @@ thead th .resize-handle:hover {
   }
 }
 
+// .name-cell base in shared; torrent override for max-width
 .name-cell {
   max-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.state-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-}
-
-.state-downloading {
-  background: rgba(245, 197, 24, 0.15);
-  color: var(--accent-yellow);
-}
-
-.state-seeding {
-  background: rgba(212, 160, 23, 0.15);
-  color: var(--accent-gold);
-}
-
-.state-paused {
-  background: rgba(122, 117, 111, 0.15);
-  color: var(--status-inactive);
-}
-
-.state-stalled {
-  background: var(--bg-warning);
-  color: var(--accent-amber);
-}
-
-.state-error {
-  background: rgba(200, 90, 40, 0.2);
-  color: var(--accent-copper);
-}
-
-.state-queued {
-  background: var(--accent-yellow-bg);
-  color: var(--accent-gold);
-}
-
-.state-checking {
-  background: var(--accent-yellow-bg);
-  color: var(--accent-yellow);
-}
-
-.state-idle {
-  background: rgba(122, 117, 111, 0.12);
-  color: var(--text-secondary);
-}
-
-.state-default {
-  background: rgba(224, 224, 224, 0.1);
-  color: var(--text-secondary);
-}
-
-.unregistered-badge {
-  background: rgba(200, 90, 40, 0.2);
-  color: var(--accent-copper);
-  margin-left: 4px;
-  font-size: 10px;
-  padding: 2px 6px;
-}
-
-.type-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-
-  &.private {
-    background: rgba(212, 160, 23, 0.15);
-    color: var(--accent-gold);
-  }
-
-  &.public {
-    background: rgba(47, 168, 160, 0.15);
-    color: var(--accent-teal);
-  }
 }
 
 .col-state,
@@ -515,46 +245,6 @@ thead th .resize-handle:hover {
 
 .data-table tbody tr.blacklisted-row {
   background: rgba(224, 144, 16, 0.03);
-}
-
-.data-table tbody tr td.no-data-cell {
-  text-align: center;
-  padding: 40px;
-  color: var(--text-secondary);
-}
-
-.pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-top: none;
-  border-radius: 0 0 12px 12px;
-}
-
-.pagination-info {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.page-info {
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .universal-actions-wrap {
@@ -583,51 +273,7 @@ thead th .resize-handle:hover {
 }
 
 
-// Custom themed checkbox
-.custom-checkbox {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--border-color);
-  border-radius: 4px;
-  background: var(--bg-card);
-  color: transparent;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
-  flex-shrink: 0;
-
-  i {
-    font-size: 10px;
-    font-weight: 700;
-  }
-
-  &:hover {
-    border-color: var(--accent-yellow);
-    background: rgba(245, 197, 24, 0.08);
-  }
-
-  &.checked {
-    border-color: var(--accent-yellow);
-    background: var(--accent-yellow);
-    color: var(--bg-primary);
-  }
-
-  &.indeterminate {
-    border-color: var(--accent-yellow);
-    background: rgba(245, 197, 24, 0.2);
-    color: var(--accent-yellow);
-  }
-
-  &.checked:hover,
-  &.indeterminate:hover {
-    background: var(--accent-yellow);
-    color: var(--bg-primary);
-    border-color: var(--accent-yellow);
-  }
-}
-
+// Checkbox styles from shared/ui/checkbox
 .col-select-header {
   .drag-handle {
     display: none;
@@ -663,91 +309,7 @@ tbody tr.row-selected.blacklisted-row {
   background: rgba(245, 197, 24, 0.06);
 }
 
-.btn-ghost {
-  background: transparent;
-  border: none;
-  color: var(--accent-yellow);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-family: inherit;
-  transition: background 0.15s ease;
-
-  &:hover {
-    background: var(--accent-yellow-bg);
-  }
-}
-
-// Row action menu
-.action-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-}
-
-.action-menu {
-  position: fixed;
-  width: 220px;
-  max-width: calc(100vw - 24px);
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
-  overflow: hidden;
-  animation: dropdown-open 150ms ease-out;
-
-  &.universal-action-menu {
-    position: static;
-    z-index: auto;
-  }
-}
-
-.action-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 14px;
-  border: none;
-  background: transparent;
-  color: var(--text-primary);
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background 0.1s ease;
-  text-align: left;
-
-  i {
-    width: 16px;
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-secondary);
-  }
-
-  &:hover {
-    background: var(--accent-yellow-bg);
-
-    i {
-      color: var(--accent-yellow);
-    }
-  }
-
-  &.danger {
-    color: var(--accent-copper);
-
-    i {
-      color: var(--accent-copper);
-    }
-
-    &:hover {
-      background: rgba(200, 90, 40, 0.1);
-    }
-  }
-}
-
+// .btn-ghost, .action-menu, .action-menu-item from shared/ui/button and shared/ui/action-menu
 .recycling-indicator {
   display: inline-flex;
   align-items: center;

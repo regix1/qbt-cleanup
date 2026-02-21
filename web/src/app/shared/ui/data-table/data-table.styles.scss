@@ -1,0 +1,90 @@
+// Data table styles — shared across torrents, blacklist, recycle-bin.
+// Import this partial from styles.scss or component styles.
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+
+  th, td {
+    box-sizing: border-box;
+  }
+
+  thead {
+    th {
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      font-weight: 500;
+      text-align: left;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      white-space: nowrap;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+  }
+
+  tbody {
+    tr {
+      transition: background 0.15s ease;
+
+      &:hover {
+        background: var(--accent-yellow-bg-light);
+      }
+
+      td {
+        padding: 12px 16px;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-primary);
+        vertical-align: middle;
+      }
+    }
+  }
+
+  &.striped tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  // ─── Mobile responsive ─────────────────────────────────────────────────────
+  @media (max-width: 768px) {
+    thead th {
+      padding: 10px 8px;
+    }
+
+    tbody tr td {
+      padding: 10px 8px;
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    thead th {
+      padding: 8px 6px;
+    }
+
+    tbody tr td {
+      padding: 8px 6px;
+      font-size: 12px;
+    }
+  }
+}
+
+.table-container {
+  overflow-x: auto;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+}
+
+.name-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.no-data-cell {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-secondary);
+}

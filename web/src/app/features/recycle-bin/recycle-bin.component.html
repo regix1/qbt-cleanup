@@ -62,12 +62,12 @@
               <tr>
                 <td class="col-name name-cell" [title]="item.name">
                   <div class="name-main">
-                    <i class="fa-solid" [class.fa-folder]="item.is_dir" [class.fa-file]="!item.is_dir" style="margin-right: 8px; color: var(--text-secondary)"></i>
+                    <i class="fa-solid name-main-icon text-secondary" [class.fa-folder]="item.is_dir" [class.fa-file]="!item.is_dir"></i>
                     {{ item.name }}
                   </div>
                   @if (item.original_path) {
                     <div class="name-meta">
-                      <i class="fa-solid fa-arrow-turn-up fa-rotate-180" style="margin-right: 4px; font-size: 10px;"></i>
+                      <i class="fa-solid fa-arrow-turn-up fa-rotate-180 name-meta-icon"></i>
                       {{ item.original_path }}
                     </div>
                   }

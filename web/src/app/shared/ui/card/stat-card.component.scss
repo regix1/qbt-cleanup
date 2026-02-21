@@ -1,0 +1,101 @@
+// Unified .stat-card from styles.scss, .summary-stat (recycle-bin), .mini-stat (dashboard).
+// Same class names for compatibility; size variants: .stat-card-sm, .stat-card-md, .stat-card-lg.
+
+.stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: border-color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    border-color: var(--accent-yellow);
+    transform: translateY(-2px);
+  }
+
+  .stat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    margin-bottom: 8px;
+    opacity: 0.8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    i {
+      font-size: inherit;
+    }
+  }
+
+  .stat-value {
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: var(--text-primary);
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+// Small: from .mini-stat (dashboard 70-103)
+.stat-card-sm {
+  padding: 8px;
+  background: var(--accent-yellow-bg-light);
+
+  &:hover {
+    background: var(--accent-yellow-bg);
+  }
+
+  .stat-icon {
+    font-size: 20px;
+    width: auto;
+    height: auto;
+    margin-bottom: 4px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    letter-spacing: 0.3px;
+    margin-top: 2px;
+  }
+}
+
+// Medium: default (summary-stat / base stat-card)
+.stat-card-md {
+  // base .stat-card is md
+}
+
+// Large: keep base .stat-card as lg-style if needed; base is already large
+.stat-card-lg {
+  padding: 24px;
+
+  .stat-icon {
+    font-size: 40px;
+    width: 40px;
+    height: 40px;
+    margin-bottom: 12px;
+  }
+
+  .stat-value {
+    font-size: 36px;
+  }
+
+  .stat-label {
+    font-size: 14px;
+    margin-top: 6px;
+  }
+}

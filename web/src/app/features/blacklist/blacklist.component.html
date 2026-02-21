@@ -17,7 +17,7 @@
 
   <div class="section-card add-form-card">
     <div class="card-header-content">
-      <i class="fa-solid fa-circle-plus" style="color: var(--accent-yellow)"></i>
+      <i class="fa-solid fa-circle-plus icon-yellow"></i>
       <span>Add to Blacklist</span>
     </div>
     <div class="section-card-content">
@@ -44,7 +44,7 @@
                 @for (torrent of filteredTorrents(); track torrent.hash) {
                   <button class="hash-dropdown-item" type="button" (click)="selectTorrent(torrent)">
                     <span class="torrent-name">{{ torrent.name }}</span>
-                    <span class="torrent-hash">{{ torrent.hash }}</span>
+                    <span class="torrent-hash font-mono">{{ torrent.hash }}</span>
                   </button>
                 } @empty {
                   <div class="hash-dropdown-empty">No torrents available</div>
@@ -95,7 +95,7 @@
             <tr>
               <td class="col-name name-cell" [title]="entry.name">{{ entry.name || '--' }}</td>
               <td class="col-hash">
-                <span class="hash-cell">{{ entry.hash }}</span>
+                <span class="hash-cell font-mono">{{ entry.hash }}</span>
               </td>
               <td class="col-reason">{{ entry.reason || '--' }}</td>
               <td class="col-added">{{ formatDate(entry.added_at) }}</td>
@@ -103,7 +103,7 @@
                 <button class="btn btn-icon"
                         title="Remove from blacklist"
                         (click)="removeEntry(entry)">
-                  <i class="fa-solid fa-trash" style="color: var(--accent-copper)"></i>
+                  <i class="fa-solid fa-trash icon-copper"></i>
                 </button>
               </td>
             </tr>

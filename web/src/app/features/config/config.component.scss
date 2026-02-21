@@ -24,101 +24,17 @@
   }
 }
 
-.header-actions {
-  display: flex;
-  gap: 12px;
-
-  button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-}
-
-.accordion {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.accordion-panel {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
-.accordion-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.2s ease;
-
-  &:hover {
-    background: rgba(245, 197, 24, 0.05);
-  }
-
-  .section-name {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text-primary);
-  }
-}
-
-.accordion-chevron {
-  font-size: 12px;
-  color: var(--text-secondary);
-  transition: transform 0.2s ease;
-  margin-left: 8px;
-
-  .accordion-panel-open & {
-    transform: rotate(180deg);
-  }
-}
-
-.accordion-content {
-  padding: 0 16px 16px;
-  border-top: 1px solid var(--border-color);
-  animation: accordion-open 0.2s ease-out;
-}
-
-@keyframes accordion-open {
-  from {
-    opacity: 0;
-    max-height: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    max-height: 2000px;
-    transform: translateY(0);
-  }
-}
-
-.section-icon {
-  color: var(--accent-yellow);
-  font-size: 20px;
-}
+// Accordion: imported from shared/ui/accordion (globally via styles.scss)
+// Config-specific overrides only:
 
 .section-count {
   font-size: 13px;
   color: var(--text-secondary);
 }
 
+// Base badge styles from shared/ui/badge; config-specific position override
 .modified-badge {
-  display: inline-block;
   margin-left: 12px;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-size: 11px;
-  font-weight: 500;
-  background: rgba(224, 144, 16, 0.15);
-  color: var(--accent-amber);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
 }
 
 .fields-grid {

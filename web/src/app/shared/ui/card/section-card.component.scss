@@ -1,0 +1,14 @@
+// Merged: .section-card, .card-body from styles.scss, blacklist, dashboard, fileflows
+
+.section-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 16px;
+
+  .section-card-content,
+  .card-body {
+    padding: 16px;
+  }
+}

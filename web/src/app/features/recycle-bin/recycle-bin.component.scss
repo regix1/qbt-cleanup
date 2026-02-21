@@ -34,24 +34,19 @@
   margin-top: 4px;
 }
 
-.table-container {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  overflow-x: auto;
-}
-
+// .table-container, .type-badge base in shared; .name-cell override for recycle-bin layout
 .name-cell {
   max-width: 400px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 
   .name-main {
     display: flex;
     align-items: center;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    .name-main-icon {
+      margin-right: 8px;
+    }
   }
 
   .name-meta {
@@ -62,30 +57,12 @@
     padding-left: 24px;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    .name-meta-icon {
+      margin-right: 4px;
+      font-size: 10px;
+    }
   }
-}
-
-.type-badge {
-  display: inline-block;
-  padding: 3px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 500;
-
-  &.folder {
-    background: rgba(212, 160, 23, 0.15);
-    color: var(--accent-gold);
-  }
-
-  &.file {
-    background: rgba(47, 168, 160, 0.15);
-    color: var(--accent-teal);
-  }
-}
-
-.header-actions {
-  display: flex;
-  gap: 8px;
 }
 
 @media (max-width: 768px) {

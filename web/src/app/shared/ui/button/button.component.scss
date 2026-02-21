@@ -1,0 +1,189 @@
+// Button and count-badge styles (from styles.scss + torrents .btn-ghost).
+// Class names kept identical so existing class-based usage keeps working.
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+  line-height: 1.4;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+
+  i {
+    font-size: 14px;
+    line-height: inherit;
+  }
+}
+
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+
+  .btn-primary & {
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+  }
+
+  .btn-secondary &,
+  .btn-text &,
+  .btn-icon & {
+    background: var(--accent-yellow);
+    color: #111;
+  }
+}
+
+.btn-primary {
+  background: var(--accent-yellow);
+  color: #111;
+  border-color: var(--accent-yellow);
+
+  &:hover:not(:disabled) {
+    background: #e6b400;
+    border-color: #e6b400;
+  }
+
+  &:active:not(:disabled) {
+    background: #c89e00;
+    border-color: #c89e00;
+  }
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--border-color);
+
+  &:hover:not(:disabled) {
+    background: var(--accent-yellow-bg);
+    border-color: var(--accent-yellow);
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(245, 197, 24, 0.15);
+  }
+
+  &.active {
+    border-color: var(--accent-yellow);
+    background: var(--accent-yellow-bg);
+    color: var(--accent-yellow);
+  }
+}
+
+.btn-danger {
+  background: var(--accent-copper);
+  color: #fff;
+  border-color: var(--accent-copper);
+
+  &:hover:not(:disabled) {
+    background: #b04e20;
+    border-color: #b04e20;
+  }
+
+  &:active:not(:disabled) {
+    background: #9a4218;
+    border-color: #9a4218;
+  }
+}
+
+.btn-text {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: transparent;
+  padding: 8px 12px;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+  }
+}
+
+.btn-text.btn-sm {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+
+  &:hover:not(:disabled) {
+    border-color: var(--accent-yellow);
+    background: var(--accent-yellow-bg);
+    color: var(--accent-yellow);
+  }
+}
+
+.btn-icon {
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  padding: 8px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &:active:not(:disabled) {
+    background: rgba(255, 255, 255, 0.12);
+    transform: scale(0.92);
+  }
+
+  i {
+    font-size: 18px;
+  }
+}
+
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+
+  i {
+    font-size: 12px;
+  }
+}
+
+.btn-ghost {
+  background: transparent;
+  border: none;
+  color: var(--accent-yellow);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-family: inherit;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--accent-yellow-bg);
+  }
+}
