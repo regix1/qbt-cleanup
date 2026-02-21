@@ -461,29 +461,23 @@ export class TorrentsComponent implements OnInit {
     ).subscribe((torrents: Torrent[]) => this.torrents.set(torrents));
   }
 
-  // Column ordering: swap semantics — dropped column lands where you put it
+  // Column ordering: swap semantics — dropped column lands where you put it.
+  // CDK reports previousIndex/currentIndex in FULL list space (disabled items included).
   onColumnDrop(event: CdkDragDrop<ColumnDef[]>): void {
     const draggedCol = event.item?.data as ColumnDef | undefined;
     if (!draggedCol || draggedCol.id === 'select') return;
 
-    const columns = [...this.columnOrder()];
-    const selectCol = columns.find((c: ColumnDef) => c.id === 'select');
-    const movable = columns.filter((c: ColumnDef) => c.id !== 'select');
-    if (movable.length < 2) return;
-
-    // Source: always resolve by identity (immune to index-space ambiguity)
-    const from = movable.findIndex((c: ColumnDef) => c.id === draggedCol.id);
-    if (from < 0) return;
-
-    // Target: CDK reports currentIndex in drop-list space.
-    // When select column is disabled (cdkDragDisabled), CDK excludes it
-    // from the sortable items, so currentIndex is already in movable-space.
-    const to = Math.max(0, Math.min(event.currentIndex, movable.length - 1));
-
+    const from = event.previousIndex;
+    const to = event.currentIndex;
     if (from === to) return;
-    [movable[from], movable[to]] = [movable[to], movable[from]];
 
-    this.columnOrder.set(selectCol ? [selectCol, ...movable] : movable);
+    const columns = [...this.columnOrder()];
+    if (to < 0 || to >= columns.length) return;
+    if (columns[to]?.id === 'select') return;
+
+    [columns[from], columns[to]] = [columns[to], columns[from]];
+
+    this.columnOrder.set(columns);
     this.saveColumnOrder();
     this.saveColumnWidths();
   }
