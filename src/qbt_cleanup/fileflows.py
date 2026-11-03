@@ -46,7 +46,7 @@ class FileFlowsClient:
         nonce = uuid.uuid4().hex
         string_to_sign = f"GET:/api/status:{timestamp}:{nonce}:"
         signature = hmac.new(
-            self.config.api_token.encode(), string_to_sign.encode(), hashlib.sha256
+            self.config.api_token.strip().encode(), string_to_sign.encode(), hashlib.sha256
         ).hexdigest()
 
         try:
