@@ -107,6 +107,7 @@ class FileFlowsConfig:
     enabled: bool = field(default_factory=lambda: parse_bool("FILEFLOWS_ENABLED", False))
     host: str = field(default_factory=lambda: os.environ.get("FILEFLOWS_HOST", "localhost"))
     port: int = field(default_factory=lambda: parse_int("FILEFLOWS_PORT", 19200))
+    api_token: str = field(default_factory=lambda: os.environ.get("FILEFLOWS_API_TOKEN", ""))
     timeout: int = field(default_factory=lambda: parse_int("FILEFLOWS_TIMEOUT", 10, 1))
 
 

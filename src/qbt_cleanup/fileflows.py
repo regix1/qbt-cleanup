@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 """FileFlows integration for protecting files during processing."""
 
+import hashlib
+import hmac
 import logging
+import time
+import uuid
 from pathlib import Path
 from typing import List, Dict, Any, Set, Optional, Tuple
 import requests
@@ -36,11 +40,30 @@ class FileFlowsClient:
         Returns:
             Parsed status dict, or None on failure.
         """
+        # FileFlows signs requests instead of sending the token:
+        # HMAC-SHA256 over "{METHOD}:{path}:{timestamp}:{nonce}:{bodyHash}", empty bodyHash for GET.
+        timestamp = str(int(time.time()))
+        nonce = uuid.uuid4().hex
+        string_to_sign = f"GET:/api/status:{timestamp}:{nonce}:"
+        signature = hmac.new(
+            self.config.api_token.encode(), string_to_sign.encode(), hashlib.sha256
+        ).hexdigest()
+
         try:
             response = requests.get(
                 f"{self.base_url}/status",
+                headers={
+                    "X-Timestamp": timestamp,
+                    "X-Nonce": nonce,
+                    "X-Signature": signature,
+                },
                 timeout=self.config.timeout,
             )
+
+            if response.status_code == 401:
+                logger.warning(f"FileFlows rejected the API token: {response.text.strip()}")
+                self._api_failures += 1
+                return None
 
             if response.status_code != 200:
                 logger.warning(f"FileFlows API returned status {response.status_code}")

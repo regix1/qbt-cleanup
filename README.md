@@ -181,6 +181,7 @@ Prevents deletion of torrents whose files are currently being processed by [File
 | `FILEFLOWS_ENABLED` | Enable FileFlows protection | `false` |
 | `FILEFLOWS_HOST` | FileFlows server host | `localhost` |
 | `FILEFLOWS_PORT` | FileFlows server port | `19200` |
+| `FILEFLOWS_API_TOKEN` | API token from FileFlows Config > API (required) | |
 | `FILEFLOWS_TIMEOUT` | API timeout in seconds | `10` |
 
 When enabled, the tool queries FileFlows once per cycle to get actively processing files. If a torrent's files match any processing file by name, the torrent is protected from deletion. On API failure, the last known processing state is used as a fallback to avoid accidental deletions.
@@ -314,6 +315,7 @@ environment:
   - FILEFLOWS_ENABLED=true
   - FILEFLOWS_HOST=192.168.1.200
   - FILEFLOWS_PORT=19200
+  - FILEFLOWS_API_TOKEN=your-fileflows-api-token
   - CHECK_PRIVATE_PAUSED_ONLY=true
   - PRIVATE_RATIO=2.0
   - PRIVATE_DAYS=14

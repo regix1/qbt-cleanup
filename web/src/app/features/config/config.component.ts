@@ -138,6 +138,7 @@ export class ConfigComponent implements OnInit {
       enabled: 'Enable FileFlows processing protection',
       host: 'FileFlows server hostname or IP address',
       port: 'FileFlows server port number',
+      api_token: 'FileFlows API token (Config > API in FileFlows)',
       timeout: 'API timeout in seconds',
     },
   };
@@ -250,7 +251,8 @@ export class ConfigComponent implements OnInit {
   }
 
   isPasswordField(sectionKey: string, fieldKey: string): boolean {
-    return sectionKey === 'connection' && fieldKey === 'password';
+    return (sectionKey === 'connection' && fieldKey === 'password')
+      || (sectionKey === 'fileflows' && fieldKey === 'api_token');
   }
 
   getFieldDescription(sectionKey: string, fieldKey: string): string {
